@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { Badge, Button, formatTime } from './ui.jsx';
+import { Badge, Button, FormActions, FormField, formatTime } from './ui.jsx';
 
 const percent = (value) => {
   if (value == null || value === '' || !Number.isFinite(Number(value))) return 'Not recorded';
@@ -265,10 +265,9 @@ export function ReportDrawer({
 
           {isPending && report && !isVo && (
             <div>
-              <h3 style={{ margin: '23px 0 12px', fontSize: 12 }}>Review decision</h3>
+              <h3 className="form-section-heading">Review decision</h3>
               {!isVo && (
-                <div className="detail-block">
-                  <label className="detail-label" htmlFor={`${id}-completion`}>Verified cumulative completion (%)</label>
+                <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
                   <input
                     id={`${id}-completion`}
                     className="form-input"
@@ -279,15 +278,12 @@ export function ReportDrawer({
                     step="any"
                     value={completion}
                     disabled={!locked || !hasMatchedItem}
-                    aria-describedby={`${id}-completion-note`}
                     aria-invalid={completion.trim() !== '' && !validCompletion}
                     onChange={(event) => { setCompletion(event.target.value); setError(''); }}
                   />
-                  <p className="field-note" id={`${id}-completion-note`}>Enter the total to date, not an additional percentage. Explain any correction below.</p>
-                </div>
+                </FormField>
               )}
-              <div className="detail-block" style={{ marginTop: 16 }}>
-                <label className="detail-label" htmlFor={`${id}-reason`}>{isVo ? 'QS review note' : 'Review note or correction reason'}</label>
+              <FormField className="drawer-note-field" label={isVo ? 'QS review note' : 'Review note or correction reason'} error={error}>
                 <textarea
                   ref={noteRef}
                   id={`${id}-reason`}
@@ -295,12 +291,10 @@ export function ReportDrawer({
                   value={reason}
                   rows={3}
                   placeholder={isVo ? 'Record the scope question, instruction evidence or next action…' : 'Add context, or explain why this update needs a correction…'}
-                  aria-describedby={error ? `${id}-error` : undefined}
                   aria-invalid={Boolean(error)}
                   onChange={(event) => { setReason(event.target.value); setError(''); }}
                 />
-              </div>
-              {error && <p id={`${id}-error`} className="field-note" role="alert" style={{ color: '#b91c1c' }}>{error}</p>}
+              </FormField>
               <div className="review-actions">
                 {isVo ? (
                   <>
@@ -322,13 +316,14 @@ export function ReportDrawer({
         </div>
 
         <footer className="drawer-footer">
-          {isVo && <Button className="primary" icon={Flag} disabled={!onReviewVO} onClick={() => onReviewVO?.(report)}>Open VO review</Button>}
-          {report && <Button icon={RotateCcw} disabled={!onReplay} onClick={() => onReplay?.(report)}>Replay same event</Button>}
+          <FormActions secondary={report && <Button icon={RotateCcw} disabled={!onReplay} onClick={() => onReplay?.(report)}>Replay same event</Button>}>
           {!report && <Button icon={Plus} disabled={!onAdd} onClick={onAdd}>Add site update</Button>}
           {isPending && !isVo && report && (
             <Button icon={Check} className="primary" disabled={!canVerify} onClick={approve}>Verify progress</Button>
           )}
           {(isVerified || !isPending || isVo) && <Button onClick={onClose}>Done</Button>}
+          {isVo && <Button className="primary" icon={Flag} disabled={!onReviewVO} onClick={() => onReviewVO?.(report)}>Open VO review</Button>}
+          </FormActions>
         </footer>
       </section>
     </div>

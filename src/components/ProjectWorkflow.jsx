@@ -1,6 +1,6 @@
 import { ArrowRight, Check, ClipboardList, FileText, Flag, MessageSquare } from 'lucide-react';
 import { getProjectWorkflow } from '../data/workflow.js';
-import { Badge, Button } from './ui.jsx';
+import { Badge, Button, PageHeader } from './ui.jsx';
 import './project-workflow.css';
 
 const icons = { contract: FileText, site: MessageSquare, vo: Flag, claims: ClipboardList };
@@ -16,7 +16,7 @@ export function WorkflowNav({ project, view, onNavigate }) {
 export function ProjectOverview({ project, onNavigate, onNext, onManage }) {
   const workflow = getProjectWorkflow(project);
   return <section className="project-overview">
-    <div className="page-header"><div><h1>Project overview</h1><p className="page-description">Your contract, site updates and claims in one place.</p></div><Button className="ghost" onClick={onManage}>All projects</Button></div>
+    <PageHeader title="Project overview" description="Your contract, site updates and claims in one place." actions={<Button onClick={onManage}>All projects</Button>}/>
     <section className="next-task" aria-labelledby="next-task-heading"><div className="next-task-heading"><span className="next-task-dot" /><h2 id="next-task-heading">Your next step</h2></div><p>{workflow.next.description}</p><Button className="primary" onClick={() => onNext(workflow.next)}>{workflow.next.label}<ArrowRight size={16} /></Button></section>
     <div className="overview-workflow-heading"><h2>How this project works</h2><span>Open any step to review it</span></div>
     <div className="overview-workflow">{workflow.steps.map((step, index) => { const Icon = icons[step.id]; return <button type="button" className="overview-step" key={step.id} onClick={() => onNavigate(step.route)}><div className="overview-step-top"><span className="overview-step-icon"><Icon size={20} /></span><span className="overview-step-number">Step {index + 1}</span><ArrowRight size={16} /></div><h3>{step.label}</h3><p>{step.detail}</p><Badge tone={tone(step.status)}>{tone(step.status) === 'green' && <Check size={11} />}{step.status}</Badge></button>; })}</div>

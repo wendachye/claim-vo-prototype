@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCheck, CircleAlert, Flag, ImageOff, MapPin, MessageSquare, RotateCcw, Save, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
+import { ArrowRight, CheckCheck, CircleAlert, Flag, ImageOff, MapPin, MessageSquare, RotateCcw, Save, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
 import { VO_STATUS_LABELS } from '../data/vo.js';
-import { Badge, Button, Modal, formatMoney, formatTime } from './ui.jsx';
+import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatMoney, formatTime } from './ui.jsx';
 import './vo-review.css';
 
 const tone = (status) => status === 'approved' ? 'green' : status === 'pendingApproval' ? 'blue' : status === 'rejected' ? 'slate' : 'amber';
@@ -46,7 +46,7 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
   }
 
   return <div className="vo-view">
-    <div className="page-header"><div><h1>Extra work (VO)</h1><p className="page-description">Check extra work against the contract and record its approval.</p></div><Button className="ghost" icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Site updates<ArrowRight size={14} /></Button></div>
+    <PageHeader title="Extra work (VO)" description="Check extra work against the contract and record its approval." actions={<Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Site updates<ArrowRight size={14} /></Button>} />
     <p className="vo-demo-note">Demo review · decisions stay in this browser.</p>
 
     {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>Flag extra work from Site updates. Its message and photo will appear here for review.</p><Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button></div> : <div className="vo-workspace">
@@ -91,10 +91,12 @@ function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContr
     if (result?.outcome === 'unchanged') setSaved('No changes to save.');
   }
   const inputProps = (name) => ({ name, value: fields[name], onChange: (event) => setField(name, event.target.value), 'aria-invalid': errorField === name });
+  const fieldError = (name) => errorField === name ? error : undefined;
   const history = [...(entry.history || [])].reverse();
 
   return <section className="vo-detail" aria-labelledby="vo-detail-heading">
-    <header className="vo-panel-header"><div><span className="vo-reference">{entry.reference}</span><h2 id="vo-detail-heading">{entry.title || 'Flagged extra work'}</h2></div><div className="vo-detail-header-actions"><Button className="small ghost vo-back-register" icon={ArrowLeft} onClick={onBack}>All extra work</Button><Badge tone={tone(entry.status)}>{VO_STATUS_LABELS[entry.status]}</Badge></div></header>
+    <div className="vo-panel-back vo-back-register"><BackButton onClick={onBack}>Back to extra work</BackButton></div>
+    <header className="vo-panel-header"><div><span className="vo-reference">{entry.reference}</span><h2 id="vo-detail-heading">{entry.title || 'Flagged extra work'}</h2></div><Badge tone={tone(entry.status)}>{VO_STATUS_LABELS[entry.status]}</Badge></header>
     <div className="vo-next-step"><div><strong>{entry.status === 'approved' ? 'Approval recorded' : entry.status === 'rejected' ? 'Review closed' : 'Next step'}</strong><p>{editable ? entry.status === 'clarification' ? 'Add the missing information, then mark this ready for approval.' : 'Check the message and photo, then explain the extra work and add its instruction reference.' : pendingApproval ? 'Enter the approved amount, approval reference and who approved it.' : entry.status === 'approved' ? 'Review this approval in the monthly claim. The claim month and QS assessment still need checking.' : 'The work was rejected. Reopen the decision only if it needs another review.'}</p></div>{entry.status === 'approved' && onOpenClaims && <Button className="primary" icon={ArrowRight} onClick={onOpenClaims}>Review in monthly claim</Button>}</div>
     <div className="vo-detail-body">
       <div className="vo-section-title"><h3>Worker’s message</h3></div>
@@ -109,25 +111,25 @@ function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContr
         <div className="vo-section-title"><h3>Review the extra work</h3><button type="button" onClick={() => onOpenContract?.()}>Check contract<ArrowRight size={12} /></button></div>
         <details className={`vo-assessment-details${editable ? ' editing' : ''}`} open={editable}><summary>{editable ? 'Work details' : 'Saved work details'}</summary>
         <div className="vo-form-grid">
-          <label className="vo-wide">Work description<input className="form-input" {...inputProps('title')} disabled={!editable} /></label>
-          <label className="vo-wide">Related contract item <span className="vo-optional">Optional</span><select className="form-select" {...inputProps('relatedItemId')} disabled={!editable}><option value="">No matching contract item</option>{project.items.map((item) => <option value={item.id} key={item.id}>{item.id} · {item.description}</option>)}</select></label>
-          <label className="vo-wide">Why is this extra work?<textarea className="form-textarea" {...inputProps('scopeAssessment')} disabled={!editable} rows={3} placeholder="Explain what was added and how it differs from the contract…" /></label>
-          <label>Instruction or drawing reference<input className="form-input" {...inputProps('instructionReference')} disabled={!editable} placeholder="e.g. site instruction or drawing revision" /></label>
-          <label>Proposed value ({currency}) <span className="vo-optional">Optional</span><input className="form-input" {...inputProps('proposedValue')} disabled={!editable} type="number" min="0" step="0.01" inputMode="decimal" placeholder="Unknown" /></label>
+          <FormField className="vo-wide" label="Work description" error={fieldError('title')}><input className="form-input" {...inputProps('title')} disabled={!editable} /></FormField>
+          <FormField className="vo-wide" label="Related contract item" optional error={fieldError('relatedItemId')}><select className="form-select" {...inputProps('relatedItemId')} disabled={!editable}><option value="">No matching contract item</option>{project.items.map((item) => <option value={item.id} key={item.id}>{item.id} · {item.description}</option>)}</select></FormField>
+          <FormField className="vo-wide" label="Why is this extra work?" error={fieldError('scopeAssessment')}><textarea className="form-textarea" {...inputProps('scopeAssessment')} disabled={!editable} rows={3} placeholder="Explain what was added and how it differs from the contract…" /></FormField>
+          <FormField label="Instruction or drawing reference" error={fieldError('instructionReference')}><input className="form-input" {...inputProps('instructionReference')} disabled={!editable} placeholder="e.g. site instruction or drawing revision" /></FormField>
+          <FormField label="Proposed value" suffix={currency} optional hint="Leave blank if the value is not known." error={fieldError('proposedValue')}><input className="form-input" {...inputProps('proposedValue')} disabled={!editable} type="number" min="0" step="0.01" inputMode="decimal" placeholder="Unknown" /></FormField>
         </div>
-        <p className="vo-field-note">Leave the proposed value blank if it is not known. A flag needs review before it can be approved.</p></details>
+        <p className="vo-field-note">A flag needs review before it can be approved.</p></details>
 
         {(pendingApproval || entry.status === 'approved') && <div className={`vo-approval-card${entry.status === 'approved' ? ' approved' : ''}`}>
           <div className="vo-section-title"><h3><ShieldCheck size={15} />{entry.status === 'approved' ? 'Recorded approval' : 'Record approval'}</h3></div>
           {entry.status === 'approved' && <div className="vo-approved-value"><span>Approved value</span><strong>{amountLabel(entry.approvedValue, currency)}</strong></div>}
-          {pendingApproval ? <div className="vo-form-grid"><label>Approved value ({currency})<input className="form-input" {...inputProps('approvedValue')} type="number" min="0" step="0.01" inputMode="decimal" placeholder="Enter approved value" /></label><label>Approval reference<input className="form-input" {...inputProps('approvalReference')} placeholder="Approval or email reference" /></label><label className="vo-wide">Approved by<input className="form-input" {...inputProps('approver')} placeholder="Person or organisation" /></label></div> : <div className="vo-recorded-approval"><span>Approval reference<strong>{entry.approvalReference || 'Not recorded'}</strong></span><span>Approved by<strong>{entry.approver || 'Not recorded'}</strong></span></div>}
+          {pendingApproval ? <div className="vo-form-grid"><FormField label="Approved value" suffix={currency} error={fieldError('approvedValue')}><input className="form-input" {...inputProps('approvedValue')} type="number" min="0" step="0.01" inputMode="decimal" placeholder="Enter approved value" /></FormField><FormField label="Approval reference" error={fieldError('approvalReference')}><input className="form-input" {...inputProps('approvalReference')} placeholder="Approval or email reference" /></FormField><FormField className="vo-wide" label="Approved by" error={fieldError('approver')}><input className="form-input" {...inputProps('approver')} placeholder="Person or organisation" /></FormField></div> : <div className="vo-recorded-approval"><span>Approval reference<strong>{entry.approvalReference || 'Not recorded'}</strong></span><span>Approved by<strong>{entry.approver || 'Not recorded'}</strong></span></div>}
           <p className="vo-field-note">Records the approval only. Nothing is sent or paid.</p>
         </div>}
 
-        {isClosed ? <details className="vo-reopen"><summary>Reopen this decision</summary><label className="vo-decision-note">Reason to reopen<textarea className="form-textarea" {...inputProps('reviewNote')} rows={2} placeholder="Explain why this needs another review…" /></label>{error && <p className="vo-form-error" role="alert"><CircleAlert size={14} />{error}</p>}<Button icon={RotateCcw} onClick={() => act('reopen')}>Reopen review</Button></details> : <>
-          <label className="vo-decision-note">Review note <span className="vo-optional">Required when requesting information or rejecting</span><textarea className="form-textarea" {...inputProps('reviewNote')} rows={2} placeholder="Add a question, decision or next action…" /></label>
-          {error && <p className="vo-form-error" role="alert"><CircleAlert size={14} />{error}</p>}{saved && <p className="vo-field-note" role="status">{saved}</p>}
-          <div className="vo-action-row"><div className="vo-secondary-actions">{editable && <Button className="ghost" icon={Save} onClick={() => act('save')}>Save draft</Button>}<Button className="ghost" onClick={() => act('clarify')}>Need information</Button><Button className="ghost vo-reject-action" onClick={() => act('reject')}>Reject</Button></div>{editable ? <Button className="primary" icon={ArrowRight} onClick={() => act('submit')}>Ready for approval</Button> : <Button className="primary" icon={CheckCheck} onClick={() => act('approve')}>Record approval</Button>}</div>
+        {isClosed ? <details className="vo-reopen"><summary>Reopen this decision</summary><FormField className="vo-decision-note" label="Reason to reopen" error={fieldError('reviewNote')}><textarea className="form-textarea" {...inputProps('reviewNote')} rows={2} placeholder="Explain why this needs another review…" /></FormField>{error && !errorField && <p className="vo-form-error" role="alert"><CircleAlert size={14} />{error}</p>}<FormActions><Button icon={RotateCcw} onClick={() => act('reopen')}>Reopen review</Button></FormActions></details> : <>
+          <FormField className="vo-decision-note" label="Review note" hint="Required when requesting information or rejecting." error={fieldError('reviewNote')}><textarea className="form-textarea" {...inputProps('reviewNote')} rows={2} placeholder="Add a question, decision or next action…" /></FormField>
+          {error && !errorField && <p className="vo-form-error" role="alert"><CircleAlert size={14} />{error}</p>}{saved && <p className="vo-field-note" role="status">{saved}</p>}
+          <FormActions className="vo-action-row" secondary={<>{editable && <Button className="ghost" icon={Save} onClick={() => act('save')}>Save draft</Button>}<Button className="ghost" onClick={() => act('clarify')}>Need information</Button><Button className="ghost vo-reject-action" onClick={() => act('reject')}>Reject</Button></>}>{editable ? <Button className="primary" icon={ArrowRight} onClick={() => act('submit')}>Ready for approval</Button> : <Button className="primary" icon={CheckCheck} onClick={() => act('approve')}>Record approval</Button>}</FormActions>
         </>}
       </form>
 

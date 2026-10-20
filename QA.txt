@@ -39,3 +39,11 @@ Simple, connected workflow — 21 October 2026
 - Production preview restarted on 4173 and overview reload verified. Source fixtures, browser data, export snapshots and hosting files preserved.
 - Current-run before/after screenshots and notes are retained in the local workspace and are not packaged in the public repository. Visual QA does not establish full keyboard/screen-reader accessibility or production readiness.
 - Public implementation copy updated locally with fictional data; changes are uncommitted and unpushed.
+
+UI layout standardization — 21 October 2026
+- Added shared PageHeader, BackButton, FormField and FormActions components and one layout/control stylesheet. Consistent destination-labelled return links, headers, 40px text controls, labels, optional/currency markers, focus/errors and attachment buttons.
+- Applied across project management/setup, contract review, site update dialogs, evidence drawer, WhatsApp/VO panels, monthly claim steps and claim preview. Step back stays lower-left; main actions are grouped to the right. Responsive master/detail panels retain their return-to-list controls.
+- Browser checked at 550 × 925: project setup missing-field messages and focus; contract return link and disabled fields; VO required assessment with currency/optional labels; claim step navigation and saved preview return; site-review correction requires a reason and focuses that field. Site update dialog was opened and cancelled.
+- No project, progress, approval or claim data was saved during these UI checks. Existing prepared warehouse revision 2 remains SGD 2,800 this month.
+- Final live and public production builds passed; all 45 business/export/workflow checks passed. Claim document JSX and print rules are unchanged, with the standardized preview toolbar still excluded from print.
+- Sources, fixtures, hosting files, saved snapshots and project isolation are preserved. Changes remain local and uncommitted. Full screen-reader testing and live backend integration are outside this check.

@@ -1,7 +1,7 @@
 .whatsapp-view { min-width:0; }
 .wa-inbox, .wa-review { scroll-margin-top:62px; }
-.wa-review-header-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
 .wa-back-inbox { display:none; }
+.wa-panel-back { padding:12px 18px 0; }
 .wa-workspace { display:grid; grid-template-columns:minmax(270px,.76fr) minmax(0,1.5fr); gap:18px; align-items:start; }
 .wa-inbox, .wa-review { min-width:0; overflow:hidden; background:#fff; border:1px solid var(--border); border-radius:10px; }
 .wa-panel-header { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:69px; padding:16px 18px; border-bottom:1px solid var(--border); }
@@ -10,9 +10,7 @@
 .wa-panel-header p { margin-top:3px; color:#64748b; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
 .wa-panel-header > svg { color:#64748b; }
 .wa-inbox-tools { display:flex; flex-direction:column; gap:8px; padding:13px 14px; border-bottom:1px solid var(--border); }
-.wa-inbox-tools .search-box { width:100%; min-height:34px; }
-.wa-inbox-tools .search-box input { height:32px; }
-.wa-inbox-tools .form-select { height:32px; font-size:13px; }
+.wa-inbox-tools .search-box { width:100%; }
 .wa-clear-search { display:flex; padding:2px; border:0; background:transparent; color:#64748b; }
 .wa-message-list { max-height:600px; overflow-y:auto; scrollbar-width:thin; }
 .wa-message { display:block; width:100%; min-height:139px; padding:15px 16px; border:0; border-bottom:1px solid #edf1f5; color:#475569; background:#fff; text-align:left; transition:background .15s; }
@@ -82,10 +80,9 @@
 .wa-baseline-note { display:flex; align-items:flex-start; gap:6px; flex-wrap:wrap; margin-top:12px; color:#64748b; font-size:12px; line-height:1.6; }
 .wa-baseline-note svg { margin-top:1px; }
 .wa-baseline-note > button { display:inline-flex; align-items:center; gap:2px; padding:0; margin-left:auto; border:0; background:none; color:#2563eb; font-size:12px; white-space:nowrap; }
-.wa-review-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-top:1px solid var(--border); background:#fcfdfe; }
-.wa-review-footer > span { color:#64748b; font-size:12px; line-height:1.7; }
-.wa-review-footer > div { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:7px; }
-.wa-review-footer .button { font-size:13px; padding-inline:10px; }
+.wa-review-footer { padding:16px 18px; border-top:1px solid var(--border); background:#fcfdfe; }
+.wa-review-footer .form-actions { width:100%; margin:0; padding:0; border:0; }
+.wa-footer-note { display:block; max-width:230px; color:#475569; font-size:12px; line-height:1.7; }
 .wa-no-selection { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; min-height:300px; color:#64748b; }
 .wa-no-selection h3 { color:#475569; font-size:14px; font-weight:500; }
 .wa-no-selection p { font-size:13px; }
@@ -98,10 +95,9 @@
   .wa-message-top { flex-wrap:wrap; gap:3px; }
   .wa-message-bottom { flex-wrap:wrap; }
   .wa-review-body { padding:16px; }
-  .wa-review-footer { flex-wrap:wrap; }
 }
 @media(max-width:1050px) {
-  .wa-back-inbox { display:inline-flex; }
+  .wa-back-inbox { display:block; }
   .wa-workspace { grid-template-columns:minmax(0,1fr); gap:16px; }
   .wa-message-list { max-height:265px; }
   .wa-message { min-height:123px; }
@@ -110,7 +106,6 @@
   .wa-inbox-tools { flex-direction:row; }
   .wa-inbox-tools .search-box { flex:1; min-width:0; }
   .wa-inbox-tools .form-select { width:150px; flex-shrink:0; }
-  .wa-review-footer { flex-wrap:nowrap; }
   .wa-evidence-photo { height:190px; }
 }
 @media(max-width:760px) {
@@ -121,8 +116,9 @@
   .wa-message-preview { margin:9px 0; }
   .wa-review-body { padding:15px; }
   .wa-evidence-photo { height:190px; }
-  .wa-review-footer { padding:13px 15px; flex-wrap:wrap; }
-  .wa-review-footer > div { margin-left:auto; }
+  .wa-review-footer { padding:16px 15px; }
+  .wa-panel-back { padding-inline:15px; }
+  .wa-footer-note { max-width:none; }
 }
 @media(max-width:420px) {
   .wa-inbox-tools { flex-direction:column; }
@@ -133,26 +129,16 @@
   .wa-progress-comparison { gap:10px; }
   .wa-progress-comparison > div + div { padding-left:10px; }
   .wa-progress-comparison strong { gap:5px; font-size:19px; }
-  .wa-review-footer > div { width:100%; }
-  .wa-review-footer > div .button { flex:1; }
 }
 
 .wa-demo-note { margin:-8px 0 18px; color:#64748b; font-size:12px; line-height:1.6; }
-.whatsapp-view .button { min-height:36px; font-size:13px; }
 .wa-message-details { margin-top:16px; border-top:1px solid var(--border); color:#475569; font-size:12px; line-height:1.7; }
 .wa-message-details > summary { min-height:36px; padding-top:10px; cursor:pointer; font-weight:500; }
 .wa-message-details p { margin:8px 0; overflow-wrap:anywhere; }
-.wa-review-footer { align-items:flex-start; }
-.wa-review-footer > span { max-width:230px; color:#475569; }
 .wa-panel-header { min-height:60px; padding-block:13px; }
 .wa-message-list { max-height:640px; }
 .wa-field-wide > strong { color:#334155; }
 .wa-result-title strong { font-size:14px; }
 @media(max-width:1050px) {
   .wa-message-list { max-height:245px; }
-}
-@media(max-width:760px) {
-  .wa-review-footer { gap:10px; }
-  .wa-review-footer > span { max-width:none; }
-  .wa-review-footer > div { width:100%; margin-left:0; justify-content:flex-start; }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ListChecks, LockKeyhole, MapPin, MessageSquare, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
-import { Badge, Button, Modal, formatTime, formatMoney } from './ui.jsx';
+import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ListChecks, LockKeyhole, MapPin, MessageSquare, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
+import { BackButton, Badge, Button, FormActions, Modal, PageHeader, formatTime, formatMoney } from './ui.jsx';
 import { getVOCases, VO_STATUS_LABELS } from '../data/vo.js';
 import './whatsapp.css';
 
@@ -67,7 +67,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const newCount = messages.filter((message) => message.status === 'new').length;
 
   return <div className="whatsapp-view">
-    <div className="page-header"><div><h1>Site updates</h1><p className="page-description">Check a worker’s message, then update progress or flag extra work.</p></div></div>
+    <PageHeader title="Site updates" description="Check a worker’s message, then update progress or flag extra work." />
     <p className="wa-demo-note">Demo inbox · no WhatsApp messages are sent.</p>
 
     {!messages.length ? <div className="project-empty empty-state"><MessageSquare size={32} /><h3>No demo messages for this project</h3><p>{project.items.length ? 'Choose a demo project in the project dropdown to try site updates.' : 'Add contract work first, or choose a demo project to try site updates.'}</p><Button icon={FileText} onClick={() => onOpenContract?.()}>Review contract</Button></div> : <>
@@ -88,7 +88,8 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
         </section>
 
         {selected ? <section ref={reviewRef} className="wa-review" aria-labelledby="wa-review-heading">
-          <header className="wa-panel-header"><div><h2 id="wa-review-heading">Review update</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><div className="wa-review-header-actions"><Button className="small ghost wa-back-inbox" icon={ArrowLeft} onClick={() => inboxRef.current?.scrollIntoView({ block: 'start' })}>Inbox</Button><Badge tone={status.tone}>{status.label}</Badge></div></header>
+          <div className="wa-panel-back wa-back-inbox"><BackButton onClick={() => inboxRef.current?.scrollIntoView({ block: 'start' })}>Back to messages</BackButton></div>
+          <header className="wa-panel-header"><div><h2 id="wa-review-heading">Review update</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><Badge tone={status.tone}>{status.label}</Badge></header>
           <div className="wa-review-body">
             <div className="wa-evidence-heading"><div className="avatar wa-worker-avatar">{selected.sender?.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('') || 'DW'}</div><div><strong>{selected.sender}</strong><span>{selected.senderRole || 'Site worker · demo'}</span></div><time dateTime={selected.date}>{time(selected.date)}</time></div>
             <div className="wa-original-message"><div className="wa-original-label"><MessageSquare size={12} />Worker’s message</div><blockquote>{selected.text}</blockquote></div>
@@ -106,7 +107,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
             <details className="wa-message-details"><summary>Message details</summary><p><strong>Message:</strong> {selected.id}{report && <><br /><strong>Report:</strong> {report.id}</>}<br /><strong>Interpretation:</strong> Predefined demo fields; AI is not connected.</p>{selected.processingNote && <p>{selected.processingNote}</p>}</details>
             {!project.locked && !isVo && !isUnclear && <div className="wa-baseline-note"><LockKeyhole size={13} /><span>Confirm the contract first so the supervisor can verify progress.</span><button type="button" onClick={() => onOpenContract?.()}>Review contract<ChevronRight size={12} /></button></div>}
           </div>
-          <footer className="wa-review-footer"><span>{isNew ? 'Check the message before adding it.' : isUnclear ? 'Waiting for a clearer update.' : isVo ? 'Next: review the extra work.' : waiting(report) ? 'Next: supervisor verification.' : 'Saved with this project.'}</span><div>{isNew ? <Button className="primary" icon={isVo ? Flag : isUnclear ? MessageSquare : Check} onClick={() => onProcess?.(selected)}>{isVo ? 'Flag extra work' : isUnclear ? 'Needs clarification' : 'Add progress update'}</Button> : report ? <>{isVo ? <Button className="primary" icon={ArrowRight} onClick={() => onOpenVO?.(report.id)}>Review extra work</Button> : waiting(report) ? <><Button className="ghost" onClick={() => onOpenCompletion?.(false)}>View progress</Button><Button className="primary" icon={ShieldCheck} onClick={() => onReview?.(report)}>Verify progress</Button></> : <Button icon={ArrowRight} onClick={() => onOpenCompletion?.(false)}>View progress</Button>}</> : <Badge tone="amber">Clarification needed</Badge>}</div></footer>
+          <footer className="wa-review-footer"><FormActions secondary={<span className="wa-footer-note">{isNew ? 'Check the message before adding it.' : isUnclear ? 'Waiting for a clearer update.' : isVo ? 'Next: review the extra work.' : waiting(report) ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>{isNew ? <Button className="primary" icon={isVo ? Flag : isUnclear ? MessageSquare : Check} onClick={() => onProcess?.(selected)}>{isVo ? 'Flag extra work' : isUnclear ? 'Needs clarification' : 'Add progress update'}</Button> : report ? <>{isVo ? <Button className="primary" icon={ArrowRight} onClick={() => onOpenVO?.(report.id)}>Review extra work</Button> : waiting(report) ? <><Button className="ghost" onClick={() => onOpenCompletion?.(false)}>View progress</Button><Button className="primary" icon={ShieldCheck} onClick={() => onReview?.(report)}>Verify progress</Button></> : <Button icon={ArrowRight} onClick={() => onOpenCompletion?.(false)}>View progress</Button>}</> : <Badge tone="amber">Clarification needed</Badge>}</FormActions></footer>
         </section> : <section className="wa-review wa-no-selection"><MessageSquare size={30} /><h3>Select a message</h3><p>Its photo and proposed update will appear here.</p></section>}
       </div>
 

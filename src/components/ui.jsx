@@ -1,11 +1,38 @@
-import { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import { Children, cloneElement, useEffect, useId, useRef } from 'react';
+import { ArrowLeft, X } from 'lucide-react';
 
 export function Badge({ tone = 'slate', children }) {
   return <span className={`badge ${tone}`}>{children}</span>;
 }
 export function Button({ icon: Icon, children, className = '', ...props }) {
   return <button type="button" className={`button ${className}`} {...props}>{Icon && <Icon size={15} />}{children}</button>;
+}
+export function BackButton({ children = 'Back', className = '', ...props }) {
+  return <Button icon={ArrowLeft} className={`back-button ${className}`} {...props}>{children}</Button>;
+}
+export function PageHeader({ title, description, actions, onBack, backLabel = 'Back', className = '' }) {
+  return <header className={`page-header page-heading ${className}`}>
+    {onBack && <div className="page-back"><BackButton onClick={onBack}>{backLabel}</BackButton></div>}
+    <div className="page-heading-row"><div className="page-heading-copy"><h1>{title}</h1>{description && <p className="page-description">{description}</p>}</div>{actions && <div className="page-actions">{actions}</div>}</div>
+  </header>;
+}
+export function FormField({ label, children, hint, error, optional, required, suffix, className = '', id }) {
+  const generatedId = useId();
+  const control = Children.only(children);
+  const controlId = control.props.id || id || generatedId;
+  const hintId = hint ? `${controlId}-hint` : undefined;
+  const errorId = error ? `${controlId}-error` : undefined;
+  const describedBy = [...new Set([control.props['aria-describedby'], hintId, errorId].filter(Boolean).join(' ').split(/\s+/))].filter(Boolean).join(' ') || undefined;
+  const controlClass = control.type === 'select' ? 'form-select' : control.type === 'textarea' ? 'form-textarea' : 'form-input';
+  return <div className={`form-field ${className}`}>
+    <label className="form-field-label" htmlFor={controlId}><span>{label}{required && <span className="form-required" aria-hidden="true"> *</span>}</span>{(optional || suffix) && <span className="form-field-meta">{suffix}{suffix && optional && ' · '}{optional && 'Optional'}</span>}</label>
+    {cloneElement(control, { id: controlId, className: [...new Set([controlClass, ...(control.props.className || '').split(' ')])].filter(Boolean).join(' '), 'aria-describedby': describedBy, 'aria-invalid': error ? true : control.props['aria-invalid'], 'aria-required': required || control.props['aria-required'] || undefined })}
+    {hint && <p className="form-field-hint" id={hintId}>{hint}</p>}
+    {error && <p className="form-field-error" id={errorId} role="alert">{error}</p>}
+  </div>;
+}
+export function FormActions({ secondary, children, className = '' }) {
+  return <div className={`form-actions ${className}`}>{secondary && <div className="form-actions-secondary">{secondary}</div>}<div className="form-actions-main">{children}</div></div>;
 }
 export function Modal({ title, description, onClose, children, footer }) {
   const node = useRef(null);

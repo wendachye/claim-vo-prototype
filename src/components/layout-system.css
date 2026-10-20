@@ -1,0 +1,77 @@
+/* Shared layout rules for every application screen. Document print styles stay separate. */
+:root {
+  --ui-control-height:40px;
+  --ui-control-radius:8px;
+  --ui-control-font:13px;
+  --ui-field-gap:8px;
+  --ui-section-gap:24px;
+  --ui-label-color:#334155;
+  --ui-help-color:#64748b;
+}
+.page-header.page-heading { display:block; margin-bottom:var(--ui-section-gap); }
+.page-heading .page-heading-row { display:flex; justify-content:space-between; align-items:flex-start; gap:16px 24px; }
+.page-heading-copy { flex:1; min-width:0; }
+.page-heading h1 { font-size:22px; line-height:1.4; font-weight:650; letter-spacing:-.5px; }
+.page-heading .page-description { margin-top:6px; color:var(--ui-help-color); font-size:13px; line-height:1.7; }
+.page-heading .page-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:8px; flex-shrink:0; }
+.page-back { display:flex; margin:0 0 12px; }
+.app-shell .button:not(.icon), .modal .button:not(.icon) { min-height:var(--ui-control-height); border-radius:var(--ui-control-radius); padding:9px 14px; font-size:var(--ui-control-font); line-height:1.45; }
+.app-shell .button.icon, .modal .button.icon { width:36px; height:36px; min-height:36px; border-radius:var(--ui-control-radius); }
+.app-shell .button.back-button, .modal .button.back-button { justify-content:flex-start; min-height:36px; padding:6px 0; border:0; background:transparent; box-shadow:none; color:var(--ui-help-color); font-size:13px; }
+.app-shell .button.back-button:hover:not(:disabled), .modal .button.back-button:hover:not(:disabled) { background:transparent; color:#1d4ed8; }
+.app-shell .button.back-button svg { width:16px; height:16px; }
+.app-shell .form-input, .app-shell .form-select, .app-shell .form-textarea { min-height:var(--ui-control-height); height:auto; border-radius:var(--ui-control-radius); padding:9px 12px; color:#1e293b; font-size:var(--ui-control-font); line-height:1.5; }
+.app-shell .form-textarea { min-height:96px; resize:vertical; }
+.app-shell .form-input:disabled, .app-shell .form-select:disabled, .app-shell .form-textarea:disabled { color:#64748b; background:#f8fafc; opacity:1; }
+.app-shell .form-input::placeholder, .app-shell .form-textarea::placeholder { color:#94a3b8; }
+.app-shell .form-input:focus-visible, .app-shell .form-select:focus-visible, .app-shell .form-textarea:focus-visible { border-color:#2563eb; outline:0; box-shadow:0 0 0 3px #2563eb1a; }
+.app-shell .form-input[aria-invalid='true'], .app-shell .form-select[aria-invalid='true'], .app-shell .form-textarea[aria-invalid='true'] { border-color:#dc2626; }
+.form-field { display:flex; flex-direction:column; gap:var(--ui-field-gap); min-width:0; }
+.form-field .form-field-label { display:flex; flex-direction:row; align-items:baseline; justify-content:space-between; gap:8px; margin:0; color:var(--ui-label-color); font-size:13px; font-weight:500; line-height:1.5; }
+.form-field-label > span:first-child { min-width:0; }
+.form-field .form-field-meta { flex-shrink:0; color:var(--ui-help-color); font-size:12px; font-weight:400; }
+.form-required { color:#b91c1c; }
+.form-field .form-field-hint, .form-field .form-field-error { margin:0; font-size:12px; font-weight:400; line-height:1.65; }
+.form-field .form-field-hint { color:var(--ui-help-color); }
+.form-field .form-field-error { color:#b91c1c; }
+.app-shell .field-grid { gap:20px 16px; }
+.app-shell .field-grid > .field-full { grid-column:1 / -1; }
+.app-shell .field-label { color:var(--ui-label-color); font-size:13px; }
+.app-shell .field-note { color:var(--ui-help-color); font-size:12px; line-height:1.65; }
+.form-actions { display:flex; align-items:center; justify-content:space-between; gap:12px 20px; padding-top:20px; margin-top:24px; border-top:1px solid var(--border); }
+.form-actions-secondary, .form-actions-main { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.form-actions-secondary { min-width:0; }
+.form-actions-main { justify-content:flex-end; margin-left:auto; }
+.form-actions-secondary > span { color:var(--ui-help-color); font-size:12px; }
+.app-shell .modal-header { padding:20px 24px; }
+.app-shell .modal-header h2 { font-size:18px; line-height:1.4; }
+.app-shell .modal-header p { margin-top:6px; color:var(--ui-help-color); font-size:13px; line-height:1.7; }
+.app-shell .modal-body { padding:24px; }
+.app-shell .modal-footer { gap:8px; padding:16px 24px; }
+.app-shell .modal-body .field-grid { margin-top:0; }
+.app-shell .search-box { min-height:var(--ui-control-height); border-radius:var(--ui-control-radius); }
+.app-shell .search-box input { height:38px; font-size:var(--ui-control-font); }
+.app-shell input[type='file'] { max-width:100%; color:var(--ui-help-color); font-size:12px; }
+.app-shell input[type='file']::file-selector-button { min-height:var(--ui-control-height); margin-right:10px; padding:8px 12px; border:1px solid var(--border); border-radius:var(--ui-control-radius); background:#fff; color:#334155; font:inherit; cursor:pointer; }
+.review-navigation { justify-content:flex-end; }
+.panel-back { padding:10px 18px 0; }
+.form-section-heading { margin:24px 0 16px; color:#334155; font-size:14px; font-weight:600; }
+.drawer-note-field { margin-top:20px; }
+.drawer-footer .form-actions { width:100%; margin:0; padding:0; border:0; }
+@media screen and (max-width:760px) {
+  .page-heading .page-heading-row { flex-wrap:wrap; gap:14px; }
+  .page-heading-copy { flex-basis:100%; }
+  .page-heading h1 { font-size:20px; }
+  .page-heading .page-actions { width:100%; justify-content:flex-start; }
+  .page-heading .page-actions .button { flex-grow:0; }
+  .form-actions { flex-wrap:wrap; gap:12px; }
+  .form-actions-main { max-width:100%; }
+  .form-actions-main .button { white-space:normal; text-align:center; }
+  .app-shell .modal-header, .app-shell .modal-body, .app-shell .modal-footer { padding-left:20px; padding-right:20px; }
+  .app-shell .modal-footer { flex-wrap:wrap; }
+  .panel-back { padding:10px 15px 0; }
+}
+@media screen and (max-width:420px) {
+  .form-actions-main { width:100%; }
+  .form-actions-main > .button { flex:1; }
+}

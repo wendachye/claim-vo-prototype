@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { AlertTriangle, ArrowRight, Check, FileText, Lock, Sparkles } from 'lucide-react';
 import { contract as sampleContract, initialItems } from '../data/contract.js';
+import { Button, FormActions, FormField } from './ui.jsx';
 
 const UNITS = ['m²', 'm³', 'm', 'set', 'design', 'visit', 'pc', 'hr'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -143,22 +144,20 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
                   ? `The ${sourceKind === 'illustrative' ? 'illustrative' : 'printed'} schedule shows ${formatQuantity(printed.quantity)} ${printed.unit}.`
                   : 'A source quantity is unavailable for this item in the active project. Review this project’s source before confirming.'}
               </p>
-              {hasSourceQuantity && <button
-                type='button'
-                className='button secondary small'
+              {hasSourceQuantity && <Button
+                className='secondary'
                 disabled={locked}
                 onClick={() => changeField('quantity', String(printed.quantity))}
               >
                 Use source value: {formatQuantity(printed.quantity)}
-              </button>}
+              </Button>}
               {hasSourceQuantity && <p className='field-note'>Filling the source value does not confirm the item.</p>}
             </div>
           </div>
         )}
 
         <div className='field-grid'>
-          <div className='field-card field-full'>
-            <label className='field-label' htmlFor={`${inputId}-description`}>Work description</label>
+          <FormField className='field-card field-full' label='Work description' id={`${inputId}-description`} hint={item.subsection ?? item.section}>
             <textarea
               id={`${inputId}-description`}
               className='form-textarea'
@@ -167,11 +166,13 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
               disabled={locked}
               onChange={(event) => changeField('description', event.target.value)}
             />
-            <p className='field-note'>{item.subsection ?? item.section}</p>
-          </div>
+          </FormField>
 
-          <div className={`field-card${item.needsReview ? ' warning' : ''}`}>
-            <label className='field-label' htmlFor={`${inputId}-quantity`}>Contract quantity</label>
+          <FormField className={`field-card${item.needsReview ? ' warning' : ''}`} label='Contract quantity' id={`${inputId}-quantity`} hint={rateOnly
+            ? 'Printed rate-reference quantity; this is not authorised work or actual hours.'
+            : printed
+              ? `${sourceLabel}: ${formatQuantity(printed.quantity)} ${printed.unit ?? ''} · ${printed.quantityBasis ?? item.quantityBasis ?? 'provisional'}`
+              : 'Source quantity unavailable for this item in the active project.'}>
             <input
               id={`${inputId}-quantity`}
               className='form-input'
@@ -181,20 +182,11 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
               inputMode='decimal'
               value={form.quantity}
               disabled={locked}
-              aria-describedby={`${inputId}-quantity-note`}
               onChange={(event) => changeField('quantity', event.target.value)}
             />
-            <p id={`${inputId}-quantity-note`} className='field-note'>
-              {rateOnly
-                ? 'Printed rate-reference quantity; this is not authorised work or actual hours.'
-                : printed
-                  ? `${sourceLabel}: ${formatQuantity(printed.quantity)} ${printed.unit ?? ''} · ${printed.quantityBasis ?? item.quantityBasis ?? 'provisional'}`
-                  : 'Source quantity unavailable for this item in the active project.'}
-            </p>
-          </div>
+          </FormField>
 
-          <div className='field-card'>
-            <label className='field-label' htmlFor={`${inputId}-unit`}>Unit</label>
+          <FormField className='field-card' label='Unit' id={`${inputId}-unit`} hint='Keep the source unit; unlike quantities are not combined.'>
             <select
               id={`${inputId}-unit`}
               className='form-select'
@@ -204,11 +196,9 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
             >
               {unitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
             </select>
-            <p className='field-note'>Keep the source unit; unlike quantities are not combined.</p>
-          </div>
+          </FormField>
 
-          <div className='field-card'>
-            <label className='field-label' htmlFor={`${inputId}-rate`}>Unit rate · {currency}</label>
+          <FormField className='field-card' label='Unit rate' suffix={currency} id={`${inputId}-rate`} hint={included ? 'Included scope has no separate source rate.' : printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : 'Source rate unavailable for this item in the active project.'}>
             <input
               id={`${inputId}-rate`}
               className='form-input'
@@ -221,10 +211,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
               disabled={locked || included}
               onChange={(event) => changeField('rate', event.target.value)}
             />
-            <p className='field-note'>
-              {included ? 'Included scope has no separate source rate.' : printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : 'Source rate unavailable for this item in the active project.'}
-            </p>
-          </div>
+          </FormField>
 
           <div className={`field-card${matchesPrintedAmount ? ' verified' : ''}`}>
             <span className='field-label'>Line amount · {currency}</span>
@@ -271,23 +258,22 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
         </div>
       </div>
 
-      <div className='editor-footer'>
-        <div className='editor-summary'>
+      <FormActions className='editor-footer' secondary={<div className='editor-summary'>
           <strong>{locked ? 'Read-only baseline' : item.id}</strong>
           <span>{locked ? 'A revision is required for edits.' : 'Confirm only after checking the source.'}</span>
-        </div>
+        </div>}>
         {!locked && onNext && (
-          <button type='button' className='button secondary' onClick={onNext}>Next item</button>
+          <Button className='secondary' onClick={onNext}>Next item</Button>
         )}
-        <button
+        <Button
           type='submit'
-          className='button primary buttonprimary'
+          className='primary'
+          icon={locked ? ArrowRight : Check}
           disabled={locked ? !onNext : !onSave}
         >
-          {locked ? <ArrowRight size={16} aria-hidden='true' /> : <Check size={16} aria-hidden='true' />}
           {locked ? 'Next item' : 'Confirm item'}
-        </button>
-      </div>
+        </Button>
+      </FormActions>
     </form>
   );
 }

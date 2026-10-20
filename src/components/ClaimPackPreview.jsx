@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Building2, CircleAlert, Download, FileCheck2, Info, Printer } from 'lucide-react';
+import { Building2, CircleAlert, Download, FileCheck2, Info, Printer } from 'lucide-react';
 import { buildClaimPack } from '../data/claim-pack.js';
-import { Badge, Button, formatMoney, formatNumber } from './ui.jsx';
+import { Badge, Button, PageHeader, formatMoney, formatNumber } from './ui.jsx';
 import './claim-pack.css';
 
 const known = (value) => value != null && value !== '';
@@ -26,7 +26,7 @@ export function ClaimPackPreview({ project, draftId, onBack, onDownloadCSV }) {
   const pack = result.outcome === 'ready' ? result.pack : null;
   const [downloadError, setDownloadError] = useState('');
   useEffect(() => setDownloadError(''), [project.id, draftId]);
-  if (!pack) return <div className="claim-pack-view"><div className="claim-pack-toolbar"><div><Button icon={ArrowLeft} onClick={onBack}>Monthly claims</Button></div></div><section className="claim-pack-invalid"><FileCheck2 size={30} /><h2>Choose a saved claim draft</h2><p>{result.error || 'Open a draft belonging to the selected project to preview its assessment.'}</p><Button className="primary" onClick={onBack}>Back to saved drafts</Button></section></div>;
+  if (!pack) return <div className="claim-pack-view"><PageHeader className="claim-pack-toolbar" title="Claim preview" onBack={onBack} backLabel="Back to claims" /><section className="claim-pack-invalid"><FileCheck2 size={30} /><h2>Choose a saved claim draft</h2><p>{result.error || 'Open a draft belonging to the selected project to preview its assessment.'}</p><Button className="primary" onClick={onBack}>View saved claims</Button></section></div>;
   const details = pack.projectDetails || {};
   const contract = details.contract || {};
   const refs = (rowId, kind) => pack.evidenceRefs.filter((entry) => entry.rowId === rowId && entry.kind === kind).map((entry) => entry.id).join(', ') || 'No report attached';
@@ -37,7 +37,7 @@ export function ClaimPackPreview({ project, draftId, onBack, onDownloadCSV }) {
   }
 
   return <div className="claim-pack-view">
-    <div className="claim-pack-toolbar"><div><Button icon={ArrowLeft} onClick={onBack}>Monthly claims</Button><h1>Claim preview</h1></div><div><Button icon={Download} onClick={download} disabled={!onDownloadCSV}>Download CSV</Button><Button className="primary" icon={Printer} onClick={() => window.print()}>Print / Save PDF</Button></div></div>
+    <PageHeader className="claim-pack-toolbar" title="Claim preview" onBack={onBack} backLabel="Back to claims" actions={<><Button icon={Download} onClick={download} disabled={!onDownloadCSV}>Download CSV</Button><Button className="primary" icon={Printer} onClick={() => window.print()}>Print / Save PDF</Button></>} />
     <p className="claim-pack-screen-note"><Info size={14} /><span>Saved revision · read-only. To save a PDF, choose “Save as PDF” in the print window.</span></p>
     {downloadError && <p className="claim-pack-screen-note" role="alert"><CircleAlert size={14} /><span>{downloadError}</span></p>}
     <article className="claim-pack-document" aria-label={`${month(pack.period)} claim assessment revision ${pack.revision}`}>

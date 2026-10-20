@@ -31,3 +31,7 @@ All approvals and prepared claims are local demos; they submit nothing and certi
 ## Simple, connected workflow
 
 Design for a nontechnical user. Keep the current Mighty One visual style while reducing repeated statistics, project summaries and notices above the work. Use plain labels and a visible sequence: Contract → Site updates → Extra work → Claims. Start on the selected project's overview with one clear next action. Keep messages and progress together under Site updates; retain original evidence and show where each action leads. Monthly claims starts with saved claims, then guides preparation through Choose work → Enter totals → Review. Put history and secondary details behind expandable controls. Simplification must preserve prior-claim reconciliation, financial validation, project isolation and explicit saving.
+
+## Consistent layout and controls
+
+Use the shared PageHeader, BackButton, FormField and FormActions patterns. Return links sit above the detail title at the upper left, use a left arrow and name their destination. Keep workflow step back actions at the left of the bottom action row; group the main action at the right. Form labels, optional markers, help/error text, control heights, borders, spacing and focus/disabled states follow layout-system.css. Preserve explicit labels/IDs, validation focus, browser-local edits and incomplete draft saving. Dialogs retain an upper-right close button; claim preview navigation stays outside the printed document. Avoid module-specific button and field sizes.
