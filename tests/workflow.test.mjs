@@ -14,7 +14,10 @@ const draft = (id, period, revision, status = 'draft') => ({ id, projectId: 'TES
 
 test('contract setup guides empty, flagged and unconfirmed projects before site work', () => {
   const value = project();
-  assert.equal(workflow({ ...value, items: [] }).next.label, 'Set up contract');
+  const empty = workflow({ ...value, items: [] });
+  assert.equal(empty.next.label, 'View contract options');
+  assert.match(empty.next.description, /mock project/);
+  assert.match(empty.next.description, /PDF previews do not add work items/);
   value.items[0].needsReview = true;
   assert.equal(workflow(value).next.label, 'Review contract items');
   assert.equal(workflow(value).steps[0].status, 'Needs review');
@@ -100,4 +103,78 @@ test('project-scoped guidance ignores foreign records and does not mutate inputs
   result.counts.verifiedItems = 100;
   assert.deepEqual(value, before);
   assert.match(getProjectWorkflow(value).period, /^\d{4}-\d{2}$/);
+});
+
+test('waiting message clarification stays visible while verified work and saved claim export remain actionable', () => {
+  const value = project();
+  value.items[0] = { ...value.items[0], quantity: 100, rate: 28, amount: 2800, reported: 65, verified: 50 };
+  value.whatsappMessages = [{ id: 'UNCLEAR', projectId: 'TEST', projectCode: 'TEST', status: 'clarification', date: '2026-10-02' }];
+  const ready = workflow(value);
+  assert.equal(ready.counts.clarifications, 1);
+  assert.equal(ready.steps[1].status, 'Needs clarification');
+  assert.equal(ready.steps[1].route, 'whatsapp');
+  assert.equal(ready.steps[1].detail, '1 site update waiting for clearer information.');
+  assert.equal(ready.next.route, 'claims');
+  value.claimDrafts = [{ ...draft('PREPARED', '2026-10', 1, 'prepared'), snapshot: { projectId: 'TEST', period: '2026-10', totals: { currentValue: 1400 } } }];
+  const before = structuredClone(value);
+  const exported = workflow(value);
+  assert.equal(exported.next.route, 'claim-preview');
+  assert.equal(exported.next.draftId, 'PREPARED');
+  assert.equal(exported.steps[1].status, 'Needs clarification');
+  assert.deepEqual(value, before); // Status guidance never changes physical or financial records.
+});
+
+test('clarification messages and latest reports deduplicate events and ignore superseded or foreign records', () => {
+  const value = project();
+  value.items.push({ id: 'B', pricingType: 'measured', verified: 20 });
+  value.whatsappMessages = [{ id: 'SAME-EVENT', projectId: 'TEST', projectCode: 'TEST', status: 'clarification', date: '2026-10-02' }];
+  value.reports = [
+    { ...report('LINKED', '2026-10-02', 'needsClarification'), sourceMessageId: 'SAME-EVENT' },
+    { ...report('REPORT-ONLY', '2026-10-03', 'needsClarification'), itemId: 'B' },
+    { ...report('FOREIGN', '2026-10-04', 'needsReview'), projectId: 'OTHER' },
+  ];
+  let result = workflow(value);
+  assert.equal(result.counts.clarifications, 2);
+  assert.equal(result.counts.pendingReports, 0);
+  assert.equal(result.steps[1].route, 'whatsapp');
+  assert.equal(result.next.route, 'claims');
+  value.reports.push(report('RESOLVED-LATEST', '2026-10-05', 'verified'));
+  result = workflow(value);
+  assert.equal(result.counts.clarifications, 1); // The old linked message/report no longer remains unresolved.
+  assert.equal(result.steps[1].route, 'completion');
+  assert.equal(result.steps[1].status, 'Needs clarification');
+  value.reports.push({ ...report('B-RESOLVED', '2026-10-06', 'verified'), itemId: 'B' });
+  assert.equal(workflow(value).counts.clarifications, 0);
+  value.whatsappMessages = [{ id: 'FOREIGN-MESSAGE', projectId: 'OTHER', projectCode: 'OTHER', status: 'clarification' }];
+  assert.equal(workflow(value).counts.clarifications, 0);
+});
+
+test('waiting reports do not create a verification loop and actionable pending reports retain priority', () => {
+  const value = project();
+  value.reports = [report('WAITING', '2026-10-01', 'needsClarification')];
+  assert.equal(workflow(value).steps[1].status, 'Needs clarification');
+  assert.equal(workflow(value).steps[1].route, 'completion');
+  assert.equal(workflow(value).next.label, 'Add a site update');
+  value.reports.push(report('NEW-PENDING', '2026-10-02'));
+  assert.equal(workflow(value).counts.clarifications, 0);
+  assert.equal(workflow(value).steps[1].status, 'Needs verification');
+  assert.equal(workflow(value).next.label, 'Verify site progress');
+});
+
+test('existing needsReview reports remain pending verification even when a linked message needs clarification', () => {
+  const value = project();
+  value.items[0].verified = 30;
+  value.reports = [{ ...report('REVIEW', '2026-10-02', 'needsReview'), sourceMessageId: 'UNCLEAR' }];
+  let result = workflow(value);
+  assert.equal(result.counts.pendingReports, 1);
+  assert.equal(result.counts.clarifications, 0);
+  assert.equal(result.steps[1].status, 'Needs verification');
+  assert.equal(result.next.label, 'Verify site progress');
+  value.whatsappMessages = [{ id: 'UNCLEAR', projectId: 'TEST', projectCode: 'TEST', status: 'clarification' }];
+  result = workflow(value);
+  assert.equal(result.counts.pendingReports, 1);
+  assert.equal(result.counts.clarifications, 1);
+  assert.equal(result.steps[1].route, 'completion');
+  assert.equal(result.steps[1].status, 'Needs verification');
+  assert.equal(result.next.label, 'Verify site progress');
 });

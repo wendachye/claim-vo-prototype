@@ -14,7 +14,7 @@ The campus dataset uses the stable internal ID `SIT01` for migration compatibili
 
 ## Project workspaces
 
-Keep items, source references, baselines, messages, reports, physical progress, VO reviews, claim drafts and history isolated by project. The top-navigation dropdown is available from every module and switching preserves the module. New projects start empty. Preserve edits during migration and reset only the selected project.
+Keep items, source references, baselines, messages, reports, physical progress, VO reviews, claim drafts and history isolated by project. The top-navigation dropdown is available from every module and switching preserves the module. New projects offer a fictional sample for the full workflow or an empty register for PDF preview. Preserve edits during migration and reset only the selected project.
 
 ## Mock workflow
 
@@ -35,3 +35,15 @@ Design for a nontechnical user. Keep the current Mighty One visual style while r
 ## Consistent layout and controls
 
 Use the shared PageHeader, BackButton, FormField and FormActions patterns. Return links sit above the detail title at the upper left, use a left arrow and name their destination. Keep workflow step back actions at the left of the bottom action row; group the main action at the right. Form labels, optional markers, help/error text, control heights, borders, spacing and focus/disabled states follow layout-system.css. Preserve explicit labels/IDs, validation focus, browser-local edits and incomplete draft saving. Dialogs retain an upper-right close button; claim preview navigation stays outside the printed document. Avoid module-specific button and field sizes.
+
+## Current stage: validate the prototype
+
+The user wants to confirm the UI and end-to-end workflow before real development. Continue with frontend screens, mock data and simulated interactions. Prioritize understandable navigation, linked steps, realistic review/status states and a complete showcase journey. Database, production authentication, backend services, live AI and WhatsApp integrations stay deferred until the user explicitly moves into real development. Vercel deployment alone does not change this scope.
+
+## Complete mock walkthrough
+
+New projects offer a separate fictional warehouse sample with six work items, four current-month mock messages and no saved progress, VO decisions or claims. Empty projects remain available for PDF preview only; preview does not claim to extract a work list. Never copy existing browser-edited project state into a new mock project.
+
+Keep the next step clear after confirming contract items, confirming the work list, processing messages and preparing claims. Site processing retains the selected result so verification or VO review is visible, including when the inbox was filtered. Extra-work links and counts include recorded approvals and rejections.
+
+Unfinished contract, VO and claim forms remain in session memory while browsing between modules or projects. Saving remains explicit; tell users to save before refreshing. Buffers must be isolated by project and record/version, clear on project reset or successful save, and never silently update financial records. Block work-list confirmation if current contract edits are still unfinished.

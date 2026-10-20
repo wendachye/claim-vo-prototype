@@ -5,7 +5,7 @@ import './project-workflow.css';
 
 const icons = { contract: FileText, site: MessageSquare, vo: Flag, claims: ClipboardList };
 const stageFor = (view) => view === 'contract' ? 'contract' : ['whatsapp', 'completion'].includes(view) ? 'site' : view === 'vo' ? 'vo' : ['claims', 'claim-preview'].includes(view) ? 'claims' : null;
-const tone = (status) => /review|pending|unread|not checked/i.test(status) ? 'amber' : /checked|confirmed|prepared|up to date/i.test(status) ? 'green' : 'slate';
+const tone = (status) => /review|pending|unread|not checked|clarification/i.test(status) ? 'amber' : /checked|confirmed|prepared|up to date/i.test(status) ? 'green' : 'slate';
 
 export function WorkflowNav({ project, view, onNavigate }) {
   const workflow = getProjectWorkflow(project);

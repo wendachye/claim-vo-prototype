@@ -15,7 +15,9 @@
     "start": "next start --hostname 127.0.0.1",
     "build:sites": "NEXT_BUILD_TARGET=sites next build && node scripts/package-next-sites.mjs && node scripts/prepare-sites-build.mjs",
     "test:claim-pack": "node --test tests/claim-pack.test.mjs",
-    "test:workflow": "node --test tests/workflow.test.mjs"
+    "test:workflow": "node --test tests/workflow.test.mjs",
+    "test:demo-project": "node --test tests/demo-project.test.mjs",
+    "test:form-buffer": "node --test tests/form-buffer.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",

@@ -4,6 +4,7 @@ import { getVOCases } from './vo.js';
 const list = (value) => Array.isArray(value) ? value : [];
 const timestamp = (value) => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
 const numberOf = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
+const needsClarification = (report) => report.status === 'needsClarification';
 
 function currentMonth() {
   const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit' }).formatToParts(new Date());
@@ -23,7 +24,16 @@ export function getProjectWorkflow(project, period = currentMonth()) {
     if (!previous || timestamp(report.date) >= timestamp(previous.date)) latestReports.set(report.itemId, report);
   }
   const pendingReports = [...latestReports.values()].filter((report) => ['pending', 'needsReview'].includes(report.status));
-  const newMessages = getWhatsAppMessages(project).filter((message) => message.status === 'new'
+  const clarificationReports = [...latestReports.values()].filter(needsClarification);
+  const unresolvedReportSources = new Set([...pendingReports, ...clarificationReports].map((report) => report.sourceMessageId).filter(Boolean));
+  const messages = getWhatsAppMessages(project).filter((message) => message.projectId === project.id);
+  const clarificationMessages = messages.filter((message) => message.status === 'clarification'
+    && (!reports.some((report) => report.sourceMessageId === message.id) || unresolvedReportSources.has(message.id)));
+  const clarificationEvents = new Set([
+    ...clarificationMessages.map((message) => `message:${message.id}`),
+    ...clarificationReports.map((report) => report.sourceMessageId ? `message:${report.sourceMessageId}` : `report:${report.id}`),
+  ]);
+  const newMessages = messages.filter((message) => message.status === 'new'
     && message.projectId === project.id && !reports.some((report) => report.sourceMessageId === message.id))
     .sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const cases = getVOCases({ ...project, items, reports });
@@ -38,6 +48,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
     contractReview: items.filter((item) => item.needsReview).length,
     newMessages: newMessages.length,
     pendingReports: pendingReports.length,
+    clarifications: clarificationEvents.size,
     verifiedItems: items.filter((item) => typeof item.verified === 'number' && item.verified > 0).length,
     openVOs: openVOs.length,
     approvedVOs: cases.filter((entry) => entry.status === 'approved').length,
@@ -47,13 +58,14 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   const steps = [
     { id: 'contract', label: 'Contract', route: 'contract',
       status: !items.length ? 'Not started' : confirmed ? 'Confirmed' : 'Needs review',
-      detail: !items.length ? 'Add the contract and its work items.'
+      detail: !items.length ? 'Choose a mock project, or preview a PDF without importing work items.'
         : counts.contractReview ? `${numberOf(counts.contractReview, 'item')} to check against the contract.`
           : !confirmed ? 'Confirm the checked contract before verifying progress.' : `Contract version ${project.version || 1} confirmed.` },
-    { id: 'site', label: 'Site updates', route: counts.newMessages ? 'whatsapp' : 'completion',
-      status: counts.newMessages ? 'New updates' : counts.pendingReports ? 'Needs verification' : counts.verifiedItems ? 'Up to date' : 'Not started',
+    { id: 'site', label: 'Site updates', route: counts.newMessages ? 'whatsapp' : counts.pendingReports ? 'completion' : clarificationMessages.length ? 'whatsapp' : 'completion',
+      status: counts.newMessages ? 'New updates' : counts.pendingReports ? 'Needs verification' : counts.clarifications ? 'Needs clarification' : counts.verifiedItems ? 'Up to date' : 'Not started',
       detail: counts.newMessages ? `${numberOf(counts.newMessages, 'new message')} to review.`
         : counts.pendingReports ? `${numberOf(counts.pendingReports, 'site report')} to review and verify.`
+          : counts.clarifications ? `${numberOf(counts.clarifications, 'site update')} waiting for clearer information.`
           : counts.verifiedItems ? `${numberOf(counts.verifiedItems, 'item')} with verified progress.` : 'Receive a site update, then verify its progress.' },
     { id: 'vo', label: 'Extra work', route: 'vo',
       status: counts.openVOs ? 'Needs review' : counts.approvedVOs ? 'Approvals recorded' : 'Optional',
@@ -66,7 +78,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   ];
 
   let next;
-  if (!items.length) next = { route: 'contract', label: 'Set up contract', description: 'Add the project contract and review its work items.' };
+  if (!items.length) next = { route: 'contract', label: 'View contract options', description: 'Choose a mock project for the full workflow, or preview a PDF. PDF previews do not add work items.' };
   else if (!confirmed) next = { route: 'contract', label: counts.contractReview ? 'Review contract items' : 'Confirm contract',
     description: counts.contractReview ? 'Check the highlighted items against the source, then confirm the contract.' : 'Confirm the reviewed work list before verifying site progress.' };
   else if (counts.newMessages) next = { route: 'whatsapp', label: 'Review site messages',

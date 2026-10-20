@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCheck, CircleAlert, Flag, ImageOff, MapPin, MessageSquare, RotateCcw, Save, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
 import { VO_STATUS_LABELS } from '../data/vo.js';
+import { clearFormBuffer } from '../data/form-buffer.js';
+import { useBufferedState } from './useFormBuffer.js';
 import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatMoney, formatTime } from './ui.jsx';
 import './vo-review.css';
 
@@ -9,6 +11,7 @@ const dateLabel = (value) => value && !Number.isNaN(new Date(value).getTime()) ?
 const amountLabel = (value, currency) => value == null || value === '' ? 'Unknown' : `${currency} ${formatMoney(value)}`;
 const closed = (status) => ['approved', 'rejected'].includes(status);
 const actionLabel = (action) => ({ save: 'QS review saved', clarify: 'Marked needs information', submit: 'Marked awaiting approval', approve: 'Approval recorded', reject: 'VO rejected', reopen: 'Review reopened' }[action] || action);
+const fieldsFor = (entry) => ({ title: entry.title || '', relatedItemId: entry.relatedItemId || '', scopeAssessment: entry.scopeAssessment || '', instructionReference: entry.instructionReference || '', proposedValue: entry.proposedValue ?? '', approvedValue: entry.approvedValue ?? entry.proposedValue ?? '', approvalReference: entry.approvalReference || '', approver: entry.approver || '', reviewNote: '' });
 
 function EvidencePhoto({ report, onOpen }) {
   const [failed, setFailed] = useState(false);
@@ -18,7 +21,7 @@ function EvidencePhoto({ report, onOpen }) {
 }
 
 export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onOpenClaims }) {
-  const [selectedId, setSelectedId] = useState(initialCaseId || cases[0]?.id || '');
+  const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [photo, setPhoto] = useState(null);
@@ -64,7 +67,9 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
 
 function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContract, onOpenClaims, onBack }) {
   const formRef = useRef(null);
-  const [fields, setFields] = useState(() => ({ title: entry.title || '', relatedItemId: entry.relatedItemId || '', scopeAssessment: entry.scopeAssessment || '', instructionReference: entry.instructionReference || '', proposedValue: entry.proposedValue ?? '', approvedValue: entry.approvedValue ?? entry.proposedValue ?? '', approvalReference: entry.approvalReference || '', approver: entry.approver || '', reviewNote: '' }));
+  const formScope = `vo:${JSON.stringify([entry.id, entry.status, entry.history.length])}`;
+  const [fields, setFields] = useBufferedState(project.id, formScope, () => fieldsFor(entry));
+  const hasEdits = JSON.stringify(fields) !== JSON.stringify(fieldsFor(entry));
   const [error, setError] = useState('');
   const [errorField, setErrorField] = useState('');
   const [saved, setSaved] = useState('');
@@ -88,7 +93,11 @@ function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContr
     }
     const result = onAction?.(entry.id, action, fields);
     if (result?.outcome === 'invalid') return problem(result.error || 'Check the review details and try again.');
-    if (result?.outcome === 'unchanged') setSaved('No changes to save.');
+    if (result?.outcome === 'unchanged') {
+      setFields(fieldsFor(entry));
+      clearFormBuffer(project.id, formScope);
+      setSaved('No changes to save.');
+    } else if (result?.outcome === 'updated') clearFormBuffer(project.id, formScope);
   }
   const inputProps = (name) => ({ name, value: fields[name], onChange: (event) => setField(name, event.target.value), 'aria-invalid': errorField === name });
   const fieldError = (name) => errorField === name ? error : undefined;
@@ -108,6 +117,7 @@ function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContr
       {report.reviewReason && <p className="vo-legacy-note"><strong>Earlier review note:</strong> {report.reviewReason}</p>}
 
       <form ref={formRef} onSubmit={(event) => event.preventDefault()} className="vo-review-form">
+        {hasEdits && <p className="vo-field-note" role="status">Your unfinished edits stay while you browse. Save before refreshing.</p>}
         <div className="vo-section-title"><h3>Review the extra work</h3><button type="button" onClick={() => onOpenContract?.()}>Check contract<ArrowRight size={12} /></button></div>
         <details className={`vo-assessment-details${editable ? ' editing' : ''}`} open={editable}><summary>{editable ? 'Work details' : 'Saved work details'}</summary>
         <div className="vo-form-grid">

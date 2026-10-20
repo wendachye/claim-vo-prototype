@@ -1,22 +1,12 @@
-import { useEffect, useId, useState } from 'react';
+import { useId } from 'react';
 import { AlertTriangle, ArrowRight, Check, FileText, Lock, Sparkles } from 'lucide-react';
 import { contract as sampleContract, initialItems } from '../data/contract.js';
+import { contractFormValues as formFor, contractFormScope } from '../data/form-buffer.js';
 import { Button, FormActions, FormField } from './ui.jsx';
+import { useBufferedState } from './useFormBuffer.js';
 
 const UNITS = ['m²', 'm³', 'm', 'set', 'design', 'visit', 'pc', 'hr'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-function formFor(item) {
-  return {
-    description: item?.description ?? '',
-    quantity: String(item?.needsReview
-      ? (item.rawExtractedQuantity ?? item.quantity ?? '')
-      : (item?.quantity ?? '')),
-    rate: item?.rate == null ? '' : String(item.rate),
-    unit: item?.unit ?? 'm²',
-    location: item?.location ?? '',
-  };
-}
 
 function formatMoney(value, currency) {
   if (value == null || !Number.isFinite(Number(value))) return '—';
@@ -39,16 +29,11 @@ function formatMonth(value) {
   return MONTHS[Number(month) - 1] ? `${MONTHS[Number(month) - 1]} ${year}` : value;
 }
 
-export function ContractEditor({ item, locked = false, onSave, onNext, contract = sampleContract, sourceItems }) {
+export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel, contract = sampleContract, sourceItems, projectId, revision = 1 }) {
   const inputId = useId();
-  const [form, setForm] = useState(() => formFor(item));
-
-  useEffect(() => {
-    setForm(formFor(item));
-  }, [
-    contract?.id, contract?.reference, item?.id, item?.description, item?.quantity, item?.rate, item?.unit,
-    item?.location, item?.needsReview, item?.rawExtractedQuantity,
-  ]);
+  const formScope = contractFormScope(item, revision, locked);
+  const [form, setForm] = useBufferedState(projectId || contract.id || contract.reference || 'sample-contract', formScope, () => formFor(item));
+  const hasEdits = !locked && JSON.stringify(form) !== JSON.stringify(formFor(item));
 
   if (!item) {
     return (
@@ -113,6 +98,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
       </div>
 
       <div className='editor-body'>
+        {hasEdits && <p className='field-note' role='status'>Unsaved changes kept while you browse. Confirm this item before refreshing.</p>}
         <div className='notice'>
           <Sparkles size={16} aria-hidden='true' />
           <div>
@@ -263,7 +249,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
           <span>{locked ? 'A revision is required for edits.' : 'Confirm only after checking the source.'}</span>
         </div>}>
         {!locked && onNext && (
-          <Button className='secondary' onClick={onNext}>Next item</Button>
+          <Button className='secondary' onClick={onNext}>{nextLabel || 'Skip item'}</Button>
         )}
         <Button
           type='submit'
@@ -271,7 +257,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, contract 
           icon={locked ? ArrowRight : Check}
           disabled={locked ? !onNext : !onSave}
         >
-          {locked ? 'Next item' : 'Confirm item'}
+          {locked ? nextLabel || 'Next item' : 'Confirm item'}
         </Button>
       </FormActions>
     </form>

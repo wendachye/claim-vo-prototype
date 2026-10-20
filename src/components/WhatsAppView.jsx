@@ -65,6 +65,15 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const isVo = selected?.kind === 'vo' || Boolean(report?.vo);
   const isUnclear = selected?.kind === 'clarification' || selected?.status === 'clarification';
   const newCount = messages.filter((message) => message.status === 'new').length;
+  const nextMessage = orderedMessages.find((message) => message.status === 'new' && message.id !== selected?.id);
+  const hasPendingReview = Boolean(report && (isVo ? !['approved', 'rejected'].includes(voCase?.status) : waiting(report)));
+  const nextMessageButton = !isNew && nextMessage ? <Button className={hasPendingReview ? 'ghost' : 'primary'} icon={ArrowRight} onClick={() => { setSearch(''); setFilter('all'); chooseMessage(nextMessage); }}>Next message</Button> : null;
+  function processSelectedMessage() {
+    setSearch('');
+    setFilter('all');
+    setSelectedId(selected.id);
+    onProcess?.(selected);
+  }
 
   return <div className="whatsapp-view">
     <PageHeader title="Site updates" description="Check a worker’s message, then update progress or flag extra work." />
@@ -107,7 +116,13 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
             <details className="wa-message-details"><summary>Message details</summary><p><strong>Message:</strong> {selected.id}{report && <><br /><strong>Report:</strong> {report.id}</>}<br /><strong>Interpretation:</strong> Predefined demo fields; AI is not connected.</p>{selected.processingNote && <p>{selected.processingNote}</p>}</details>
             {!project.locked && !isVo && !isUnclear && <div className="wa-baseline-note"><LockKeyhole size={13} /><span>Confirm the contract first so the supervisor can verify progress.</span><button type="button" onClick={() => onOpenContract?.()}>Review contract<ChevronRight size={12} /></button></div>}
           </div>
-          <footer className="wa-review-footer"><FormActions secondary={<span className="wa-footer-note">{isNew ? 'Check the message before adding it.' : isUnclear ? 'Waiting for a clearer update.' : isVo ? 'Next: review the extra work.' : waiting(report) ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>{isNew ? <Button className="primary" icon={isVo ? Flag : isUnclear ? MessageSquare : Check} onClick={() => onProcess?.(selected)}>{isVo ? 'Flag extra work' : isUnclear ? 'Needs clarification' : 'Add progress update'}</Button> : report ? <>{isVo ? <Button className="primary" icon={ArrowRight} onClick={() => onOpenVO?.(report.id)}>Review extra work</Button> : waiting(report) ? <><Button className="ghost" onClick={() => onOpenCompletion?.(false)}>View progress</Button><Button className="primary" icon={ShieldCheck} onClick={() => onReview?.(report)}>Verify progress</Button></> : <Button icon={ArrowRight} onClick={() => onOpenCompletion?.(false)}>View progress</Button>}</> : <Badge tone="amber">Clarification needed</Badge>}</FormActions></footer>
+          <footer className="wa-review-footer"><FormActions secondary={<span className="wa-footer-note">{isNew ? 'Check the message before adding it.' : isUnclear ? 'Waiting for a clearer update.' : isVo && hasPendingReview ? 'Next: review the extra work.' : waiting(report) && !isVo ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>
+            {isNew ? <Button className="primary" icon={isVo ? Flag : isUnclear ? MessageSquare : Check} onClick={processSelectedMessage}>{isVo ? 'Flag extra work' : isUnclear ? 'Needs clarification' : 'Add progress update'}</Button> : <>
+              {hasPendingReview && nextMessageButton}
+              {report ? isVo ? <Button className={hasPendingReview || !nextMessage ? 'primary' : ''} icon={ArrowRight} onClick={() => onOpenVO?.(report.id)}>Review extra work</Button> : waiting(report) ? <><Button className="ghost" onClick={() => onOpenCompletion?.(false)}>View progress</Button><Button className="primary" icon={ShieldCheck} onClick={() => onReview?.(report)}>Verify progress</Button></> : <Button icon={ArrowRight} onClick={() => onOpenCompletion?.(false)}>View progress</Button> : <Badge tone="amber">Clarification needed</Badge>}
+              {!hasPendingReview && nextMessageButton}
+            </>}
+          </FormActions></footer>
         </section> : <section className="wa-review wa-no-selection"><MessageSquare size={30} /><h3>Select a message</h3><p>Its photo and proposed update will appear here.</p></section>}
       </div>
 

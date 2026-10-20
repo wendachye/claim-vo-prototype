@@ -42,7 +42,7 @@
 .projects-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .projects-code-input { font-family: 'SFMono-Regular', Consolas, monospace; letter-spacing: .4px; }
 .projects-field-error { margin-top: 6px; color: #b91c1c; font-size: 12px; line-height: 1.65; }
-.projects-create-note { display: flex; align-items: flex-start; gap: 8px; padding: 11px 12px; border: 1px solid #e2e8f0; border-radius: 7px; color: #64748b; background: #f8fafc; font-size: 10px; line-height: 1.7; }
+.projects-create-note { display: flex; align-items: flex-start; gap: 8px; padding: 11px 12px; border: 1px solid #e2e8f0; border-radius: 7px; color: #64748b; background: #f8fafc; font-size: 12px; line-height: 1.7; }
 .projects-create-note svg { margin-top: 2px; color: #94a3b8; }
 .projects-submit-error { margin-top: -5px; }
 @media (min-width: 1580px) { .projects-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
