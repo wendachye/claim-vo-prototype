@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760" role="img" aria-labelledby="plan-title plan-description">
+  <title id="plan-title">Fictional warehouse area plan</title>
+  <desc id="plan-description">A fictional warehouse site plan for manual area mapping. Block A contains the external-wall zone A1 and roof zone A2. Block B contains floor zone B1 and loading-bay zone B2. This diagram is not to scale and has no measured dimensions.</desc>
+  <defs>
+    <pattern id="roof-lines" width="16" height="16" patternUnits="userSpaceOnUse">
+      <path d="M0 16 16 0" stroke="#d7e2f3" stroke-width="1"/>
+    </pattern>
+    <pattern id="floor-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#e3e9f1" stroke-width="1"/>
+    </pattern>
+    <style>
+      text { font-family: Arial, Helvetica, sans-serif; }
+      .caption { fill: #64748b; font-size: 15px; }
+      .zone-label { fill: #334155; font-size: 17px; font-weight: 600; }
+      .site-line { fill: none; stroke: #b9c6d8; stroke-width: 2; }
+      .wall { fill: none; stroke: #8fa1ba; stroke-width: 5; }
+      .internal { fill: none; stroke: #c5d0de; stroke-width: 2; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="760" fill="#ffffff"/>
+  <text x="54" y="58" fill="#1e293b" font-size="30" font-weight="600">Warehouse area plan</text>
+  <text x="54" y="87" class="caption">WAREHOUSE-DEMO-PLAN-R1 · Manual area mapping</text>
+  <rect x="909" y="37" width="237" height="32" rx="6" fill="#edf3ff"/>
+  <text x="1027.5" y="58" text-anchor="middle" fill="#3e60bf" font-size="13" font-weight="600">FICTIONAL DEMONSTRATION</text>
+  <path d="M54 112H1146" stroke="#dce3ed"/>
+
+  <rect x="54" y="139" width="1092" height="500" rx="9" fill="#fbfcfe" stroke="#dce3ed"/>
+  <path d="M571 160V611" stroke="#edf1f6" stroke-width="46"/>
+  <path d="M571 173V601" stroke="#c8d3e2" stroke-width="2" stroke-dasharray="10 12"/>
+  <text x="587" y="437" fill="#8492a6" font-size="13" transform="rotate(-90 587 437)">SERVICE ACCESS</text>
+  <path d="M80 580H1117" stroke="#edf1f6" stroke-width="36"/>
+  <path d="M82 580H1115" stroke="#c8d3e2" stroke-width="2" stroke-dasharray="10 12"/>
+  <text x="101" y="618" class="caption">Site access road</text>
+
+  <rect x="100" y="170" width="430" height="360" fill="#ffffff" stroke="#8fa1ba" stroke-width="5"/>
+  <rect x="114" y="184" width="402" height="332" fill="#f8fafc" stroke="#d3dce8"/>
+  <path d="M126 258H505M344 184V516M126 419H505" class="internal"/>
+  <rect x="128" y="275" width="200" height="126" rx="5" fill="#eaf1fc" fill-opacity=".85" stroke="#8faee0" stroke-dasharray="6 5"/>
+  <rect x="360" y="193" width="143" height="52" rx="4" fill="#edf3ff" stroke="#9eb7de"/>
+  <rect x="360" y="193" width="143" height="52" rx="4" fill="url(#roof-lines)"/>
+  <path d="M117 275V401" stroke="#7395c5" stroke-width="6"/>
+  <text x="129" y="221" fill="#4c607b" font-size="23" font-weight="600">BLOCK A</text>
+  <text x="147" y="296" class="zone-label">A1 · External wall</text>
+  <text x="147" y="379" class="caption">Cladding work zone</text>
+  <text x="359" y="275" class="zone-label">A2 · Roof</text>
+  <text x="128" y="465" class="caption">Internal warehouse bays</text>
+  <path d="M164 506V531M201 506V531M384 506V531M421 506V531" stroke="#aebed2" stroke-width="3"/>
+  <path d="M164 530Q164 493 201 493M384 530Q384 493 421 493" class="site-line"/>
+
+  <rect x="650" y="190" width="430" height="340" fill="#ffffff" stroke="#8fa1ba" stroke-width="5"/>
+  <rect x="664" y="204" width="402" height="312" fill="#fafbfd" stroke="#d3dce8"/>
+  <rect x="686" y="276" width="270" height="145" rx="5" fill="#f0f5fb" stroke="#9fb3cf" stroke-dasharray="6 5"/>
+  <rect x="686" y="276" width="270" height="145" rx="5" fill="url(#floor-grid)"/>
+  <path d="M973 204V421M664 438H1066" class="internal"/>
+  <rect x="924" y="449" width="126" height="58" rx="4" fill="#edf3ff" stroke="#9eb7de"/>
+  <text x="684" y="247" fill="#4c607b" font-size="23" font-weight="600">BLOCK B</text>
+  <text x="707" y="305" class="zone-label">B1 · Floor</text>
+  <text x="707" y="402" class="caption">Floor-finish work zone</text>
+  <text x="684" y="481" class="zone-label">B2 · Loading bay</text>
+  <path d="M951 509V531M975 509V531M999 509V531M1023 509V531" stroke="#8fa1ba" stroke-width="3"/>
+  <path d="M934 541H1040" stroke="#adbed4" stroke-width="2" stroke-dasharray="5 5"/>
+
+  <g fill="#f7f9fc" stroke="#aebed2" stroke-width="2">
+    <rect x="121" y="244" width="9" height="9"/>
+    <rect x="335" y="244" width="9" height="9"/>
+    <rect x="501" y="244" width="9" height="9"/>
+    <rect x="121" y="410" width="9" height="9"/>
+    <rect x="335" y="410" width="9" height="9"/>
+    <rect x="501" y="410" width="9" height="9"/>
+    <rect x="675" y="267" width="9" height="9"/>
+    <rect x="961" y="267" width="9" height="9"/>
+    <rect x="1052" y="267" width="9" height="9"/>
+    <rect x="675" y="423" width="9" height="9"/>
+    <rect x="961" y="423" width="9" height="9"/>
+    <rect x="1052" y="423" width="9" height="9"/>
+  </g>
+
+  <g transform="translate(1112 174)">
+    <text x="0" y="0" text-anchor="middle" fill="#64748b" font-size="13" font-weight="600">N</text>
+    <path d="M0 13-9 37H0V58M0 13 9 37H0" fill="#d7e2f1" stroke="#8da2bf" stroke-width="2"/>
+  </g>
+  <path d="M69 655H1131" stroke="#dce3ed"/>
+  <rect x="77" y="679" width="18" height="14" rx="3" fill="#edf3ff" stroke="#9eb7de"/>
+  <text x="108" y="692" fill="#64748b" font-size="15">Illustrative work zones</text>
+  <text x="468" y="692" fill="#64748b" font-size="15">Fictional demo plan · Not to scale · Manual area mapping</text>
+  <text x="77" y="724" fill="#94a3b8" font-size="13">Area locations are demonstration references. No quantities, completion or claim values are measured from this drawing.</text>
+</svg>

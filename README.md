@@ -83,3 +83,11 @@ Generated photo files and prompts are documented in [public/assets/DEMO-PHOTOS.m
 4. Correct WI-001 from **1,320** to the source value **1,200 m²**, confirm the item, then confirm the work list before site verification.
 
 The work list uses the bundled fictional warehouse source in SGD. Selected PDF contents are not parsed. File bytes stay out of saved project data; a selected-file preview is available for the current session only. The bundled PDF remains available after reload. Empty projects receive the sample list in place; projects with existing work open the result in a new demo project. Existing edits, baselines and claims are preserved.
+
+## Drawing and area mapping
+
+Open **Contract → Drawing & areas**, then **Use demo drawing** or select a local PDF/image. Choose an area, link its contract work items and **Save area**. Add your own area codes as needed. Image plans support pins; PDF references use an area name and page. Mapping is manual and does not measure work.
+
+Saved links appear in the contract work list, site-message review and Progress. A message naming a work item that conflicts with its area link is held for clarification. A map never turns an unclear message into automatic completion. Existing report evidence, baselines and claim snapshots remain unchanged.
+
+Drawing metadata and saved areas stay in browser storage. Custom file previews last for the current session; choose the same file again to restore a preview without replacing links. The bundled fictional plan remains available after reload. Replacing a drawing retains area names/links but clears pin positions for review. Reset clears only the selected project's drawing and mappings.

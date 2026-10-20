@@ -352,6 +352,7 @@ export function resetProject(project) {
   claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }) };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   delete next.lockedAt;
+  delete next.drawingMapping;
   return next;
 }
 

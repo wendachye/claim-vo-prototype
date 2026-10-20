@@ -1,4 +1,5 @@
 // Frontend-only fixtures. Fields are prefilled demonstration results, not AI output.
+import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.js';
 const clone = (value) => structuredClone(value);
 const waiting = (report) => ['pending', 'needsReview'].includes(report.status);
 
@@ -89,6 +90,10 @@ export function processWhatsAppMessage(project, messageId) {
     || typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0 || pct > 100)) {
     return needsClarification('Match one valid contract item and confirm 0–100% total completion before updating the register.');
   }
+  const areaLink = getAreaLinkStatus(project, message);
+  if (message.kind === 'progress' && areaLink.conflict) {
+    return needsClarification(`Area ${areaLink.area.code} is mapped to ${areaLink.area.workItemIds.join(', ')}, but this message names ${message.itemId}. Check the area or work item before updating progress.`);
+  }
   if (!Number.isFinite(new Date(message.date).getTime())) return invalid;
   if (message.kind === 'progress' && project.reports.some((report) => report.itemId === item.id
     && !report.vo && !['rejected', 'superseded'].includes(report.status)
@@ -102,6 +107,7 @@ export function processWhatsAppMessage(project, messageId) {
     id: reportId, projectId: project.id, projectCode: project.code,
     sourceMessageId: message.id, itemId: isVo ? null : item.id,
     area: message.area, location: message.location,
+    areaMapping: snapshotMappedArea(areaLink.area),
     sender: message.sender, date: message.date, completion: isVo ? null : pct,
     completionBasis: isVo ? 'unclear' : 'cumulative', status: isVo ? 'needsReview' : 'pending',
     message: message.text, photo: message.photo, photoAlt: message.photoAlt,

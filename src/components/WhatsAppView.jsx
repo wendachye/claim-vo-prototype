@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ListChecks, LockKeyhole, MapPin, MessageSquare, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
 import { BackButton, Badge, Button, FormActions, Modal, PageHeader, formatTime, formatMoney } from './ui.jsx';
 import { getVOCases, VO_STATUS_LABELS } from '../data/vo.js';
+import { getAreaLinkStatus } from '../data/drawing-mapping.js';
 import './whatsapp.css';
 
 const waiting = (report) => ['pending', 'needsReview'].includes(report?.status);
@@ -33,7 +34,7 @@ function Field({ label, children, wide = false }) {
   return <div className={`wa-field${wide ? ' wa-field-wide' : ''}`}><span>{label}</span><strong>{children || 'Not identified'}</strong></div>;
 }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenVO }) {
+export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenVO, onOpenDrawing }) {
   const voCases = getVOCases(project);
   const caseFor = (report) => voCases.find((entry) => entry.id === report?.id);
   const orderedMessages = [...messages].sort((a, b) => Number(b.status === 'new') - Number(a.status === 'new') || Date.parse(b.date) - Date.parse(a.date));
@@ -63,7 +64,8 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const voCase = caseFor(report);
   const isNew = selected?.status === 'new';
   const isVo = selected?.kind === 'vo' || Boolean(report?.vo);
-  const isUnclear = selected?.kind === 'clarification' || selected?.status === 'clarification';
+  const areaLink = selected ? getAreaLinkStatus(project, selected) : null;
+  const isUnclear = selected?.kind === 'clarification' || selected?.status === 'clarification' || (isNew && areaLink?.conflict);
   const newCount = messages.filter((message) => message.status === 'new').length;
   const nextMessage = orderedMessages.find((message) => message.status === 'new' && message.id !== selected?.id);
   const hasPendingReview = Boolean(report && (isVo ? !['approved', 'rejected'].includes(voCase?.status) : waiting(report)));
@@ -105,7 +107,8 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
             <DemoPhoto src={selected.photo} alt={selected.photoAlt} className="wa-evidence-photo" onOpen={() => setPhoto({ src: selected.photo, alt: selected.photoAlt })} />
 
             <div className="wa-interpretation-heading"><h3>Suggested update</h3></div>
-            <div className="wa-fields"><Field label="Location">{[selected.location, selected.area].filter(Boolean).join(' · ')}</Field><Field label="Update">{isVo ? 'Extra work' : isUnclear ? 'Needs clarification' : 'Total progress to date'}</Field><Field label="Matched contract work" wide>{item ? `${item.ref} · ${item.description}` : 'Not matched — confirm with the worker'}</Field></div>
+            <div className="wa-fields"><Field label="Location">{[selected.location, selected.area].filter(Boolean).join(' · ')}</Field><Field label="Update">{isVo ? 'Extra work' : isUnclear ? 'Needs clarification' : 'Total progress to date'}</Field><Field label={areaLink?.conflict ? 'Work item in message' : 'Matched contract work'} wide>{item ? `${item.ref} · ${item.description}` : 'Not matched — confirm with the worker'}</Field></div>
+            <div className={`area-mapping-reference${areaLink?.conflict ? ' conflict' : ''}`}><div>{areaLink?.area ? <><strong>Area {areaLink.area.code} · {areaLink.area.name}</strong><p>{areaLink.linkedItems.length ? `Drawing links: ${areaLink.linkedItems.map(entry=>entry.id).join(', ')}` : 'No contract work items linked yet.'}</p>{areaLink.conflict && <p>This message names a different work item. Confirm the area or item before changing progress.</p>}</> : <span>This message has no saved drawing-area link.</span>}</div><a className="area-mapping-link" href={areaLink?.area ? `#drawing?area=${encodeURIComponent(areaLink.area.id)}` : '#drawing'} onClick={event=>{if(onOpenDrawing){event.preventDefault();onOpenDrawing(areaLink?.area?.id);}}}>View area map<ArrowRight size={13}/></a></div>
 
             {isVo ? <div className="wa-result wa-result-vo"><div className="wa-result-title"><Flag size={16} /><strong>{isNew ? 'Check whether this is extra work' : voCase?.status === 'approved' ? 'Extra work approved' : voCase?.status === 'rejected' ? 'Extra work rejected' : voCase?.status === 'pendingApproval' ? 'Awaiting approval' : voCase?.status === 'clarification' ? 'More information needed' : 'Saved for extra-work review'}</strong></div><p>{isNew ? 'Save this message and photo for the QS to check against the contract.' : 'Open extra-work review to check the scope, value and approval.'}</p><div className="wa-result-foot">Progress unchanged <span>·</span> {voCase?.status === 'approved' ? `Approved value: ${project.contract.currency || 'SGD'} ${formatMoney(voCase.approvedValue)}` : voCase?.proposedValue != null ? `Proposed: ${project.contract.currency || 'SGD'} ${formatMoney(voCase.proposedValue)}` : 'Value unknown'} <span>·</span> {voCase?.status === 'approved' ? 'Approval recorded locally' : voCase?.status === 'rejected' ? 'Rejected in local review' : 'Not approved yet'}</div></div> : isUnclear ? <div className="wa-result wa-result-unclear"><div className="wa-result-title"><CircleAlert size={16} /><strong>Ask the worker to clarify</strong></div><p>{selected.kind === 'clarification' ? 'Ask which work item is meant and the total percentage completed so far.' : 'Confirm the work item, total completed so far and date before updating progress.'}</p><div className="wa-result-foot">Progress will stay unchanged.</div>{selected.status === 'clarification' && <div className="wa-clarification-saved"><Check size={13} />Marked for clarification. Contact the worker outside this demo.</div>}</div> : <div className={`wa-result ${report?.status === 'verified' ? 'wa-result-verified' : ''}`}>
               <div className="wa-result-title"><ListChecks size={16} /><strong>{isNew ? 'Progress change' : report?.status === 'verified' ? 'Progress verified' : report?.status === 'superseded' ? 'A newer update replaced this report' : report?.status === 'rejected' ? 'Report dismissed' : 'Update added — ready to verify'}</strong>{!isNew && report?.status !== 'rejected' && report?.status !== 'superseded' && <Check size={14} />}</div>
