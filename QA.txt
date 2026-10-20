@@ -1,0 +1,18 @@
+Public prototype validation — 21 October 2026
+
+Publication copy
+- Campus scaffold schedule is entirely fictional: 18 invented rows and illustrative commercial values.
+- Warehouse project is an independent fictional example.
+- Uploaded contract pages and source drawings are excluded.
+- Generated demonstration photos remain labelled as fictional visual examples.
+- No credentials, environment files, browser state, dependency folders or built artifacts are part of the publication source.
+
+Validation
+- Production build passed. All 30 checks passed: 8 project-state, 10 WhatsApp-state, 8 VO-state and 4 hosting checks.
+- These checks validate a local frontend prototype, not production readiness, legal entitlement or payment certification.
+
+Manual demo
+- Review the 2,800 versus 2,000 fictional quantity mismatch, confirm the item and baseline.
+- Process a mock progress photo and review cumulative reported versus verified percentages.
+- Process extra work, assess the VO, record a fictional approval or rejection and inspect its history.
+- Switch projects to confirm each workspace remains independent.
