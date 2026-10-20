@@ -4,6 +4,7 @@ import { DEMO_DRAWING_ASSET, DEMO_DRAWING_FILENAME, getDrawingMapping, validateD
 import { getAreaProgress, getDrawingProgress } from '../data/drawing-progress.js';
 import { clearFormBuffer } from '../data/form-buffer.js';
 import { useBufferedState } from './useFormBuffer.js';
+import { AreaEvidencePanel } from './AreaEvidencePanel.jsx';
 import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime } from './ui.jsx';
 import './drawing-mapping.css';
 
@@ -22,7 +23,7 @@ const sampleInput = () => ({ inputKind: 'sample', fileName: DEMO_DRAWING_FILENAM
 const completionText = (value) => `${Math.round(value * 10) / 10}%`;
 const pinDetail = (progress) => !progress || !progress.totalCount ? 'Not linked' : progress.totalCount === 1 ? progress.items[0].completion === null ? 'Needs update' : completionText(progress.items[0].completion) : `${progress.completedCount}/${progress.totalCount} done`;
 
-export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onRemoveArea, onOpenProgress, onStartCompletionDemo, onPreviewFile }) {
+export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onRemoveArea, onOpenProgress, onOpenEvidence, onStartCompletionDemo, onPreviewFile }) {
   const mapping = getDrawingMapping(project);
   const drawing = mapping.drawing;
   const areas = mapping.areas || [];
@@ -149,7 +150,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
             const progress = areaProgress.get(area.id);
             return <button type="button" key={area.id} className={`drawing-area-row${selected?.id === area.id && selectedId !== 'new' ? ' selected' : ''}`} aria-pressed={selected?.id === area.id && selectedId !== 'new'} onClick={() => chooseArea(area.id)}><span className="drawing-area-code">{area.code}</span><span className="drawing-area-copy"><strong>{area.name}</strong><small>{area.workItemIds.length ? `${area.workItemIds.length} linked work item${area.workItemIds.length === 1 ? '' : 's'} · ${pinDetail(progress)}` : 'Choose contract work items'}{drawing.kind === 'pdf' ? ` · Page ${area.page}` : !area.position ? ' · Pin not placed' : ''}</small></span><Badge tone={progress?.tone}>{progress?.label || 'Not linked'}</Badge></button>;
           }) : <p className="drawing-no-areas">No areas yet. Add the first area and choose its contract work.</p>}</div>
-          {showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} editorRef={editorRef} onCancel={() => { if (selectedId === 'new') setSelectedId(areas[0]?.id || 'new'); setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); }} /> : <AreaProgressSummary area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setScrollTarget('editor'); }} onOpenProgress={onOpenProgress} />}
+          {showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} editorRef={editorRef} onCancel={() => { if (selectedId === 'new') setSelectedId(areas[0]?.id || 'new'); setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); }} /> : <><AreaProgressSummary area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setScrollTarget('editor'); }} onOpenProgress={onOpenProgress} /><AreaEvidencePanel key={`${project.id}:${selected.id}`} project={project} area={selected} onOpenEvidence={onOpenEvidence} /></>}
         </section>
       </div>
       {mapping.history?.length > 0 && <details className="drawing-history"><summary>Mapping history · {mapping.history.length} {mapping.history.length === 1 ? 'action' : 'actions'}</summary><ol>{mapping.history.map((entry, index) => <li key={entry.id || index}><strong>{actionLabel(entry.action)}{entry.area?.code || entry.previousArea?.code ? ` · ${entry.area?.code || entry.previousArea.code}` : ''}</strong>{entry.detail && <p>{entry.detail}</p>}{entry.date && <time dateTime={entry.date}>{formatTime(entry.date)}</time>}</li>)}</ol></details>}

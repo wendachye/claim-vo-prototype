@@ -56,6 +56,18 @@ export function getWhatsAppMessages(project) {
   return seedWhatsAppMessages(project);
 }
 
+export function getMessageReport(project, message) {
+  const inProject = (entry) => entry && typeof entry === 'object' && !Array.isArray(entry)
+    && (entry.projectId == null || entry.projectId === '' || entry.projectId === project?.id)
+    && (entry.projectCode == null || entry.projectCode === '' || (typeof entry.projectCode === 'string'
+      && entry.projectCode.trim().toUpperCase() === String(project?.code || '').trim().toUpperCase()));
+  if (!project || !inProject(message) || typeof message.id !== 'string' || !message.id.trim()) return null;
+  const reports = (Array.isArray(project.reports) ? project.reports : []).filter((report) => inProject(report)
+    && typeof report.id === 'string' && report.id.trim());
+  return reports.find((report) => report.id === message.reportId)
+    || reports.find((report) => report.sourceMessageId === message.id) || null;
+}
+
 function markMessage(project, message, status, note, date) {
   return {
     ...project,

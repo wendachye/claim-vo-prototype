@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ListChecks, LockKeyhole, MapPin, MessageSquare, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
 import { BackButton, Badge, Button, FormActions, Modal, PageHeader, formatTime, formatMoney } from './ui.jsx';
 import { getVOCases, VO_STATUS_LABELS } from '../data/vo.js';
+import { getMessageReport as messageReport } from '../data/whatsapp.js';
 import { getAreaLinkStatus } from '../data/drawing-mapping.js';
 import './whatsapp.css';
 
 const waiting = (report) => ['pending', 'needsReview'].includes(report?.status);
 const percent = (value) => value == null ? '—' : `${Number(value)}%`;
-const messageReport = (project, message) => project.reports.find((report) => report.id === message?.reportId || report.sourceMessageId === message?.id);
 const time = (value) => value && !Number.isNaN(new Date(value).getTime()) ? formatTime(value) : 'Demo message';
 
 function statusFor(message, report, voCase) {
@@ -34,18 +34,23 @@ function Field({ label, children, wide = false }) {
   return <div className={`wa-field${wide ? ' wa-field-wide' : ''}`}><span>{label}</span><strong>{children || 'Not identified'}</strong></div>;
 }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenVO, onOpenDrawing }) {
+export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenVO, onOpenDrawing, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing }) {
   const voCases = getVOCases(project);
   const caseFor = (report) => voCases.find((entry) => entry.id === report?.id);
   const orderedMessages = [...messages].sort((a, b) => Number(b.status === 'new') - Number(a.status === 'new') || Date.parse(b.date) - Date.parse(a.date));
-  const [selectedId, setSelectedId] = useState(() => orderedMessages.find((message) => message.status === 'new')?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
+  const [selectedId, setSelectedId] = useState(() => initialMessageId || orderedMessages.find((message) => message.status === 'new')?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [photo, setPhoto] = useState(null);
   const inboxRef = useRef(null);
   const reviewRef = useRef(null);
+  useEffect(() => {
+    if (!initialMessageId || !messages.some((message) => message.id === initialMessageId)) return;
+    if (selectedId !== initialMessageId) { setSearch(''); setFilter('all'); setSelectedId(initialMessageId); setPhoto(null); }
+    if (window.matchMedia('(max-width: 1050px)').matches) reviewRef.current?.scrollIntoView({ block: 'start' });
+  }, [initialMessageId, project.id]);
   function chooseMessage(message) {
-    setSelectedId(message.id);
+    setSelectedId(message.id); setPhoto(null); onSelectMessage?.(message.id);
     if (window.matchMedia('(max-width: 1050px)').matches) reviewRef.current?.scrollIntoView({ block: 'start' });
   }
   const shown = orderedMessages.filter((message) => {
@@ -57,7 +62,8 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
       || (filter === 'vo' && (message.kind === 'vo' || report?.vo))
       || (filter === 'clarification' && (message.kind === 'clarification' || message.status === 'clarification')));
   });
-  const selected = shown.find((message) => message.id === selectedId) || shown[0];
+  const unavailable = Boolean(initialMessageId && !messages.some((message) => message.id === initialMessageId));
+  const selected = unavailable ? null : shown.find((message) => message.id === selectedId) || shown[0];
   const report = selected ? messageReport(project, selected) : null;
   const item = project.items.find((entry) => entry.id === selected?.itemId);
   const status = selected ? statusFor(selected, report, caseFor(report)) : null;
@@ -78,7 +84,8 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   }
 
   return <div className="whatsapp-view">
-    <PageHeader title="Site updates" description="Check a worker’s message, then update progress or flag extra work." />
+    <PageHeader title="Site updates" description="Check a worker’s message, then update progress or flag extra work." onBack={onBackToDrawing} backLabel="Back to drawing" />
+    {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This update is not available in the selected project.</span><Button onClick={onClearMessageSelection}>Show all messages</Button></div>}
     <p className="wa-demo-note">Demo inbox · no WhatsApp messages are sent.</p>
 
     {!messages.length ? <div className="project-empty empty-state"><MessageSquare size={32} /><h3>No demo messages for this project</h3><p>{project.items.length ? 'Choose a demo project in the project dropdown to try site updates.' : 'Add contract work first, or choose a demo project to try site updates.'}</p><Button icon={FileText} onClick={() => onOpenContract?.()}>Review contract</Button></div> : <>
@@ -99,7 +106,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
         </section>
 
         {selected ? <section ref={reviewRef} className="wa-review" aria-labelledby="wa-review-heading">
-          <div className="wa-panel-back wa-back-inbox"><BackButton onClick={() => inboxRef.current?.scrollIntoView({ block: 'start' })}>Back to messages</BackButton></div>
+          <div className="wa-panel-back wa-back-inbox"><BackButton onClick={onBackToDrawing || (() => inboxRef.current?.scrollIntoView({ block: 'start' }))}>{onBackToDrawing ? 'Back to drawing' : 'Back to messages'}</BackButton></div>
           <header className="wa-panel-header"><div><h2 id="wa-review-heading">Review update</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><Badge tone={status.tone}>{status.label}</Badge></header>
           <div className="wa-review-body">
             <div className="wa-evidence-heading"><div className="avatar wa-worker-avatar">{selected.sender?.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('') || 'DW'}</div><div><strong>{selected.sender}</strong><span>{selected.senderRole || 'Site worker · demo'}</span></div><time dateTime={selected.date}>{time(selected.date)}</time></div>

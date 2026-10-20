@@ -46,7 +46,8 @@ export function createDrawingProgressDemo(workspace, now = new Date()) {
     const area = getDrawingMapping(project).areas.find((entry) => entry.code === areaCode);
     return {
       id: `${project.id}-MAP-REPORT-${sequence}`, projectId: project.id, projectCode: project.code,
-      itemId, area: `Area ${areaCode}`, areaMapping: snapshotMappedArea(area), location: item.location,
+      itemId, sourceMessageId: `${project.id}-MAP-WA-${sequence}`, channel: 'whatsapp-mock',
+      area: `Area ${areaCode}`, areaMapping: snapshotMappedArea(area), location: item.location,
       sender: 'Warehouse worker (demo)', date: at(minutesAgo), completion, completionBasis: 'cumulative', status,
       message: `${project.code} | ${item.location} | Area ${areaCode} | ${itemId}\nCOMPLETE=${completion}% TOTAL\nFictional drawing progress showcase update.`,
       photo: '/assets/demo-scaffold.jpg', photoAlt,
@@ -66,7 +67,34 @@ export function createDrawingProgressDemo(workspace, now = new Date()) {
   project.locked = true;
   project.lockedAt = baselineAt;
   project.baselines = [{ version: project.version, items: baselineItems, date: baselineAt, demo: true }];
-  project.whatsappMessages = [];
+  const messageBase = {
+    projectId: project.id, projectCode: project.code,
+    senderRole: 'Site worker · demo', completionBasis: 'cumulative',
+    processingNote: 'Fictional showcase message with a prefilled mock interpretation. No AI or WhatsApp service is connected.',
+    photoAlt,
+  };
+  project.whatsappMessages = [
+    ...project.reports.map((report) => ({
+      ...messageBase, id: report.sourceMessageId, kind: 'progress', status: 'processed', reportId: report.id,
+      itemId: report.itemId, area: report.area, location: report.location,
+      sender: report.sender, date: report.date, processedAt: report.date,
+      completion: report.completion, text: report.message, photo: report.photo,
+    })),
+    {
+      ...messageBase, id: `${project.id}-MAP-WA-005`, kind: 'vo', status: 'new',
+      itemId: null, area: 'Area A2', location: 'Block A', completion: null, completionBasis: 'unclear',
+      sender: 'Warehouse worker (demo)', date: at(5), photo: '/assets/demo-platform.jpg',
+      text: `${project.code} | Block A | Area A2\nSupervisor requested additional roof-edge weather protection outside the existing schedule. Please check whether this is extra work.\nFictional showcase message; demo photo attached.`,
+      processingNote: 'Mock possible extra work. QS must review the scope and instruction; no price or claim is approved.',
+    },
+    {
+      ...messageBase, id: `${project.id}-MAP-WA-006`, kind: 'clarification', status: 'new',
+      itemId: null, area: 'Area B1', location: 'Block B', completion: 50, completionBasis: 'unclear',
+      sender: 'Warehouse worker (demo)', date: at(3), photo: '/assets/demo-scaffold.jpg',
+      text: `${project.code} | Block B | Area B1 done 50%.\nFictional showcase message; demo photo attached.`,
+      processingNote: 'Work item and completion basis are unclear. Ask for the item reference and total completion before changing progress.',
+    },
+  ];
   project.voReviews = [];
   project.claimDrafts = [];
   project.history = [{

@@ -99,3 +99,11 @@ Open **Contract → Drawing & areas** to see Not started, In progress and Comple
 Statuses refer to each linked work item as a whole, not measured quantities within an area. Multiple items are summarized by counts, without averaging their percentages. Unlinked areas and missing progress are shown separately.
 
 **Try completion demo** opens a separate fictional project containing all three completion states and a pending report for review. Existing projects are preserved. No backend or live AI is connected.
+
+## Area messages and site photos
+
+Select a pin or area in **Drawing & areas** to see **Site updates & photos** beneath its completion details. The cards show the original message, sender, date, review status and attached photo. Click a photo to enlarge it. Recent updates appear first; longer histories can be expanded.
+
+**Open original update** opens the exact mock WhatsApp message, with **Back to drawing** to return to the area. Older report-only records offer **Review site report**. Viewing cards or photos leaves progress, VO decisions and claims unchanged. Saved reports and their inbox copies appear once, and old saved area references remain attached after mapping edits.
+
+New projects created through **Try completion demo** include six mock messages: four saved progress updates, one new possible VO and one unclear update. Existing projects keep their saved records. Photos are clearly labelled demonstration images; no live WhatsApp or backend service is connected.

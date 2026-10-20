@@ -20,7 +20,8 @@
     "test:form-buffer": "node --test tests/form-buffer.test.mjs",
     "test:contract-import": "node --test tests/contract-import.test.mjs",
     "test:drawing-mapping": "node --test tests/drawing-mapping.test.mjs tests/drawing-workflow.test.mjs",
-    "test:drawing-progress": "node --test tests/drawing-progress.test.mjs tests/drawing-progress-demo.test.mjs"
+    "test:drawing-progress": "node --test tests/drawing-progress.test.mjs tests/drawing-progress-demo.test.mjs",
+    "test:drawing-evidence": "node --test tests/drawing-evidence.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",
