@@ -91,3 +91,11 @@ Open **Contract → Drawing & areas**, then **Use demo drawing** or select a loc
 Saved links appear in the contract work list, site-message review and Progress. A message naming a work item that conflicts with its area link is held for clarification. A map never turns an unclear message into automatic completion. Existing report evidence, baselines and claim snapshots remain unchanged.
 
 Drawing metadata and saved areas stay in browser storage. Custom file previews last for the current session; choose the same file again to restore a preview without replacing links. The bundled fictional plan remains available after reload. Replacing a drawing retains area names/links but clears pin positions for review. Reset clears only the selected project's drawing and mappings.
+
+## Completion on the drawing
+
+Open **Contract → Drawing & areas** to see Not started, In progress and Completed colours from linked work items. **Verified** shows supervisor-checked totals; **Reported** shows worker updates. Select an area and choose **View in Progress** to open just its linked items. Verify a pending report there and return to the drawing to see the status change.
+
+Statuses refer to each linked work item as a whole, not measured quantities within an area. Multiple items are summarized by counts, without averaging their percentages. Unlinked areas and missing progress are shown separately.
+
+**Try completion demo** opens a separate fictional project containing all three completion states and a pending report for review. Existing projects are preserved. No backend or live AI is connected.

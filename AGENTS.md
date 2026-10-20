@@ -61,3 +61,11 @@ Drawing & areas belongs under Contract. Support a bundled fictional plan and loc
 An area can link to multiple work items from the selected project. Saving is explicit, codes are unique per map, and stale drawing IDs or foreign item IDs must be rejected. Replacing a drawing keeps named links but clears pin positions and page references for review. Reset clears only the selected project's drawing and area mappings. Keep existing contract baselines, financial values, original reports and saved claim snapshots intact.
 
 Show saved area links in Contract, Site updates and Progress. A conflicting explicit work item and saved area link requires clarification before processing a new WhatsApp progress report; ambiguous area-only messages still require an item and completion basis. Save a copy of the mapped area with newly processed reports so later remapping cannot rewrite earlier evidence. Backend, drawing AI and live WhatsApp remain deferred; commit/push only when explicitly requested.
+
+## Completion on drawings
+
+Drawing status derives live from the selected project's linked whole work-item totals. Offer Verified (default) and Reported views with explicit labels. Use Not started for zero, In progress for partial/mixed known work and Completed only when every linked item reaches 100 in the selected basis. Unknown progress and unlinked areas stay distinct. Do not average mixed work items, infer area quantities, or convert progress into claims. The same item linked to several areas shows the same whole-item status, with that limitation stated.
+
+Keep the drawing readable: show a status legend, text as well as colour, a selected-area summary and a direct link to its filtered Progress list. Mapping edits remain explicit and secondary to the status view. Opening Progress from an area retains that area in the link; clearing filters or switching projects clears the area scope. Missing or foreign areas must not show other project records. Verification in Progress updates the drawing through the same project state.
+
+Try completion demo opens a new, clearly fictional project with linked areas and seeded progress illustrating all three statuses; it must never overwrite existing records or claims. This remains frontend-only. Commit, push and deploy only when explicitly requested.

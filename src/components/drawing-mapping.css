@@ -24,8 +24,15 @@
 .drawing-image-stage.is-placing { cursor:crosshair; outline:2px solid #4265df; outline-offset:2px; }
 .drawing-pin { position:absolute; z-index:1; display:flex; align-items:center; justify-content:center; gap:3px; min-width:46px; height:30px; padding:4px 7px; border:1px solid #d8b57b; border-radius:7px; color:#855817; background:#fff7e7; box-shadow:0 2px 5px #3341551a; font-family:inherit; font-size:11px; font-weight:600; line-height:1.4; white-space:nowrap; transform:translate(-50%,-50%); cursor:pointer; }
 .drawing-pin svg { flex-shrink:0; }
-.drawing-pin.linked { color:#24765e; background:#effaf4; border-color:#abd6c4; }
-.drawing-pin.selected { z-index:2; color:#fff; background:#4265df; border-color:#4265df; box-shadow:0 0 0 3px #4265df33; }
+.drawing-pin.status-completed { color:#24765e; background:#effaf4; border-color:#8bc8af; }
+.drawing-pin.status-in-progress { color:#3156c8; background:#eef4ff; border-color:#9eb7ed; }
+.drawing-pin.status-not-started { color:#475569; background:#f1f5f9; border-color:#b8c4d2; }
+.drawing-pin.status-unlinked { color:#64748b; background:#fff; border-color:#a8b6c8; border-style:dashed; }
+.drawing-pin.status-unknown { color:#855817; background:#fff7e7; border-color:#d8b57b; }
+.drawing-pin.selected { z-index:2; outline:2px solid #4265df; outline-offset:3px; box-shadow:0 0 0 5px #fff9; }
+.drawing-pin:not(.draft) { height:auto; min-height:38px; }
+.drawing-pin > span strong, .drawing-pin > span small { display:block; }
+.drawing-pin > span small { font-size:9px; font-weight:500; }
 .drawing-pin.draft { z-index:3; border:2px dashed #4265df; color:#3155c7; background:#fff; pointer-events:none; }
 .drawing-image-stage.is-placing .drawing-pin { pointer-events:none; }
 .drawing-pin:focus-visible { outline:2px solid #2563eb; outline-offset:3px; }
@@ -75,6 +82,38 @@
 .drawing-history p { margin:5px 0; line-height:1.7; }
 .drawing-history time { color:#94a3b8; font-size:11px; }
 .drawing-local-note { margin:20px 0 0; color:#64748b; font-size:12px; line-height:1.8; }
+.drawing-progress-controls { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 18px 10px; color:#475569; font-size:12px; }
+.drawing-progress-controls > div { display:flex; gap:5px; }
+.drawing-progress-controls .button { min-height:32px; padding:7px 12px; font-size:12px; }
+.drawing-progress-controls p { flex-basis:100%; margin:0; color:#64748b; font-size:11px; line-height:1.7; }
+.drawing-progress-legend { display:flex; flex-wrap:wrap; gap:8px 14px; padding:0 18px 14px; border-bottom:1px solid var(--border); color:#64748b; font-size:11px; line-height:1.6; }
+.drawing-progress-legend span { display:inline-flex; align-items:center; gap:5px; }
+.drawing-progress-legend i { width:9px; height:9px; border:1px solid #a8b6c8; border-radius:50%; background:#cbd5e1; }
+.drawing-progress-legend .in-progress { border-color:#4265df; background:#7499ec; }
+.drawing-progress-legend .completed { border-color:#24765e; background:#57ac87; }
+.drawing-progress-legend .unlinked { border-style:dashed; background:#fff; }
+.drawing-progress-legend .unknown { border-color:#b38434; background:#edc680; }
+.drawing-area-progress { padding:20px 18px; scroll-margin-top:76px; }
+.drawing-progress-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.drawing-progress-heading h3 { margin:0; color:#1e293b; font-size:14px; font-weight:600; line-height:1.7; }
+.drawing-progress-heading p { margin:4px 0 0; color:#64748b; font-size:11px; }
+.drawing-progress-heading .badge { flex-shrink:0; margin-top:3px; }
+.drawing-progress-summary { margin:20px 0 12px; color:#334155; font-size:13px; font-weight:550; }
+.drawing-progress-items { margin:0; padding:0; list-style:none; }
+.drawing-progress-items li { display:flex; align-items:flex-start; gap:12px; padding:13px 0; border-top:1px solid #eef1f5; }
+.drawing-progress-items li > div { min-width:0; flex:1; }
+.drawing-progress-items li strong { display:block; font-size:12px; font-weight:500; line-height:1.7; }
+.drawing-progress-items li small { display:block; margin-top:3px; color:#64748b; font-size:11px; line-height:1.6; }
+.drawing-item-completion { flex-shrink:0; min-width:72px; text-align:right; }
+.drawing-item-completion strong { color:#475569; }
+.drawing-item-completion.status-completed strong { color:#24765e; }
+.drawing-item-completion.status-in-progress strong { color:#3156c8; }
+.drawing-item-completion.status-unknown strong { color:#9a6928; }
+.drawing-progress-help { margin:12px 0 0; color:#64748b; font-size:12px; line-height:1.8; }
+.drawing-progress-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+.drawing-completion-demo { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-top:20px; padding:14px 18px; border:1px solid var(--border); border-radius:9px; background:#f8fafc; }
+.drawing-completion-demo strong { color:#475569; font-size:12px; font-weight:550; }
+.drawing-completion-demo p { margin:4px 0 0; color:#64748b; font-size:12px; line-height:1.7; }
 .drawing-upload-content { display:flex; flex-direction:column; gap:18px; }
 .drawing-upload-content .notice { margin:0; }
 .drawing-demo-option { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
