@@ -99,7 +99,19 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
 
       <div className='editor-body'>
         {hasEdits && <p className='field-note' role='status'>Unsaved changes kept while you browse. Confirm this item before refreshing.</p>}
-        <div className='notice'>
+        {locked ? <div className='notice success' role='status'>
+          <Lock size={16} aria-hidden='true' />
+          <div>
+            <strong>Demo baseline confirmed · read only</strong>
+            <p>{contract.demoImport
+              ? 'Seeded values use the fictional demo PDF; any separately selected PDF was previewed only.'
+              : sourceKind === 'illustrative'
+              ? 'Values are invented for this showcase and use the illustrative schedule. No supplied contract was extracted.'
+              : sourceKind === 'provided'
+              ? 'Values are seeded from the supplied schedule for this showcase.'
+              : 'Values are seeded for this showcase. No source document is supplied.'} Choose Edit contract to create a revision.</p>
+          </div>
+        </div> : <div className='notice'>
           <Sparkles size={16} aria-hidden='true' />
           <div>
             <strong>{contract.demoImport ? 'Mock extraction' : sourceKind === 'illustrative' ? 'Illustrative review data' : 'Simulated extraction'}</strong>
@@ -109,17 +121,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
               ? 'These editable values are invented for this project’s showcase. Compare them with the illustrative schedule; no supplied contract has been extracted.'
               : 'These editable values are seeded for the showcase. Compare them with this project’s source schedule before confirming.'}</p>
           </div>
-        </div>
-
-        {locked && (
-          <div className='notice success' role='status'>
-            <Lock size={16} aria-hidden='true' />
-            <div>
-              <strong>This baseline is locked</strong>
-              <p>Create a new revision to change approved contract data. Reviewing this item does not change the locked version.</p>
-            </div>
-          </div>
-        )}
+        </div>}
 
         {item.needsReview && (
           <div className='notice warning' role='note'>

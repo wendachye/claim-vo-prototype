@@ -96,6 +96,11 @@ function approvedEvidence(entry, end) {
 
 const total = (rows, field) => rows.some((row) => row[field] === null) ? null : money(rows.reduce((sum, row) => sum + row[field], 0));
 
+export function countPendingClaimVOs(review) {
+  return (review.voRows || []).filter((row) => !row.eligible && !row.included
+    && ['flagged', 'clarification', 'pendingApproval'].includes(row.status)).length;
+}
+
 export function buildClaimReview(project, period, input = {}) {
   const { assessment, errors } = normalizeAssessment(project, input);
   const { cutoff, end } = periodEnd(period);

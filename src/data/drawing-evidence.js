@@ -1,6 +1,7 @@
 // Read-only links to original site evidence. A drawing never changes a report.
 import { getDrawingMapping } from './drawing-mapping.js';
 import { getWhatsAppMessages } from './whatsapp.js';
+import { needsProgressClarification } from './report-status.js';
 
 const record = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value) => typeof value === 'string' ? value.trim() : '';
@@ -52,6 +53,7 @@ const reportStates = {
   verified: { label: 'Verified', tone: 'green' },
   pending: { label: 'Needs verification', tone: 'amber' },
   needsReview: { label: 'Needs review', tone: 'amber' },
+  needsClarification: { label: 'Needs clarification', tone: 'amber' },
   superseded: { label: 'Superseded', tone: 'slate' },
   rejected: { label: 'Dismissed', tone: 'slate' },
   clarification: { label: 'Needs clarification', tone: 'amber' },
@@ -92,7 +94,7 @@ function evidenceEntry(project, area, report, message) {
   const matchKind = matchArea(area, source, report ? message : null);
   if (!matchKind) return null;
   const kind = report ? report.vo || report.kind === 'vo' ? 'vo'
-    : report.kind === 'clarification' || report.status === 'clarification' ? 'clarification' : 'progress'
+    : report.kind === 'clarification' || needsProgressClarification(report) ? 'clarification' : 'progress'
     : message.kind === 'vo' ? 'vo' : message.kind === 'clarification' || message.status === 'clarification' ? 'clarification' : 'progress';
   return {
     id: `${report ? 'report' : 'message'}:${source.id}`, messageId: message?.id || null, reportId: report?.id || null,

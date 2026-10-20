@@ -12,6 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { Badge, Button, FormActions, FormField, formatTime } from './ui.jsx';
+import { isReviewableProgressReport, needsProgressClarification } from '../data/report-status.js';
 
 const percent = (value) => {
   if (value == null || value === '' || !Number.isFinite(Number(value))) return 'Not recorded';
@@ -49,7 +50,8 @@ export function ReportDrawer({
   const [error, setError] = useState('');
   const [photoFailed, setPhotoFailed] = useState(false);
 
-  const isPending = report?.status === 'pending' || report?.status === 'needsReview';
+  const isPending = isReviewableProgressReport(report);
+  const isClarification = needsProgressClarification(report);
   const isVerified = report?.status === 'verified' || report?.status === 'approved';
   const isVo = Boolean(report?.vo);
   const hasMatchedItem = Boolean(item && report?.itemId === item.id);
@@ -64,7 +66,8 @@ export function ReportDrawer({
   const isManual = report?.origin === 'manual' || report?.origin === 'uploaded';
   const reportStatus = isVo ? 'Flagged extra work'
     : isVerified ? 'Verified'
-      : report?.status === 'pending' ? 'Pending review'
+      : isClarification ? 'Needs clarification'
+        : report?.status === 'pending' ? 'Pending review'
         : report?.status === 'needsReview' ? 'Needs review'
           : report?.status === 'rejected' ? 'Rejected'
             : report?.status || 'No report selected';
@@ -254,7 +257,17 @@ export function ReportDrawer({
             <div className="notice warning"><AlertTriangle aria-hidden="true" /><span>Match the update to one work item and area before verifying progress.</span></div>
           ) : null}
 
-          {!locked && report && !isVo && !isVerified && (
+          {isClarification && (
+            <div className="notice warning">
+              <MessageSquare aria-hidden="true" />
+              <span><strong>Waiting for a clearer site update.</strong><br />
+                {report.reviewReason && <><strong>Clarification note:</strong> {report.reviewReason}<br /></>}
+                Contact the worker outside this demo. When the work item, area and total completion are confirmed, add a new update for review. Current progress stays unchanged; no message was sent.
+              </span>
+            </div>
+          )}
+
+          {!locked && report && !isVo && !isVerified && !isClarification && (
             <div className="notice warning"><AlertTriangle aria-hidden="true" /><span>Review and lock the contract baseline before verifying this progress update.</span></div>
           )}
 
@@ -322,6 +335,7 @@ export function ReportDrawer({
             <Button icon={Check} className="primary" disabled={!canVerify} onClick={approve}>Verify progress</Button>
           )}
           {(isVerified || !isPending || isVo) && <Button onClick={onClose}>Done</Button>}
+          {isClarification && <Button className="primary" icon={Plus} disabled={!onAdd} onClick={() => onAdd?.(item?.id)}>Add clarified demo update</Button>}
           {isVo && <Button className="primary" icon={Flag} disabled={!onReviewVO} onClick={() => onReviewVO?.(report)}>Open VO review</Button>}
           </FormActions>
         </footer>

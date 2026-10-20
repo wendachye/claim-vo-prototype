@@ -1,7 +1,7 @@
 // Frontend-only fixtures. Fields are prefilled demonstration results, not AI output.
 import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.js';
+import { isUnresolvedProgressReport } from './report-status.js';
 const clone = (value) => structuredClone(value);
-const waiting = (report) => ['pending', 'needsReview'].includes(report.status);
 
 export function seedWhatsAppMessages(project) {
   if (!project?.items?.length || project.contract?.sourceKind === 'none'
@@ -135,7 +135,7 @@ export function processWhatsAppMessage(project, messageId) {
     project: {
       ...marked,
       items: project.items.map((entry) => !isVo && entry.id === item.id ? { ...entry, reported: pct } : entry),
-      reports: [...project.reports.map((entry) => !isVo && entry.itemId === item.id && !entry.vo && waiting(entry)
+      reports: [...project.reports.map((entry) => !isVo && entry.itemId === item.id && isUnresolvedProgressReport(entry)
         ? { ...entry, status: 'superseded', supersededByReportId: reportId, supersededAt: date,
           supersededBy: 'Alex Tan · Demo reviewer',
           supersededReason: 'Replaced by a newer cumulative mock WhatsApp report. Original evidence is retained.' }

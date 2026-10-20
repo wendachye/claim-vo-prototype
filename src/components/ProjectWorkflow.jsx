@@ -13,7 +13,7 @@ export function WorkflowNav({ project, view, onNavigate }) {
   return <nav className="workflow-nav" aria-label="Project workflow">{workflow.steps.map((step, index) => <button type="button" key={step.id} className={active === step.id ? 'current' : ''} aria-current={active === step.id ? 'step' : undefined} title={step.detail} onClick={() => onNavigate(step.route)}><span>{index + 1}</span><strong>{step.label}</strong>{index < 3 && <ArrowRight size={12} className="workflow-link-arrow" />}</button>)}</nav>;
 }
 
-export function ProjectOverview({ project, onNavigate, onNext, onManage }) {
+export function ProjectOverview({ project, onNavigate, onNext, onManage, onReviewContract }) {
   const workflow = getProjectWorkflow(project);
   const usesProvidedSource = project.contract?.sourceKind === 'provided';
   return <section className="project-overview">
@@ -21,7 +21,8 @@ export function ProjectOverview({ project, onNavigate, onNext, onManage }) {
     {project.providedContractDemo && <section className="contract-scenario-guide" aria-labelledby="contract-scenario-heading">
       <div className="contract-scenario-heading"><h2 id="contract-scenario-heading">{usesProvidedSource ? 'Your contract' : 'Sample contract'}, a realistic walkthrough</h2><Badge tone="blue">{usesProvidedSource ? 'Provided sample' : 'Fictional sample'}</Badge></div>
       <p>{usesProvidedSource ? `${project.items.length} representative contract rows and the supplied site plan. Site activity, dates, photos, approvals and claim assessments are simulated.` : `${project.items.length} fictional contract rows and an illustrative campus plan. All values, parties, site activity and claim assessments are demo data.`}</p>
-      <div className="contract-scenario-actions"><Button icon={MapPin} onClick={() => onNavigate('drawing')}>Explore the drawing</Button><Button onClick={() => onNavigate('claims')}>View example claim<ArrowRight size={14}/></Button></div>
+      <p>The demo starts with a checked contract baseline and a saved example claim.</p>
+      <div className="contract-scenario-actions"><Button className="primary" icon={FileText} onClick={() => onReviewContract ? onReviewContract() : onNavigate('contract')}>Review contract</Button><Button icon={MapPin} onClick={() => onNavigate('drawing')}>Explore the drawing</Button><Button onClick={() => onNavigate('claims')}>View example claim<ArrowRight size={14}/></Button></div>
       <details><summary>What to try in this project</summary><ol>
         <li><strong>Contract:</strong> compare W3 and W5 items with the {usesProvidedSource ? 'supplied' : 'fictional'} schedule.{usesProvidedSource && ' The sample contains selected rows, not the full work list.'}</li>
         <li><strong>Drawing:</strong> select an area to see its work, messages, photos and VO flags. Pins are illustrative manual links.</li>

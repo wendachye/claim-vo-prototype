@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaimReview, saveClaimDraft, markClaimPrepared, normalizeClaimDrafts } from '../src/data/claims.js';
+import { buildClaimReview, countPendingClaimVOs, saveClaimDraft, markClaimPrepared, normalizeClaimDrafts } from '../src/data/claims.js';
 import { createProject, loadWorkspace, resetProject, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.js';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
 
 function project() {
   const base = createProject({ name: 'Test site', code: 'T01', country: 'Singapore' });
@@ -102,6 +103,27 @@ test('only measured verified work and currently approved VOs before cutoff are e
   const missingDate = structuredClone(before);
   missingDate.voReviews[0].history = [];
   assert.equal(buildClaimReview(missingDate, '2026-10', assessment()).voRows[0].eligible, false);
+});
+
+test('the S.I.T. claim counts open VO follow-ups without treating rejected or approved cases as awaiting review', () => {
+  const before = createSITContractDemo({ code: 'SIT-CLAIM01', name: 'S.I.T. claim walkthrough' }, new Date('2026-10-21T13:00:00Z'));
+  const original = structuredClone(before);
+  const saved = before.claimDrafts[0];
+  const review = buildClaimReview(before, saved.period, saved.assessment);
+  assert.equal(review.voRows.length, 3);
+  assert.equal(countPendingClaimVOs(review), 1);
+  assert.deepEqual(review.totals, saved.snapshot.totals);
+  assert.equal(review.canPrepare, true);
+  assert.deepEqual(before, original);
+
+  const flagged = review.voRows.find((row) => row.status === 'flagged');
+  for (const status of ['flagged', 'clarification', 'pendingApproval']) {
+    assert.equal(countPendingClaimVOs({ voRows: [{ ...flagged, status }] }), 1);
+  }
+  for (const status of ['approved', 'rejected']) {
+    assert.equal(countPendingClaimVOs({ voRows: [{ ...flagged, status }] }), 0);
+  }
+  assert.equal(countPendingClaimVOs({ voRows: [{ ...flagged, included: true }] }), 0);
 });
 
 test('unknown and zero amounts stay distinct; limits, malformed inputs and adjustments need review', () => {

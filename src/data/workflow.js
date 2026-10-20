@@ -1,10 +1,10 @@
 import { getWhatsAppMessages } from './whatsapp.js';
 import { getVOCases } from './vo.js';
+import { isReviewableProgressReport, needsProgressClarification } from './report-status.js';
 
 const list = (value) => Array.isArray(value) ? value : [];
 const timestamp = (value) => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
 const numberOf = (count, singular, plural = `${singular}s`) => `${count} ${count === 1 ? singular : plural}`;
-const needsClarification = (report) => report.status === 'needsClarification';
 
 function currentMonth() {
   const parts = new Intl.DateTimeFormat('en', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit' }).formatToParts(new Date());
@@ -23,8 +23,8 @@ export function getProjectWorkflow(project, period = currentMonth()) {
     const previous = latestReports.get(report.itemId);
     if (!previous || timestamp(report.date) >= timestamp(previous.date)) latestReports.set(report.itemId, report);
   }
-  const pendingReports = [...latestReports.values()].filter((report) => ['pending', 'needsReview'].includes(report.status));
-  const clarificationReports = [...latestReports.values()].filter(needsClarification);
+  const pendingReports = [...latestReports.values()].filter(isReviewableProgressReport);
+  const clarificationReports = [...latestReports.values()].filter(needsProgressClarification);
   const unresolvedReportSources = new Set([...pendingReports, ...clarificationReports].map((report) => report.sourceMessageId).filter(Boolean));
   const messages = getWhatsAppMessages(project).filter((message) => message.projectId === project.id);
   const clarificationMessages = messages.filter((message) => message.status === 'clarification'

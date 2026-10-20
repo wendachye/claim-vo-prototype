@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowRight, Check, CheckCheck, ChevronRight, CircleAlert, FileCheck2, FileText, Flag, History, ListChecks, Plus, Save } from 'lucide-react';
-import { buildClaimReview } from '../data/claims.js';
+import { buildClaimReview, countPendingClaimVOs } from '../data/claims.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { BackButton, Badge, Button, FormActions, FormField, PageHeader, formatMoney, formatNumber, formatTime } from './ui.jsx';
 import './monthly-claims.css';
@@ -43,7 +43,7 @@ export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpe
     && (project.items.find((item) => item.id === row.id)?.pricingType === 'measured' || row.included));
   const otherVORows = review.voRows.filter((row) => !row.eligible);
   const priorReviewCount = [...otherWorkRows, ...otherVORows].filter((row) => row.included).length;
-  const pendingVOCount = otherVORows.filter((row) => !row.included).length;
+  const pendingVOCount = countPendingClaimVOs(review);
   const selectedWork = review.workRows.filter((row) => row.included);
   const selectedVOs = review.voRows.filter((row) => row.included);
   const saved = savedRecord ? project.claimDrafts?.find((draft) => draft.id === savedRecord.id) || savedRecord : null;
@@ -51,6 +51,7 @@ export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpe
   const negativeAdjustment = [...selectedWork, ...selectedVOs].some((row) => row.currentValue < 0);
 
   useEffect(() => { if (initialTab === 'drafts') { setMode('history'); setFeedback(null); } }, [initialTab]);
+  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [mode, step]);
 
   function changeAssessment(updater) {
     setForms((prior) => {

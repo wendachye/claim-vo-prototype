@@ -67,6 +67,22 @@ test('legacy report-only, superseded and dismissed evidence remains visible in s
   assert.equal(result.entries[2].sourceLabel, 'Site update');
 });
 
+test('supervisor clarification appears once with its original area evidence and distinct review status', () => {
+  const value = project();
+  value.whatsappMessages = [message('M1', { status: 'processed', reportId: 'R1' })];
+  value.reports = [report('R1', { sourceMessageId: 'M1', status: 'needsClarification',
+    reviewReason: 'Confirm the cumulative total.', areaMapping: snapshotMappedArea(area(value)) })];
+  const before = structuredClone(value);
+  const result = evidence(value);
+  assert.equal(result.entries.length, 1);
+  assert.equal(result.entries[0].kind, 'clarification');
+  assert.equal(result.entries[0].label, 'Needs clarification');
+  assert.equal(result.entries[0].tone, 'amber');
+  assert.equal(result.entries[0].text, value.reports[0].message);
+  assert.equal(result.entries[0].photo, value.reports[0].photo);
+  assert.deepEqual(value, before);
+});
+
 test('saved area IDs remain authoritative after renaming, code reuse, remapping and drawing replacement', () => {
   let value = project();
   const originalArea = area(value);
