@@ -17,7 +17,8 @@
     "test:claim-pack": "node --test tests/claim-pack.test.mjs",
     "test:workflow": "node --test tests/workflow.test.mjs",
     "test:demo-project": "node --test tests/demo-project.test.mjs",
-    "test:form-buffer": "node --test tests/form-buffer.test.mjs"
+    "test:form-buffer": "node --test tests/form-buffer.test.mjs",
+    "test:contract-import": "node --test tests/contract-import.test.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",

@@ -3,6 +3,7 @@ import {
   ExternalLink, FileText, FileWarning, LoaderCircle, Map, Minus, Plus, RotateCcw,
 } from 'lucide-react';
 import { contract as sampleContract } from '../data/contract.js';
+import { DEMO_CONTRACT_FILENAME, DEMO_CONTRACT_PDF } from '../data/contract-import.js';
 import './source-preview.css';
 
 const DOCUMENTS = {
@@ -26,7 +27,7 @@ function scheduleAmount(row, field) {
   return Number(value).toLocaleString('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** Project-scoped source preview. Only the fictional campus schedule has image assets. */
+/** Project-scoped source preview. Each document belongs to its source project. */
 export function SourcePreview({ item, compact = false, uploadedDocument = null, contract = sampleContract, sourceItems = [] }) {
   const [documentType, setDocumentType] = useState('schedule');
   const [zoom, setZoom] = useState(1);
@@ -36,23 +37,25 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
   const [retryVersion, setRetryVersion] = useState(0);
   const viewportRef = useRef(null);
   const scheduleRef = useRef(null);
-  const sourceKind = contract?.sourceKind ?? (contract === sampleContract ? 'illustrative' : 'none');
+  const sourceKind = contract?.sourceKind ?? (contract === sampleContract ? 'provided' : 'none');
   const sourceFilename = contract?.sourceFilename ?? contract?.sourceFile;
   const hasProvidedAssets = sourceKind === 'provided' && sourceFilename === sampleContract.sourceFile;
+  const hasDemoAssets = Boolean(contract?.demoImport) && sourceFilename === DEMO_CONTRACT_FILENAME && contract.sourceFile === DEMO_CONTRACT_PDF;
   const hasDrawing = hasProvidedAssets && (contract?.hasDrawing ?? contract === sampleContract);
   const activeType = hasDrawing ? documentType : 'schedule';
-  const document = DOCUMENTS[activeType];
+  const document = hasDemoAssets ? { ...DOCUMENTS.schedule, asset: '/samples/warehouse-contract-demo.png', ratio: 210 / 297 } : DOCUMENTS[activeType];
   const isSchedule = activeType === 'schedule';
   const showUploaded = isSchedule && Boolean(uploadedDocument?.url);
-  const showIllustrative = !showUploaded && sourceKind === 'illustrative';
-  const showImage = !showUploaded && !showIllustrative && hasProvidedAssets;
+  const showIllustrative = !showUploaded && !hasDemoAssets && sourceKind === 'illustrative';
+  const showImage = !showUploaded && !showIllustrative && (hasProvidedAssets || hasDemoAssets);
   const rows = Array.isArray(sourceItems) ? sourceItems : [];
   const hasPreview = showUploaded || showImage || (showIllustrative && rows.length > 0);
   const asset = showUploaded ? uploadedDocument.url : showImage ? document.asset : null;
   const activeLabel = showUploaded ? 'Uploaded PDF' : document.label;
   const filename = showUploaded
     ? (uploadedDocument.name || 'Uploaded contract.pdf')
-    : showIllustrative ? 'Illustrative demo schedule · not a supplied contract'
+    : hasDemoAssets ? 'Fictional demo contract PDF'
+      : showIllustrative ? 'Illustrative demo schedule · not a supplied contract'
       : (sourceFilename || 'No source document supplied');
   const page = item?.sourcePage ?? contract?.sourcePage;
   const pageCount = contract?.sourcePageCount;
@@ -99,7 +102,8 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
   }
 
   const pageLabel = showUploaded ? 'Preview only'
-    : showIllustrative ? 'Demo reference'
+    : hasDemoAssets ? 'Demo PDF · page 1'
+      : showIllustrative ? 'Demo reference'
       : !showImage ? 'No source'
         : !isSchedule ? 'Reference plan'
           : page ? `Page ${page}${pageCount ? ` / ${pageCount}` : ''}` : 'Schedule image';
@@ -127,7 +131,7 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
           </>}
           {asset && <>
             {!showUploaded && <span className='source-preview__toolbar-divider' aria-hidden='true' />}
-            <a className='source-preview__icon-button' href={asset} target='_blank' rel='noopener noreferrer' aria-label={`Open ${activeLabel.toLowerCase()} in a new tab`} title='Open source in a new tab'><ExternalLink size={15} aria-hidden='true' /></a>
+            <a className='source-preview__icon-button' href={hasDemoAssets ? DEMO_CONTRACT_PDF : asset} target='_blank' rel='noopener noreferrer' aria-label={`Open ${activeLabel.toLowerCase()} in a new tab`} title='Open source in a new tab'><ExternalLink size={15} aria-hidden='true' /></a>
           </>}
         </div>
       </div>}
@@ -175,7 +179,7 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
             <div className='source-preview__page-space' style={{ width: `${zoom * 100}%`, aspectRatio: imageRatio }}>
               <div className='source-preview__page' style={{ width: `${100 / zoom}%`, transform: `scale(${zoom})` }}>
                 <img key={`${projectKey}-${activeType}-${retryVersion}`} className='source-preview__image' src={document.asset}
-                  alt={isSchedule ? `Original contract schedule${page ? `, PDF page ${page}${pageCount ? ` of ${pageCount}` : ''}` : ''}. Locate source reference ${reference}.` : 'Site plan reference. Area-to-item mapping is entered by a manager in this prototype.'}
+                  alt={hasDemoAssets ? `Fictional demo contract schedule, page 1. Locate source reference ${reference}.` : isSchedule ? `Original contract schedule${page ? `, PDF page ${page}${pageCount ? ` of ${pageCount}` : ''}` : ''}. Locate source reference ${reference}.` : 'Site plan reference. Area-to-item mapping is entered by a manager in this prototype.'}
                   draggable={false} onLoad={(event) => {
                     const { naturalWidth, naturalHeight } = event.currentTarget;
                     if (naturalWidth && naturalHeight) setImageRatio(naturalWidth / naturalHeight);
@@ -187,10 +191,11 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
       </div>
 
       <div className='source-preview__provenance'>
-        <div className='source-preview__provenance-line'><FileText size={13} aria-hidden='true' /><span>{showUploaded ? 'Uploaded document · browser PDF preview' : showIllustrative ? 'Illustrative demo schedule · active project only' : showImage ? isSchedule ? 'Original schedule image · printed page 1 of 1' : 'Drawing reference · manual area mapping' : 'No source preview · active project only'}</span></div>
+        <div className='source-preview__provenance-line'><FileText size={13} aria-hidden='true' /><span>{showUploaded ? 'Uploaded document · browser PDF preview' : hasDemoAssets ? 'Fictional demo PDF · page 1 of 1' : showIllustrative ? 'Illustrative demo schedule · active project only' : showImage ? isSchedule ? 'Original schedule image · printed page 1 of 1' : 'Drawing reference · manual area mapping' : 'No source preview · active project only'}</span></div>
         <p>{showUploaded
           ? 'This upload does not replace the seeded schedule or update work-item values. Use the external-link control if your browser cannot display the PDF.'
-          : showIllustrative ? (contract?.sampleNote || 'This locally rendered schedule contains invented demo data, not a supplied contract. No AI extraction is running.')
+          : hasDemoAssets ? 'Review the mock values against this fictional source. No live extraction or contract approval is performed.'
+            : showIllustrative ? (contract?.sampleNote || 'This locally rendered schedule contains invented demo data, not a supplied contract. No AI extraction is running.')
             : showImage ? isSchedule ? (contract?.sampleNote || 'Seeded review preview. Compare the selected reference with the source; no live AI extraction is running.')
               : 'Area aliases are demo mappings. No drawing quantities or completion percentages are inferred from this image.'
               : 'Review values are not evidence of a supplied contract. Attach and review this project’s own source before relying on them.'}</p>

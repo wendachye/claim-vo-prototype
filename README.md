@@ -11,7 +11,7 @@ Start on **Project overview** for the selected project's next action. The visibl
 - **Contract:** check the work list, then confirm it. A confirmed contract offers **Continue to site updates**.
 - **Site updates:** review messages and photos, then use **Progress** to verify completion. New messages appear first. Small screens show reported and verified totals together in cards.
 - **Extra work:** review the evidence and instruction, then track approval. The approved record links to monthly claims; approval never inserts a claim value automatically.
-- **Claims:** saved claims appear first. **Start claim** guides **Choose work → Enter totals → Review**. Use **Other work claimed before?** to reconcile prior amounts for work that is no longer eligible. Positive prior amounts cannot be omitted. Save explicitly before leaving this module; saved revisions retain their snapshots.
+- **Claims:** saved claims appear first. **Start claim** guides **Choose work → Enter totals → Review**. Use **Other work claimed before?** to reconcile prior amounts for work that is no longer eligible. Positive prior amounts cannot be omitted. Unfinished edits remain while browsing; save explicitly before refreshing. Saved revisions retain their snapshots.
 
 History, message details and older claim versions are expandable. This remains a browser-local demo with no live AI, WhatsApp or external submission.
 
@@ -44,7 +44,7 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 2. In **WhatsApp processing**, process the WI-001 photo update. Reported completion changes to 65%; verified completion stays at 25% until reviewed. Cumulative percentages replace the total. Replaying an event creates no duplicate report.
 3. Process an extra-work message. In **VO review**, inspect the evidence, record a scope assessment and instruction reference, then track approval. Decisions retain their history.
 4. In **Monthly claims**, choose a month and enter QS-assessed cumulative quantities and VO values. Review prior claimed values, confirm any undated evidence as of the cutoff, save a revision and mark a valid draft prepared. Prepared drafts do not become prior claimed values. Open **Preview & export** from Saved drafts to read the frozen revision, download its CSV or use Print / Save PDF.
-5. Switch to **Warehouse Extension (Demo)**. Its schedule, activity, VO reviews and claim drafts remain separate. New projects start empty.
+5. Switch to **Warehouse Extension (Demo)**. Its schedule, activity, VO reviews and claim drafts remain separate. New projects offer a fictional warehouse sample or an empty register for mock contract upload.
 
 ## Checks
 
@@ -56,6 +56,7 @@ npm run test:vo
 npm run test:claims
 npm run test:claim-pack
 npm run test:workflow
+npm run test:contract-import
 npm run preview
 ```
 
@@ -67,9 +68,18 @@ Import this repository using the **Next.js** framework preset and the repository
 
 ## Limits
 
-- Backend, production authentication, live WhatsApp and AI extraction are future work. Message interpretation uses predefined fixtures. Uploading a PDF opens a local preview and does not replace the seeded schedule.
+- Backend, production authentication, live WhatsApp and AI extraction are future work. Message interpretation uses predefined fixtures. PDF selection is local; mock extraction uses a preset fictional work list and never replaces existing project records.
 - Browser storage retains changes on the same origin; it provides no server sync or durable audit service. Reset restores only the selected project's seed.
 - Physical completion does not automatically establish a claim amount. QS assessments require explicit quantities and values; bundled scaffold rates must not be multiplied by duration as a billing rule.
 - VO approvals and prepared claims are local demonstrations. They do not submit a claim, certify payment, change contract totals or establish previous claimed amounts. Claim values and evidence remain frozen, and changed sources require a new revision. New revisions also capture project/contract details; legacy revisions label their current-details fallback. Exports are read-only assessments with incomplete values left unknown. CSV includes evidence references; photos appear in the preview/PDF.
 
 Generated photo files and prompts are documented in [public/assets/DEMO-PHOTOS.md](public/assets/DEMO-PHOTOS.md).
+
+## Mock contract upload
+
+1. Open **Contract → Upload contract**. Choose a local PDF up to 30 MB, or **Use demo PDF**.
+2. Select **Start demo extraction**. The short simulation can be canceled without changing project data.
+3. Review six preset items and the flagged quantity. **Review work list** opens the matching fictional PDF beside the editable fields.
+4. Correct WI-001 from **1,320** to the source value **1,200 m²**, confirm the item, then confirm the work list before site verification.
+
+The work list uses the bundled fictional warehouse source in SGD. Selected PDF contents are not parsed. File bytes stay out of saved project data; a selected-file preview is available for the current session only. The bundled PDF remains available after reload. Empty projects receive the sample list in place; projects with existing work open the result in a new demo project. Existing edits, baselines and claims are preserved.

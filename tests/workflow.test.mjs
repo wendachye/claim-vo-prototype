@@ -15,9 +15,10 @@ const draft = (id, period, revision, status = 'draft') => ({ id, projectId: 'TES
 test('contract setup guides empty, flagged and unconfirmed projects before site work', () => {
   const value = project();
   const empty = workflow({ ...value, items: [] });
-  assert.equal(empty.next.label, 'View contract options');
-  assert.match(empty.next.description, /mock project/);
-  assert.match(empty.next.description, /PDF previews do not add work items/);
+  assert.equal(empty.next.label, 'Add a contract');
+  assert.match(empty.next.description, /demo contract/);
+  assert.match(empty.next.description, /simulated work list/);
+  assert.match(empty.next.description, /selected PDF is not read/);
   value.items[0].needsReview = true;
   assert.equal(workflow(value).next.label, 'Review contract items');
   assert.equal(workflow(value).steps[0].status, 'Needs review');

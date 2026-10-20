@@ -48,7 +48,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
   const printed = Array.isArray(projectSourceItems) ? projectSourceItems.find((sourceItem) => sourceItem.id === item.id) : undefined;
   const sourceKind = contract?.sourceKind ?? (contract === sampleContract ? 'provided' : 'none');
   const currency = contract?.currency || (contract === sampleContract ? 'SGD' : 'Currency not specified');
-  const sourceLabel = sourceKind === 'illustrative' ? 'Demo schedule' : 'Printed source';
+  const sourceLabel = contract.demoImport ? 'Demo PDF' : sourceKind === 'illustrative' ? 'Demo schedule' : 'Printed source';
   const hasSourceQuantity = printed?.quantity != null && printed.quantity !== '' && Number.isFinite(Number(printed.quantity));
   const sourcePage = printed?.sourcePage ?? contract?.sourcePage;
   const sourceFilename = contract?.sourceFilename ?? contract?.sourceFile;
@@ -102,8 +102,10 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
         <div className='notice'>
           <Sparkles size={16} aria-hidden='true' />
           <div>
-            <strong>{sourceKind === 'illustrative' ? 'Illustrative review data' : 'Simulated extraction'}</strong>
-            <p>{sourceKind === 'illustrative'
+            <strong>{contract.demoImport ? 'Mock extraction' : sourceKind === 'illustrative' ? 'Illustrative review data' : 'Simulated extraction'}</strong>
+            <p>{contract.demoImport
+              ? 'Check these simulated values against the fictional demo PDF. Any separately selected PDF was previewed only.'
+              : sourceKind === 'illustrative'
               ? 'These editable values are invented for this project’s showcase. Compare them with the illustrative schedule; no supplied contract has been extracted.'
               : 'These editable values are seeded for the showcase. Compare them with this project’s source schedule before confirming.'}</p>
           </div>
@@ -234,7 +236,9 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
           <FileText size={16} aria-hidden='true' />
           <div>
             <strong>Source reference {item.ref}</strong>
-            <p>{sourceKind === 'illustrative'
+            <p>{contract.demoImport
+              ? `${sourceFilename} · fictional demo PDF, page 1.`
+              : sourceKind === 'illustrative'
               ? 'Illustrative demo schedule · not a supplied contract.'
               : sourceKind === 'provided'
                 ? `${sourceFilename || 'Project source'}${sourcePage ? ` · PDF page ${sourcePage}${contract?.sourcePageCount ? ` of ${contract.sourcePageCount}` : ''}` : ''}.`

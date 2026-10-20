@@ -14,7 +14,7 @@ The campus dataset uses the stable internal ID `SIT01` for migration compatibili
 
 ## Project workspaces
 
-Keep items, source references, baselines, messages, reports, physical progress, VO reviews, claim drafts and history isolated by project. The top-navigation dropdown is available from every module and switching preserves the module. New projects offer a fictional sample for the full workflow or an empty register for PDF preview. Preserve edits during migration and reset only the selected project.
+Keep items, source references, baselines, messages, reports, physical progress, VO reviews, claim drafts and history isolated by project. The top-navigation dropdown is available from every module and switching preserves the module. New projects offer a fictional sample for the full workflow or an empty register for the mock contract upload. Preserve edits during migration and reset only the selected project.
 
 ## Mock workflow
 
@@ -42,8 +42,14 @@ The user wants to confirm the UI and end-to-end workflow before real development
 
 ## Complete mock walkthrough
 
-New projects offer a separate fictional warehouse sample with six work items, four current-month mock messages and no saved progress, VO decisions or claims. Empty projects remain available for PDF preview only; preview does not claim to extract a work list. Never copy existing browser-edited project state into a new mock project.
+New projects offer a separate fictional warehouse sample with six work items, four current-month mock messages and no saved progress, VO decisions or claims. Empty projects remain available and can start the mock contract upload flow. Selected PDFs are preview only; the extraction demonstration uses the bundled fictional work list. Never copy existing browser-edited project state into a new mock project.
 
 Keep the next step clear after confirming contract items, confirming the work list, processing messages and preparing claims. Site processing retains the selected result so verification or VO review is visible, including when the inbox was filtered. Extra-work links and counts include recorded approvals and rejections.
 
 Unfinished contract, VO and claim forms remain in session memory while browsing between modules or projects. Saving remains explicit; tell users to save before refreshing. Buffers must be isolated by project and record/version, clear on project reset or successful save, and never silently update financial records. Block work-list confirmation if current contract edits are still unfinished.
+
+## Mock contract upload and extraction
+
+Contract upload stays frontend-only. Users can choose a local PDF up to 30 MB or the bundled fictional warehouse PDF, see cancelable simulated extraction, and review six preset work items with one quantity mismatch. Make it clear that selected-file contents are not parsed. Review uses the matching fictional PDF and source rows; selected filenames are separate input metadata and must never be presented as evidence for the preset values.
+
+Apply the result to a truly empty project only. If any contract or workflow data exists, create a uniquely named demo project and preserve the existing project, local edits and claim snapshots. Keep file bytes and object URLs out of persistent project storage. A selected PDF preview is session-only; the bundled source remains available after reload. Retain the existing item checks and explicit work-list confirmation before progress verification. Do not connect a backend or live AI, commit, push or deploy without a new user request.

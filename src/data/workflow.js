@@ -58,7 +58,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   const steps = [
     { id: 'contract', label: 'Contract', route: 'contract',
       status: !items.length ? 'Not started' : confirmed ? 'Confirmed' : 'Needs review',
-      detail: !items.length ? 'Choose a mock project, or preview a PDF without importing work items.'
+      detail: !items.length ? 'Upload a PDF and review the simulated demo work list.'
         : counts.contractReview ? `${numberOf(counts.contractReview, 'item')} to check against the contract.`
           : !confirmed ? 'Confirm the checked contract before verifying progress.' : `Contract version ${project.version || 1} confirmed.` },
     { id: 'site', label: 'Site updates', route: counts.newMessages ? 'whatsapp' : counts.pendingReports ? 'completion' : clarificationMessages.length ? 'whatsapp' : 'completion',
@@ -78,7 +78,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   ];
 
   let next;
-  if (!items.length) next = { route: 'contract', label: 'View contract options', description: 'Choose a mock project for the full workflow, or preview a PDF. PDF previews do not add work items.' };
+  if (!items.length) next = { route: 'contract', label: 'Add a contract', description: 'Choose a PDF or use the demo contract, then review a simulated work list. The selected PDF is not read.' };
   else if (!confirmed) next = { route: 'contract', label: counts.contractReview ? 'Review contract items' : 'Confirm contract',
     description: counts.contractReview ? 'Check the highlighted items against the source, then confirm the contract.' : 'Confirm the reviewed work list before verifying site progress.' };
   else if (counts.newMessages) next = { route: 'whatsapp', label: 'Review site messages',
