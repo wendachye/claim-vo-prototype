@@ -1,0 +1,86 @@
+.workflow-nav { display:flex; align-items:center; border:1px solid #dfe6ef; border-radius:9px; background:#fff; margin-bottom:24px; overflow:hidden; }
+.workflow-nav > button { position:relative; display:flex; align-items:center; justify-content:center; flex:1; gap:9px; padding:12px 16px; border:0; background:transparent; color:#64748b; min-height:47px; font-size:12px; }
+.workflow-nav > button > span { display:grid; place-items:center; width:22px; height:22px; flex-shrink:0; border-radius:50%; background:#f1f5f9; color:#64748b; font-size:11px; }
+.workflow-nav > button > strong { font-weight:500; }
+.workflow-nav > button.current { background:#eff6ff; color:#1d4ed8; }
+.workflow-nav > button.current > span { background:#2563eb; color:#fff; }
+.workflow-link-arrow { position:absolute; right:-6px; z-index:1; color:#cbd5e1; }
+.project-overview { max-width:1180px; margin:0 auto; }
+.project-overview .page-description { font-size:13px; }
+.next-task { padding:25px 28px; border:1px solid #bfdbfe; border-radius:12px; background:#f4f8ff; margin:2px 0 30px; }
+.next-task-heading { display:flex; align-items:center; gap:8px; }
+.next-task-heading h2 { color:#1e40af; font-size:12px; font-weight:600; }
+.next-task-dot { width:7px; height:7px; border-radius:50%; background:#2563eb; }
+.next-task p { max-width:740px; margin:13px 0 18px; color:#1e293b; font-size:18px; line-height:1.6; letter-spacing:-.2px; }
+.next-task .button { min-height:40px; padding:10px 16px; font-size:13px; }
+.overview-workflow-heading { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; align-items:baseline; margin-bottom:14px; }
+.overview-workflow-heading h2 { font-size:14px; font-weight:600; color:#334155; }
+.overview-workflow-heading > span { color:#64748b; font-size:12px; }
+.overview-workflow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; }
+.overview-step { display:flex; flex-direction:column; min-width:0; padding:20px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; text-align:left; transition:border-color .15s,box-shadow .15s; }
+.overview-step:hover { border-color:#93b4f3; box-shadow:0 3px 12px #0f172a08; }
+.overview-step-top { display:flex; align-items:center; gap:7px; width:100%; margin-bottom:18px; }
+.overview-step-top > svg { margin-left:auto; color:#64748b; }
+.overview-step-icon { display:grid; place-items:center; width:35px; height:35px; border-radius:8px; background:#f1f5f9; color:#475569; }
+.overview-step-number { font-size:11px; color:#64748b; }
+.overview-step h3 { color:#0f172a; font-size:15px; font-weight:600; }
+.overview-step p { margin:9px 0 17px; color:#64748b; font-size:12px; line-height:1.8; flex:1; }
+.overview-step .badge { align-self:flex-start; font-size:10px; }
+.overview-caption { margin:18px 0; color:#64748b; font-size:12px; line-height:1.8; }
+.site-view-tabs { display:flex; gap:7px; margin:-7px 0 21px; padding:4px; width:fit-content; border:1px solid #e2e8f0; border-radius:8px; background:#edf2f7; }
+.site-view-tabs button { display:flex; align-items:center; gap:7px; min-height:34px; padding:7px 15px; border:0; border-radius:5px; background:transparent; color:#64748b; font-size:12px; }
+.site-view-tabs button.current { background:#fff; color:#1e40af; box-shadow:0 1px 3px #0f172a12; }
+.site-view-tabs button > span { font-size:10px; color:#9a6700; }
+.contract-facts { display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; margin-bottom:20px; padding:15px 18px; border:1px solid #e2e8f0; border-radius:9px; background:#fff; font-size:12px; color:#64748b; }
+.contract-facts > span { display:flex; gap:7px; align-items:center; }
+.contract-facts strong { color:#334155; font-weight:600; }
+.contract-facts .button { margin-left:auto; min-height:30px; font-size:11px; padding:5px 9px; }
+.next-module { display:flex; justify-content:space-between; align-items:center; gap:15px; padding:16px 18px; margin-top:20px; border:1px solid #dbeafe; border-radius:9px; background:#f8fbff; }
+.next-module strong { display:block; color:#334155; font-size:13px; font-weight:550; }
+.next-module p { font-size:12px; line-height:1.7; color:#64748b; margin-top:4px; }
+.demo-mode { display:flex; align-items:center; gap:5px; border:1px solid #dbeafe; border-radius:5px; background:#eff6ff; color:#1e40af; padding:5px 8px; font-size:11px; }
+.management-tabs { display:flex; gap:22px; margin-bottom:24px; border-bottom:1px solid #e2e8f0; }
+.management-tabs button { padding:0 0 12px; border:0; border-bottom:2px solid transparent; color:#64748b; background:transparent; font-size:13px; }
+.management-tabs button.current { color:#1d4ed8; border-color:#2563eb; }
+.sidebar .nav-caption { font-size:10px; }
+.sidebar .nav-item { font-size:13px; min-height:43px; }
+.sidebar .sidebar-bottom { margin-top:auto; }
+.sidebar .nav-step { display:grid; place-items:center; width:23px; height:23px; border:1px solid #475569; border-radius:6px; color:#cbd5e1; font-size:11px; flex-shrink:0; }
+.sidebar .nav-item.active .nav-step { border-color:#526781; color:#fff; background:#334155; }
+@media screen and (max-width:1200px) { .overview-workflow { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media screen and (max-width:760px) { .workflow-nav { margin-bottom:20px; } .workflow-nav > button { padding:10px 5px; gap:5px; min-height:49px; font-size:10px; } .workflow-nav > button > span { width:19px; height:19px; font-size:10px; } .workflow-link-arrow { display:none; } .next-task { padding:20px; margin-bottom:25px; } .next-task p { font-size:17px; } .overview-workflow { gap:10px; } .overview-step { padding:15px; } .overview-step h3 { font-size:14px; } .overview-step p { font-size:12px; margin-bottom:13px; } .overview-step-top { margin-bottom:12px; gap:5px; } .overview-step-icon { width:30px; height:30px; } .overview-step-icon > svg { width:17px; } .overview-step-number { font-size:10px; } .next-module { align-items:flex-start; flex-direction:column; } .contract-facts { padding:13px; gap:10px 18px; } .contract-facts .button { margin-left:0; } .management-tabs { margin-bottom:20px; } }
+
+.projects-simple-list { display:flex; flex-direction:column; gap:13px; }
+.project-list-row { display:flex; align-items:center; gap:16px; padding:21px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+.project-list-row.active { border-color:#bfdbfe; }
+.project-list-icon { display:grid; place-items:center; width:45px; height:45px; border-radius:9px; background:#f1f5f9; color:#64748b; flex-shrink:0; }
+.project-list-copy { flex:1; }
+.project-list-copy h2 { font-size:15px; color:#1e293b; font-weight:600; }
+.project-list-copy > p { color:#64748b; font-size:12px; margin:5px 0 9px; }
+.project-list-copy > div { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
+.project-list-copy > div > span:not(.badge) { font-size:11px; color:#64748b; }
+.project-list-row .button { font-size:12px; }
+.progress-explainer { color:#64748b; font-size:12px; line-height:1.8; margin:-4px 0 20px; }
+.progress-mobile-label { display:none; }
+.project-empty p { color:#64748b; font-size:13px; }
+@media screen and (max-width:760px) {
+  .data-table.progress-register { display:block; min-width:0; }
+  .progress-register thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+  .progress-register tbody { display:block; }
+  .progress-register .table-row { display:grid; grid-template-columns:1fr 1fr; gap:10px 20px; padding:17px; border-bottom:1px solid #e2e8f0; }
+  .progress-register .table-row:last-child { border-bottom:0; }
+  .progress-register td { min-width:0; max-width:none; padding:0; border:0; }
+  .progress-register td:first-child, .progress-register td:nth-child(2) { grid-column:1 / -1; }
+  .progress-register td:first-child .cell-primary { font-size:14px; font-weight:600; }
+  .progress-register .cell-secondary { color:#64748b; font-size:11px; }
+  .progress-register td:nth-child(2) { display:flex; gap:7px; align-items:center; }
+  .progress-register td:nth-child(2) .cell-secondary { margin:0; }
+  .progress-register td:nth-child(3), .progress-register td:nth-child(4) { padding:10px 0; }
+  .progress-register .progress-mobile-label { display:block; margin-bottom:7px; color:#64748b; font-size:12px; }
+  .progress-register .progress-cell { min-width:0; }
+  .progress-register .progress-number { font-size:17px; }
+  .progress-register .progress-track { flex:1; min-width:20px; }
+  .progress-register td:nth-child(6) { text-align:right; }
+  .progress-register td:nth-child(7) { display:none; }
+}
+@media screen and (max-width:760px) { .project-list-row { flex-wrap:wrap; padding:17px; } .project-list-copy { min-width:calc(100% - 70px); } .project-list-row > .button { margin-left:61px; } }

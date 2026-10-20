@@ -4,6 +4,17 @@ A frontend-only construction workflow demo built with Next.js and React. It incl
 
 All seeded projects, parties, schedule values, site activity and approvals are fictional. Generated photos illustrate the workflow; they are not evidence from an actual project. No uploaded contract pages, commercial records or drawings are included.
 
+## Simple workflow
+
+Start on **Project overview** for the selected project's next action. The visible sequence is **Contract → Site updates → Extra work → Claims**. The top project dropdown stays available from every module.
+
+- **Contract:** check the work list, then confirm it. A confirmed contract offers **Continue to site updates**.
+- **Site updates:** review messages and photos, then use **Progress** to verify completion. New messages appear first. Small screens show reported and verified totals together in cards.
+- **Extra work:** review the evidence and instruction, then track approval. The approved record links to monthly claims; approval never inserts a claim value automatically.
+- **Claims:** saved claims appear first. **Start claim** guides **Choose work → Enter totals → Review**. Use **Other work claimed before?** to reconcile prior amounts for work that is no longer eligible. Positive prior amounts cannot be omitted. Save explicitly before leaving this module; saved revisions retain their snapshots.
+
+History, message details and older claim versions are expandable. This remains a browser-local demo with no live AI, WhatsApp or external submission.
+
 ## Run
 
 Use Node.js **22.12+** and npm.
@@ -15,12 +26,12 @@ npm run dev
 
 Open the address printed by Next.js (normally http://localhost:3000). The project dropdown applies to every module:
 
-- `#projects` — create and select project workspaces
+- `#projects` — selected-project overview and next action; open All projects for management
 - `#contract` — review illustrative schedule values and confirm a baseline
 - `#completion` — review cumulative reported and verified physical progress
-- `#whatsapp` — process mock worker messages and generated photos
-- `#vo` — assess flagged extra work and track local approval decisions
-- `#claims` — prepare monthly assessments from verified work and approved VOs
+- `#whatsapp` — Site updates: review mock worker messages and generated photos
+- `#vo` — Extra work: assess flags and track local approval decisions
+- `#claims` — saved claims and guided preparation from verified work and approved VOs
 - `#claim-preview?draft=…` — preview a saved revision, download CSV or print/save PDF
 
 ## Demo walkthrough
@@ -40,6 +51,7 @@ npm run test:whatsapp
 npm run test:vo
 npm run test:claims
 npm run test:claim-pack
+npm run test:workflow
 npm run preview
 ```
 

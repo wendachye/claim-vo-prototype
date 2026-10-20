@@ -25,3 +25,17 @@ Claim preview and export verification
 - Project switching guards foreign drafts; returning to saved drafts, reload, frozen revisions and captured metadata were checked.
 - The in-app browser could not open a print window. PDF output was verified through regular Chrome.
 - Final print CSS is identical to the validated live implementation; responsive layout rules apply to screen only.
+
+Simple, connected workflow — 21 October 2026
+- Replaced the dense project landing page with a selected-project overview and one next action. Project management remains separate; the top dropdown preserves the current module.
+- Added a visible Contract → Site updates → Extra work → Claims sequence. Removed repeated KPI/context panels; kept facts/evidence close to the work.
+- Site updates has Messages and Progress tabs. New messages appear first; matched progress links to evidence review. Extra-work links share the existing VO register.
+- Small-screen progress cards show reported and verified totals together. Browser verified a card opens its original message/photo and verification record.
+- Monthly claims opens with saved months/versions. Preparation uses Choose work → Enter totals → Review; earlier versions, metadata and saved exports remain intact.
+- Ineligible measured work and VOs retain a prior-amount reconciliation path. Browser checked a positive prior amount forces inclusion and blocks preparation; clearing the unsaved test amount restored the original valid totals. Zero/blank-prior ineligible selections can be removed.
+- Browser checked in-app viewport 550 × 925: overview next action, selected newest new message, step links, progress evidence, extra-work review, claim work/totals/review, all-project management, empty project and project switching while preserving the module.
+- Existing warehouse claim R2 remains Prepared, one item, SGD 2,800 this month. No claim or approval records were saved/changed by this UI check.
+- Final live and sanitized public production builds passed. All 45 state/export/workflow checks passed. New workflow tests cover prioritization, project guards and saved revision guidance.
+- Production preview restarted on 4173 and overview reload verified. Source fixtures, browser data, export snapshots and hosting files preserved.
+- Current-run before/after screenshots and notes are retained in the local workspace and are not packaged in the public repository. Visual QA does not establish full keyboard/screen-reader accessibility or production readiness.
+- Public implementation copy updated locally with fictional data; changes are uncommitted and unpushed.

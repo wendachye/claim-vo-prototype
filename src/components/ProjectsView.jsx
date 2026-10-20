@@ -38,57 +38,12 @@ export function ProjectsView({ projects = [], activeProjectId, onOpen, onCreate 
   const [search, setSearch] = useState('');
   const [country, setCountry] = useState('all');
   const available = list(projects);
-  const stats = available.map(projectStats);
-  const totals = stats.reduce((sum, current) => ({
-    pending: sum.pending + current.pending,
-    review: sum.review + current.review,
-    variations: sum.variations + current.variations,
-  }), { pending: 0, review: 0, variations: 0 });
   const shown = available.filter((project) => matchesProject(project, search) && (country === 'all' || project.country === country));
-  const clearFilters = () => { setSearch(''); setCountry('all'); };
-  const summary = [
-    { label: 'PROJECTS', value: available.length, detail: 'Separate project workspaces', icon: Building2 },
-    { label: 'AWAITING VERIFICATION', value: totals.pending, detail: 'Site reports · excludes possible VOs', icon: Clock3 },
-    { label: 'CONTRACT ITEMS TO REVIEW', value: totals.review, detail: 'Source checks before confirmation', icon: ListChecks },
-    { label: 'POSSIBLE VARIATIONS', value: totals.variations, detail: 'For QS review · not approved', icon: CircleAlert },
-  ];
-
   return <div className="projects-view">
-    <div className="page-header projects-header">
-      <div><h1>Projects</h1><p className="page-description">Keep each contract, site update and review in its own workspace.</p></div>
-      <Button className="primary" icon={Plus} onClick={() => onCreate?.()} disabled={!onCreate}>New project</Button>
-    </div>
-
-    <div className="summary-grid projects-summary">
-      {summary.map(({ label, value, detail, icon: Icon }) => <div className="summary-card" key={label}>
-        <div className="summary-label">{label}<Icon size={16} aria-hidden="true" /></div>
-        <div className="summary-value">{value}</div><div className="summary-detail">{detail}</div>
-      </div>)}
-    </div>
-
-    <div className="section-toolbar projects-toolbar">
-      <label className="search-box"><Search size={16} aria-hidden="true" /><input aria-label="Search projects" placeholder="Search project name or code…" value={search} onChange={(event) => setSearch(event.target.value)} />{search && <button type="button" className="projects-search-clear" aria-label="Clear project search" onClick={() => setSearch('')}><X size={14} /></button>}</label>
-      <div className="filter-group"><span className="projects-result-count" aria-live="polite">{shown.length} {shown.length === 1 ? 'project' : 'projects'}</span><select className="form-select" aria-label="Filter projects by country" value={country} onChange={(event) => setCountry(event.target.value)}><option value="all">All countries</option>{COUNTRIES.map((value) => <option key={value} value={value}>{value}</option>)}</select></div>
-    </div>
-
-    {shown.length ? <div className="projects-grid">
-      {shown.map((project) => {
-        const counts = projectStats(project);
-        const source = sourceBadge(project);
-        const active = project.id === activeProjectId;
-        return <article className={`projects-card${active ? ' projects-card-active' : ''}`} key={project.id} aria-labelledby={`project-title-${project.id}`}>
-          <div className="projects-card-heading"><div className="projects-card-icon"><Building2 size={21} aria-hidden="true" /></div><div className="projects-card-identifiers"><span className="projects-code">{project.code}</span><span className="projects-country"><MapPin size={11} aria-hidden="true" />{project.country || 'Country not set'}</span></div>{active && <Badge tone="blue"><span className="projects-active-dot" />Active</Badge>}</div>
-          <h2 id={`project-title-${project.id}`}>{project.name || 'Untitled project'}</h2>
-          <p className="projects-card-description">{project.description || project.contract?.name || 'Add a contract to set up the scope and start reviewing site updates.'}</p>
-          <div className="projects-card-badges"><Badge tone={source.tone}>{source.label}</Badge>{counts.items > 0 ? <Badge tone={project.locked ? 'green' : 'amber'}>{project.locked ? <LockKeyhole size={11} aria-hidden="true" /> : <Clock3 size={11} aria-hidden="true" />}v{project.version || 1} · {project.locked ? 'Confirmed' : 'In review'}</Badge> : <Badge>No baseline</Badge>}</div>
-          <div className="projects-card-stats"><div><strong>{counts.items}</strong><span>Work items</span></div><div><strong className={counts.pending ? 'projects-stat-amber' : ''}>{counts.pending}</strong><span>Pending reports</span></div><div><strong className={counts.review ? 'projects-stat-amber' : ''}>{counts.review}</strong><span>Source checks</span></div></div>
-          <div className="projects-card-progress"><span><Check size={13} aria-hidden="true" />{counts.verified} {counts.verified === 1 ? 'item' : 'items'} with verified progress</span>{counts.variations > 0 && <span className="projects-vo-count">{counts.variations} possible {counts.variations === 1 ? 'VO' : 'VOs'}</span>}</div>
-          <div className="projects-card-actions"><Button icon={FileText} onClick={() => onOpen?.(project.id, 'contract')} disabled={!onOpen}>Review contract</Button><Button icon={ListChecks} onClick={() => onOpen?.(project.id, 'completion')} disabled={!onOpen}>Completion list<ArrowRight size={13} aria-hidden="true" /></Button></div>
-        </article>;
-      })}
-    </div> : <div className="projects-empty empty-state"><FolderOpen size={31} aria-hidden="true" /><h3>{available.length ? 'No matching projects' : 'Your first project starts here'}</h3><p>{available.length ? 'Try another project name, code or country.' : 'Create a workspace for your contract and site reports.'}</p><Button icon={available.length ? X : Plus} className={available.length ? '' : 'primary'} onClick={available.length ? clearFilters : () => onCreate?.()} disabled={!available.length && !onCreate}>{available.length ? 'Clear filters' : 'New project'}</Button></div>}
-
-    <div className="projects-footnote"><Info size={13} aria-hidden="true" /><span>Progress is shown as item counts. Completion percentages and contract values are not combined across projects.</span></div>
+    <div className="page-header"><div><h1>All projects</h1><p className="page-description">Open a project to see its next steps.</p></div><Button className="primary" icon={Plus} onClick={onCreate}>New project</Button></div>
+    <div className="section-toolbar projects-toolbar"><label className="search-box"><Search size={16}/><input aria-label="Search projects" placeholder="Find a project…" value={search} onChange={event=>setSearch(event.target.value)}/>{search&&<button aria-label="Clear project search" onClick={()=>setSearch('')}><X size={14}/></button>}</label><select className="form-select" aria-label="Filter projects by country" value={country} onChange={event=>setCountry(event.target.value)}><option value="all">All countries</option>{COUNTRIES.map(value=><option key={value}>{value}</option>)}</select></div>
+    <div className="projects-simple-list">{shown.map(project=>{const counts=projectStats(project);return <article key={project.id} className={`project-list-row${project.id===activeProjectId?' active':''}`}><div className="project-list-icon"><Building2 size={22}/></div><div className="project-list-copy"><h2>{project.name}</h2><p>{project.code} · {project.country||'Country not set'}</p><div><Badge tone={project.locked?'green':counts.items?'amber':'slate'}>{project.locked?'Contract checked':counts.items?'Contract to check':'No contract yet'}</Badge>{counts.pending>0&&<span>{counts.pending} site {counts.pending===1?'update':'updates'} to check</span>}</div></div><Button onClick={()=>onOpen?.(project.id,'projects')}>{project.id===activeProjectId?'View overview':'Open project'}<ArrowRight size={14}/></Button></article>;})}</div>
+    {!shown.length&&<div className="empty-state"><FolderOpen size={28}/><h3>No matching projects</h3><p>Try a different name or country.</p><Button onClick={()=>{setSearch('');setCountry('all');}}>Clear filters</Button></div>}
   </div>;
 }
 
