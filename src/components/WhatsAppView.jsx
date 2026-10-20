@@ -4,6 +4,7 @@ import { BackButton, Badge, Button, FormActions, Modal, PageHeader, formatTime, 
 import { getVOCases, VO_STATUS_LABELS } from '../data/vo.js';
 import { getMessageReport as messageReport } from '../data/whatsapp.js';
 import { getAreaLinkStatus } from '../data/drawing-mapping.js';
+import { getWorkItemMessageSample } from '../data/contract-work-links.js';
 import { isReviewableProgressReport, needsProgressClarification, needsMessageClarification } from '../data/report-status.js';
 import './whatsapp.css';
 
@@ -36,7 +37,7 @@ function Field({ label, children, wide = false }) {
   return <div className={`wa-field${wide ? ' wa-field-wide' : ''}`}><span>{label}</span><strong>{children || 'Not identified'}</strong></div>;
 }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenVO, onOpenDrawing, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing }) {
+export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing }) {
   const voCases = getVOCases(project);
   const caseFor = (report) => voCases.find((entry) => entry.id === report?.id);
   const orderedMessages = [...messages].sort((a, b) => Number(b.status === 'new') - Number(a.status === 'new') || Date.parse(b.date) - Date.parse(a.date));
@@ -67,12 +68,14 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const unavailable = Boolean(initialMessageId && !messages.some((message) => message.id === initialMessageId));
   const selected = unavailable ? null : shown.find((message) => message.id === selectedId) || shown[0];
   const report = selected ? messageReport(project, selected) : null;
-  const item = project.items.find((entry) => entry.id === selected?.itemId);
+  const item = project.items.find((entry) => entry.id === (report && !report.vo ? report.itemId : selected?.itemId));
   const status = selected ? statusFor(selected, report, caseFor(report)) : null;
   const voCase = caseFor(report);
   const isNew = selected?.status === 'new';
   const isVo = selected?.kind === 'vo' || Boolean(report?.vo);
   const areaLink = selected ? getAreaLinkStatus(project, selected) : null;
+  const contractItems = item ? [item] : isVo ? areaLink?.linkedItems || [] : [];
+  const messageSample = !isVo && item ? getWorkItemMessageSample(project, item.id) : null;
   const isUnclear = needsMessageClarification(selected, report) || (isNew && areaLink?.conflict);
   const newCount = messages.filter((message) => message.status === 'new').length;
   const nextMessage = orderedMessages.find((message) => message.status === 'new' && message.id !== selected?.id);
@@ -111,12 +114,18 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
           <div className="wa-panel-back wa-back-inbox"><BackButton onClick={onBackToDrawing || (() => inboxRef.current?.scrollIntoView({ block: 'start' }))}>{onBackToDrawing ? 'Back to drawing' : 'Back to messages'}</BackButton></div>
           <header className="wa-panel-header"><div><h2 id="wa-review-heading">Review update</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><Badge tone={status.tone}>{status.label}</Badge></header>
           <div className="wa-review-body">
+            {contractItems.length > 0 && <section className="wa-contract-context" aria-label="Contract work referenced by this update">
+              <span>{isVo ? 'Related contract work for QS review' : areaLink?.conflict ? 'Contract item named in the message' : 'Contract work for this update'}</span>
+              {contractItems.map((entry) => <div className="wa-contract-work" key={entry.id}><div><strong>{entry.ref} · {entry.description}</strong><small>{entry.id}{entry.sourcePage ? ` · Source page ${entry.sourcePage}` : ''}</small></div>{(onOpenContractItem || onOpenContract) && <Button className="ghost" icon={FileText} onClick={() => onOpenContractItem ? onOpenContractItem(entry.id) : onOpenContract()}>View contract item</Button>}</div>)}
+              {isVo && <p>Related scope only. QS must check whether the requested extra work is covered by this contract item.</p>}
+              {messageSample && <details className="wa-contract-sample"><summary>Sample worker message for this item</summary><pre>{messageSample}</pre><p>Confirm the site area and total completion before sending an update. This format does not create a claim value.</p></details>}
+            </section>}
             <div className="wa-evidence-heading"><div className="avatar wa-worker-avatar">{selected.sender?.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('') || 'DW'}</div><div><strong>{selected.sender}</strong><span>{selected.senderRole || 'Site worker · demo'}</span></div><time dateTime={selected.date}>{time(selected.date)}</time></div>
             <div className="wa-original-message"><div className="wa-original-label"><MessageSquare size={12} />Worker’s message</div><blockquote>{selected.text}</blockquote></div>
             <DemoPhoto src={selected.photo} alt={selected.photoAlt} className="wa-evidence-photo" onOpen={() => setPhoto({ src: selected.photo, alt: selected.photoAlt })} />
 
             <div className="wa-interpretation-heading"><h3>Suggested update</h3></div>
-            <div className="wa-fields"><Field label="Location">{[selected.location, selected.area].filter(Boolean).join(' · ')}</Field><Field label="Update">{isVo ? 'Extra work' : isUnclear ? 'Needs clarification' : 'Total progress to date'}</Field><Field label={areaLink?.conflict ? 'Work item in message' : 'Matched contract work'} wide>{item ? `${item.ref} · ${item.description}` : 'Not matched — confirm with the worker'}</Field></div>
+            <div className="wa-fields"><Field label="Location">{[selected.location, selected.area].filter(Boolean).join(' · ')}</Field><Field label="Update">{isVo ? 'Extra work' : isUnclear ? 'Needs clarification' : 'Total progress to date'}</Field>{!item && <Field label="Matched contract work" wide>Not matched — confirm with the worker</Field>}</div>
             <div className={`area-mapping-reference${areaLink?.conflict ? ' conflict' : ''}`}><div>{areaLink?.area ? <><strong>Area {areaLink.area.code} · {areaLink.area.name}</strong><p>{areaLink.linkedItems.length ? `Drawing links: ${areaLink.linkedItems.map(entry=>entry.id).join(', ')}` : 'No contract work items linked yet.'}</p>{areaLink.conflict && <p>This message names a different work item. Confirm the area or item before changing progress.</p>}</> : <span>This message has no saved drawing-area link.</span>}</div><a className="area-mapping-link" href={areaLink?.area ? `#drawing?area=${encodeURIComponent(areaLink.area.id)}` : '#drawing'} onClick={event=>{if(onOpenDrawing){event.preventDefault();onOpenDrawing(areaLink?.area?.id);}}}>View area map<ArrowRight size={13}/></a></div>
 
             {isVo ? <div className="wa-result wa-result-vo"><div className="wa-result-title"><Flag size={16} /><strong>{isNew ? 'Check whether this is extra work' : voCase?.status === 'approved' ? 'Extra work approved' : voCase?.status === 'rejected' ? 'Extra work rejected' : voCase?.status === 'pendingApproval' ? 'Awaiting approval' : voCase?.status === 'clarification' ? 'More information needed' : 'Saved for extra-work review'}</strong></div><p>{isNew ? 'Save this message and photo for the QS to check against the contract.' : 'Open extra-work review to check the scope, value and approval.'}</p><div className="wa-result-foot">Progress unchanged <span>·</span> {voCase?.status === 'approved' ? `Approved value: ${project.contract.currency || 'SGD'} ${formatMoney(voCase.approvedValue)}` : voCase?.proposedValue != null ? `Proposed: ${project.contract.currency || 'SGD'} ${formatMoney(voCase.proposedValue)}` : 'Value unknown'} <span>·</span> {voCase?.status === 'approved' ? 'Approval recorded locally' : voCase?.status === 'rejected' ? 'Rejected in local review' : 'Not approved yet'}</div></div> : isUnclear ? <div className="wa-result wa-result-unclear"><div className="wa-result-title"><CircleAlert size={16} /><strong>Ask the worker to clarify</strong></div><p>{needsProgressClarification(report) && report.reviewReason ? report.reviewReason : selected.kind === 'clarification' ? 'Ask which work item is meant and the total percentage completed so far.' : 'Confirm the work item, total completed so far and date before updating progress.'}</p><div className="wa-result-foot">Current progress stays unchanged.</div>{(selected.status === 'clarification' || needsProgressClarification(report)) && <div className="wa-clarification-saved"><Check size={13} />Contact the worker outside this demo, then add a clearer cumulative update. No message was sent.</div>}</div> : <div className={`wa-result ${report?.status === 'verified' ? 'wa-result-verified' : ''}`}>

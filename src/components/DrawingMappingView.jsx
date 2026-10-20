@@ -3,6 +3,8 @@ import { ArrowRight, ArrowUpRight, Check, CircleAlert, FileText, Flag, ImageOff,
 import { DEMO_DRAWING_FILENAME, getDrawingAsset, getDrawingMapping, getProvidedDrawingSource, validateDrawingFile } from '../data/drawing-mapping.js';
 import { getAreaProgress, getDrawingProgress } from '../data/drawing-progress.js';
 import { getAreaVOFlags, getDrawingVOFlags } from '../data/drawing-vo.js';
+import { getSITAreaUpdate } from '../data/sit-area-update.js';
+import { getSITAreaDefinitions, getSITAreaExclusions } from '../data/sit-area-definitions.js';
 import { clearFormBuffer } from '../data/form-buffer.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { AreaEvidencePanel } from './AreaEvidencePanel.jsx';
@@ -26,7 +28,7 @@ const completionText = (value) => `${Math.round(value * 10) / 10}%`;
 const pinDetail = (progress) => !progress || !progress.totalCount ? 'Not linked' : progress.totalCount === 1 ? progress.items[0].completion === null ? 'Needs update' : completionText(progress.items[0].completion) : `${progress.completedCount}/${progress.totalCount} done`;
 const voDescription = (flags) => flags?.markerLabel ? `Extra work: ${flags.markerLabel}` : 'No active extra-work flags';
 
-export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onRemoveArea, onOpenProgress, onOpenEvidence, onOpenVO, onStartCompletionDemo, onPreviewFile }) {
+export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onAddContractAreas, onRemoveArea, onOpenProgress, onOpenContractItem, onOpenEvidence, onOpenVO, onStartCompletionDemo, onPreviewFile }) {
   const mapping = getDrawingMapping(project);
   const drawing = mapping.drawing;
   const areas = mapping.areas || [];
@@ -51,6 +53,8 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   const selected = selectedId === 'new' ? null : areas.find((area) => area.id === selectedId) || areas[0] || null;
   const providedSource = drawing?.inputKind === 'provided' ? getProvidedDrawingSource(project) : null;
   const suppliedReference = Boolean(providedSource && project.contract?.sourceKind === 'provided');
+  const contractAreaUpdate = getSITAreaUpdate(project);
+  const linkedItemCount = new Set(areas.flatMap((area) => area.workItemIds)).size;
   const permanentAsset = getDrawingAsset(project, drawing);
   const asset = permanentAsset || previewUrl || localPreviewUrl;
   const hasImage = drawing && drawing.kind !== 'pdf';
@@ -81,6 +85,14 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
     rememberAreaRoute(areaId);
     setSelectedId(areaId); setEditing(areaId === 'new'); setFeedback(null); setPlacing(false); setDraftPosition(null);
     if (window.matchMedia('(max-width: 1100px)').matches) setScrollTarget(areaId === 'new' ? 'editor' : 'status');
+  }
+  function addContractAreas() {
+    const result = onAddContractAreas?.();
+    if (!result) return;
+    setFeedback({ error: result.outcome === 'unavailable', message: result.outcome === 'updated'
+      ? `${result.itemCount} contract items linked in ${result.areaCount} added areas. Detailed positions need confirmation.`
+      : result.outcome === 'unchanged' ? 'The available contract area links are already saved.'
+        : result.error || 'These source area links are unavailable for this drawing.' });
   }
   function placeAt(position) {
     pinSetter.current?.(position);
@@ -136,6 +148,16 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
     {!drawing ? <section className="drawing-empty-state"><div className="drawing-empty-icon"><MapPin size={30} /></div><h2>Add a site drawing</h2><p>Use your drawing or the fictional demo plan, then choose which work belongs to each area.</p><div className="drawing-empty-actions"><Button className="primary" icon={Upload} onClick={() => setModal('upload')}>Upload drawing</Button><Button icon={FileText} onClick={() => install(sampleInput())} disabled={!onInstall}>Use demo drawing</Button></div><small>PDF, PNG, JPEG or WebP up to 15 MB. No drawing recognition or measurement is performed.</small></section> : <>
       <div className="drawing-file-bar"><FileText size={18} /><div><strong>{drawing.fileName}</strong><span>{drawing.kind === 'sample' ? 'Fictional demo plan · not to scale' : providedSource ? `${providedSource.label} · manually mapped` : 'Local drawing · manually mapped'} · {mappedCount} of {areas.length} areas linked</span></div><Badge tone={drawing.kind === 'sample' || providedSource ? 'blue' : 'slate'}>{drawing.kind === 'sample' ? 'Demo drawing' : providedSource ? suppliedReference ? 'Provided source' : 'Demo drawing' : 'Local file'}</Badge></div>
       {providedSource && <p className="drawing-viewer-note">{providedSource.note}</p>}
+      {contractAreaUpdate.available && <section className="drawing-contract-coverage" aria-label="S.I.T. contract area coverage">
+        <div><div><h2>Contract area links</h2><p><strong>{linkedItemCount} of {project.items.length} contract items</strong> linked across {areas.length} site areas.</p></div>{contractAreaUpdate.areaCount > 0 && onAddContractAreas && <Button icon={Plus} onClick={addContractAreas} disabled={showEditor}>Link remaining contract areas</Button>}</div>
+        <p>Names follow the source schedule. New areas are linked by name; their detailed positions need confirmation on a more detailed drawing.</p>
+        {contractAreaUpdate.areaCount > 0 && showEditor && <p>Save or leave the area form before adding the remaining source links.</p>}
+        <details><summary>Items without a default site area</summary><ul>{getSITAreaExclusions().map(({ itemId, reason }) => {
+          const item = project.items.find((entry) => entry.id === itemId);
+          return item ? <li key={itemId}><strong>{item.ref} · {item.description}</strong><span>{reason}</span></li> : null;
+        })}</ul></details>
+        {contractAreaUpdate.skipped.length > 0 && <details><summary>Links that need manual review</summary><ul>{contractAreaUpdate.skipped.map((entry, index) => <li key={`${entry.code}-${index}`}><strong>{entry.code} · {entry.itemIds.map((id) => project.items.find((item) => item.id === id)?.ref || id).join(' · ')}</strong><span>{entry.reason}</span></li>)}</ul></details>}
+      </section>}
       <div className="drawing-workspace">
         <section className="drawing-plan-panel" ref={viewerRef} aria-labelledby="drawing-plan-heading">
           <header className="drawing-panel-heading"><div><h2 id="drawing-plan-heading">Drawing</h2><p>{hasImage ? 'Select a pin or choose an area from the list.' : 'Link areas by name and PDF page.'}</p></div>{asset && <a className="button" href={asset} target="_blank" rel="noreferrer" aria-label="Open drawing in a new tab"><ArrowUpRight size={15} />Open drawing</a>}</header>
@@ -159,9 +181,10 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
           <div className="drawing-area-list" aria-label="Mapped site areas">{areas.length ? areas.map((area) => {
             const progress = areaProgress.get(area.id);
             const flags = areaVOFlags.get(area.id);
-            return <button type="button" key={area.id} className={`drawing-area-row${selected?.id === area.id && selectedId !== 'new' ? ' selected' : ''}`} aria-label={`Area ${area.code}: ${area.name}. ${basisLabel}: ${progress?.label || 'Not linked'}, ${pinDetail(progress)}. ${voDescription(flags)}`} aria-pressed={selected?.id === area.id && selectedId !== 'new'} onClick={() => chooseArea(area.id)}><span className="drawing-area-code">{area.code}<AreaVOMarker flags={flags} /></span><span className="drawing-area-copy"><strong>{area.name}</strong><small>{area.workItemIds.length ? `${area.workItemIds.length} linked work item${area.workItemIds.length === 1 ? '' : 's'} · ${pinDetail(progress)}` : 'Choose contract work items'}{drawing.kind === 'pdf' ? ` · Page ${area.page}` : !area.position ? ' · Pin not placed' : ''}</small></span><Badge tone={progress?.tone}>{progress?.label || 'Not linked'}</Badge></button>;
+            const references = area.workItemIds.map((id) => project.items?.find((item) => item.id === id)).filter(Boolean).map((item) => item.ref || item.id).join(' · ');
+            return <button type="button" key={area.id} className={`drawing-area-row${selected?.id === area.id && selectedId !== 'new' ? ' selected' : ''}`} aria-label={`Area ${area.code}: ${area.name}.${references ? ` Contract: ${references}.` : ''} ${basisLabel}: ${progress?.label || 'Not linked'}, ${pinDetail(progress)}. ${voDescription(flags)}`} aria-pressed={selected?.id === area.id && selectedId !== 'new'} onClick={() => chooseArea(area.id)}><span className="drawing-area-code">{area.code}<AreaVOMarker flags={flags} /></span><span className="drawing-area-copy"><strong>{area.name}</strong>{references && <small>Contract: {references}</small>}<small>{area.workItemIds.length ? `${area.workItemIds.length} linked work item${area.workItemIds.length === 1 ? '' : 's'} · ${pinDetail(progress)}` : 'Choose contract work items'}{drawing.kind === 'pdf' ? ` · Page ${area.page}` : !area.position ? ' · Pin not placed' : ''}</small></span><Badge tone={progress?.tone}>{progress?.label || 'Not linked'}</Badge></button>;
           }) : <p className="drawing-no-areas">No areas yet. Add the first area and choose its contract work.</p>}</div>
-          {showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} editorRef={editorRef} onCancel={() => { if (selectedId === 'new') setSelectedId(areas[0]?.id || 'new'); setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); }} /> : <><AreaProgressSummary area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setScrollTarget('editor'); }} onOpenProgress={onOpenProgress} /><AreaVOPanel key={`vo:${project.id}:${selected.id}`} area={selected} flags={selectedVOFlags} onOpenVO={onOpenVO} onOpenEvidence={onOpenEvidence} /><AreaEvidencePanel key={`${project.id}:${selected.id}`} project={project} area={selected} onOpenEvidence={onOpenEvidence} /></>}
+          {showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} editorRef={editorRef} onCancel={() => { if (selectedId === 'new') setSelectedId(areas[0]?.id || 'new'); setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); }} /> : <><AreaProgressSummary project={project} area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setScrollTarget('editor'); }} onOpenProgress={onOpenProgress} onOpenContractItem={onOpenContractItem} /><AreaVOPanel key={`vo:${project.id}:${selected.id}`} area={selected} flags={selectedVOFlags} onOpenVO={onOpenVO} onOpenEvidence={onOpenEvidence} /><AreaEvidencePanel key={`${project.id}:${selected.id}`} project={project} area={selected} onOpenEvidence={onOpenEvidence} /></>}
         </section>
       </div>
       {mapping.history?.length > 0 && <details className="drawing-history"><summary>Mapping history · {mapping.history.length} {mapping.history.length === 1 ? 'action' : 'actions'}</summary><ol>{mapping.history.map((entry, index) => <li key={entry.id || index}><strong>{actionLabel(entry.action)}{entry.area?.code || entry.previousArea?.code ? ` · ${entry.area?.code || entry.previousArea.code}` : ''}</strong>{entry.detail && <p>{entry.detail}</p>}{entry.date && <time dateTime={entry.date}>{formatTime(entry.date)}</time>}</li>)}</ol></details>}
@@ -180,13 +203,20 @@ function AreaVOMarker({ flags }) {
   return <span className={`drawing-vo-marker ${pendingCount ? 'amber' : 'green'}`} title={flags.markerLabel} aria-hidden="true">{pendingCount ? <Flag size={10} /> : <Check size={10} />}{pendingCount ? count : `VO ${count}`}</span>;
 }
 
-function AreaProgressSummary({ area, progress, basisLabel, summaryRef, onEdit, onOpenProgress }) {
+function AreaProgressSummary({ project, area, progress, basisLabel, summaryRef, onEdit, onOpenProgress, onOpenContractItem }) {
   if (!area || !progress) return null;
+  const sourceArea = project.contract?.sourceProfile === 'sit-loa-2021' && project.contract?.sourceKind === 'provided'
+    && getSITAreaDefinitions().some((definition) => definition.code === area.code);
   return <section className="drawing-area-progress" ref={summaryRef} aria-label={`Area ${area.code} completion`}>
     <div className="drawing-progress-heading"><div><h3>{area.code} · {area.name}</h3><p>{basisLabel} completion</p></div><Badge tone={progress.tone}>{progress.label}</Badge></div>
+    {sourceArea && !area.position && <p className="drawing-progress-help">Named contract area · exact position is not confirmed on the general site plan.</p>}
     {progress.totalCount ? <>
       <p className="drawing-progress-summary">{progress.summary}</p>
-      <ul className="drawing-progress-items">{progress.items.map((item) => <li key={item.id}><div><strong>{item.description}</strong><small>{item.id}</small>{item.reported !== item.verified && <small>Reported {item.reported === null ? 'Not recorded' : completionText(item.reported)} · Verified {item.verified === null ? 'Not recorded' : completionText(item.verified)}</small>}</div><span className={`drawing-item-completion status-${item.status}`}><strong>{item.completion === null ? '—' : completionText(item.completion)}</strong><small>{item.label}</small></span></li>)}</ul>
+      <ul className="drawing-progress-items">{progress.items.map((item) => {
+        const contractItem = project.items?.find((entry) => entry.id === item.id);
+        const reference = [contractItem?.ref, item.id, contractItem?.sourcePage ? `Source page ${contractItem.sourcePage}` : null].filter(Boolean).join(' · ');
+        return <li key={item.id}><div><strong>{contractItem?.description || item.description}</strong><small>{reference}</small>{sourceArea && item.id === 'WI-012' && contractItem?.pricingType === 'included' && <small>Included with B.1 platform work. Shared W3/W5 scope; its quantity is not split and no separate claim value is added.</small>}{item.reported !== item.verified && <small>Reported {item.reported === null ? 'Not recorded' : completionText(item.reported)} · Verified {item.verified === null ? 'Not recorded' : completionText(item.verified)}</small>}{onOpenContractItem && contractItem && <Button className="ghost drawing-contract-item-link" icon={FileText} onClick={() => onOpenContractItem(item.id)}>View contract item</Button>}</div><span className={`drawing-item-completion status-${item.status}`}><strong>{item.completion === null ? '—' : completionText(item.completion)}</strong><small>{item.label}</small></span></li>;
+      })}</ul>
       {progress.unknownCount > 0 && <p className="drawing-progress-help">{progress.unknownCount} work item{progress.unknownCount === 1 ? ' needs' : 's need'} a {basisLabel.toLowerCase()} completion update.</p>}
     </> : <p className="drawing-progress-help">Link contract work items to show their completion here.</p>}
     <p className="drawing-progress-help">This shows whole linked work items, not a measured percentage of this area.</p>

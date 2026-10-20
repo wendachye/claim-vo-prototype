@@ -32,6 +32,17 @@
 .wa-list-empty strong { color:#475569; font-size:14px; font-weight:500; }
 .wa-list-empty p { font-size:13px; }
 .wa-review-body { padding:18px; }
+.wa-contract-context { margin-bottom:18px; padding:14px; border:1px solid #dbe5f3; border-radius:8px; background:#f8faff; }
+.wa-contract-context > span { display:block; margin-bottom:8px; color:#64748b; font-size:12px; }
+.wa-contract-work { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; }
+.wa-contract-work + .wa-contract-work { margin-top:10px; }
+.wa-contract-work > div { flex:1 1 220px; min-width:0; }
+.wa-contract-work strong { display:block; color:#334155; font-size:13px; line-height:1.7; }
+.wa-contract-work small { display:block; margin-top:3px; color:#64748b; font-size:11px; }
+.wa-contract-context p { margin:8px 0 0; color:#64748b; font-size:12px; line-height:1.7; }
+.wa-contract-sample { margin-top:10px; border-top:1px solid #e2e8f0; }
+.wa-contract-sample > summary { padding-top:10px; color:#4265df; cursor:pointer; font-size:12px; }
+.wa-contract-sample pre { margin:10px 0 0; padding:12px; border:1px solid #e2e8f0; border-radius:6px; background:#fff; color:#334155; font-family:inherit; font-size:12px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 .wa-evidence-heading { display:flex; align-items:center; gap:9px; margin-bottom:12px; }
 .wa-worker-avatar { width:31px; height:31px; font-size:12px; background:#f1f5f9; color:#64748b; }
 .wa-evidence-heading > div:not(.avatar) { display:flex; flex:1; flex-direction:column; gap:3px; min-width:0; }

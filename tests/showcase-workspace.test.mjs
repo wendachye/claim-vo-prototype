@@ -32,7 +32,11 @@ test('a fresh visitor starts on the complete original S.I.T. showcase with other
   assert.equal(sit.items[0].rate, 13.5);
   assert.equal(sit.contract.reference, 'CCSC/SIT/SC/21.183');
   assert.equal(getDrawingAsset(sit), '/assets/site-plan.png');
-  assert.equal(getDrawingMapping(sit).areas.length, 4);
+  const areas = getDrawingMapping(sit).areas;
+  assert.equal(areas.length, 12);
+  assert.equal(new Set(areas.flatMap(area => area.workItemIds)).size, 13);
+  assert.equal(areas.filter(area => area.position !== null).length, 4);
+  assert.equal(areas.find(area => area.code === 'W3-ST36').position, null);
   assert.equal(sit.reports.length, 7);
   assert.equal(sit.whatsappMessages.length, 8);
   assert.ok(sit.reports.every((report) => report.demo && report.origin === 'simulated'));

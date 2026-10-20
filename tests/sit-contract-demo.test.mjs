@@ -77,7 +77,7 @@ test('creating a S.I.T. scenario leaves fictional campus seeds and existing brow
   assert.deepEqual(getSITContractSample(), sourceBefore);
 });
 
-test('original drawing references map four source rows with separate reported and verified observations', () => {
+test('original drawing references map named source scopes without inventing new pin positions', () => {
   const project = create();
   const mapping = getDrawingMapping(project);
   assert.equal(mapping.drawing.fileName, 'site-plan.png');
@@ -89,13 +89,55 @@ test('original drawing references map four source rows with separate reported an
     { code: 'W3-ST34', workItemIds: ['WI-002'], position: { x: .65, y: .87 } },
     { code: 'W5-ST51', workItemIds: ['WI-004'], position: { x: .58, y: .48 } },
     { code: 'W5-EAST', workItemIds: ['WI-005'], position: { x: .78, y: .51 } },
+    { code: 'W3-ST36', workItemIds: ['WI-003'], position: null },
+    { code: 'W5-NORTH', workItemIds: ['WI-006'], position: null },
+    { code: 'W5-ESCALATOR', workItemIds: ['WI-007'], position: null },
+    { code: 'W3-COLUMNS', workItemIds: ['WI-008'], position: null },
+    { code: 'W3-AMPH-A', workItemIds: ['WI-009', 'WI-012'], position: null },
+    { code: 'W5-AMPH-AB', workItemIds: ['WI-010', 'WI-012'], position: null },
+    { code: 'W3-LIFT-CORES', workItemIds: ['WI-011'], position: null },
+    { code: 'W3-TEMP-ACCESS', workItemIds: ['WI-013'], position: null },
   ]);
-  const status = basis => Object.fromEntries(getDrawingProgress(project, basis).map(area => [area.code, area.status]));
+  assert.equal(new Set(mapping.areas.flatMap(area => area.workItemIds)).size, 13);
+  for (const area of mapping.areas) {
+    const primaryItem = project.items.find(item => item.id === area.workItemIds[0]);
+    assert.equal(area.name, primaryItem.description);
+    assert.equal(area.page, 1);
+    assert.equal(area.projectId, project.id);
+    assert.equal(area.drawingId, mapping.drawing.id);
+  }
+  const status = basis => Object.fromEntries(getDrawingProgress(project, basis).slice(0, 4).map(area => [area.code, area.status]));
   assert.deepEqual(status('verified'), { 'W3-ST31': 'in-progress', 'W3-ST34': 'completed', 'W5-ST51': 'not-started', 'W5-EAST': 'not-started' });
   assert.deepEqual(status('reported'), { 'W3-ST31': 'in-progress', 'W3-ST34': 'completed', 'W5-ST51': 'in-progress', 'W5-EAST': 'not-started' });
   assert.equal(project.items[0].reported, 65);
   assert.equal(project.items[0].verified, 50);
   assert.equal(project.items.find(row => row.id === 'WI-004').verified, 0);
+  for (const area of getDrawingProgress(project).slice(4)) assert.equal(area.status, 'not-started');
+});
+
+test('shared included decking is linked to both platform scopes without splitting quantities or creating site evidence', () => {
+  const project = create();
+  const mapping = getDrawingMapping(project);
+  const decking = project.items.find(item => item.id === 'WI-012');
+  assert.deepEqual(mapping.areas.filter(area => area.workItemIds.includes(decking.id)).map(area => area.code), ['W3-AMPH-A', 'W5-AMPH-AB']);
+  assert.equal(decking.quantity, 1);
+  assert.equal(decking.rate, null);
+  assert.equal(decking.amount, null);
+  assert.equal(decking.pricingType, 'included');
+  const access = project.items.find(item => item.id === 'WI-013');
+  assert.equal(access.quantity, 4);
+  assert.equal(access.pricingType, 'included');
+  assert.equal(mapping.areas.filter(area => area.workItemIds.includes(access.id)).length, 1);
+  for (const area of mapping.areas.slice(4)) {
+    assert.equal(getAreaEvidence(project, area.id).entries.length, 0);
+    assert.equal(getAreaVOFlags(project, area.id).openCount, 0);
+  }
+  const excludedIds = ['WI-014', 'WI-015', 'WI-016', 'WI-017', 'WI-018'];
+  assert.ok(mapping.areas.every(area => area.workItemIds.every(id => !excludedIds.includes(id))));
+  assert.deepEqual(financialRows(project.items.filter(item => excludedIds.includes(item.id))), financialRows(source.initialItems.filter(item => excludedIds.includes(item.id))));
+  assert.equal(project.reports.length, 7);
+  assert.equal(project.whatsappMessages.length, 8);
+  assert.equal(project.claimDrafts[0].snapshot.totals.currentValue, 15894);
 });
 
 test('source-linked messages, photos and three VO decisions stay simulated and replay safely', () => {
@@ -113,6 +155,10 @@ test('source-linked messages, photos and three VO decisions stay simulated and r
     assert.equal(report.demo, true);
     assert.equal(report.origin, 'simulated');
     assert.ok(report.areaMapping.areaId.startsWith(`AREA-${project.id}-`));
+    const savedArea = getDrawingMapping(project).areas.find(area => area.id === report.areaMapping.areaId);
+    assert.ok(savedArea);
+    assert.ok(['W3-ST31', 'W3-ST34', 'W5-ST51', 'W5-EAST'].includes(savedArea.code));
+    assert.deepEqual(report.areaMapping.workItemIds, savedArea.workItemIds);
     const replay = processWhatsAppMessage(project, message.id);
     assert.equal(replay.outcome, 'duplicate');
     assert.deepEqual(replay.project, before);
@@ -133,6 +179,69 @@ test('source-linked messages, photos and three VO decisions stay simulated and r
   const result = processWhatsAppMessage(project, unclear.id);
   assert.equal(result.outcome, 'clarification');
   for (const field of ['items', 'reports', 'voReviews', 'claimDrafts']) assert.deepEqual(result.project[field], before[field]);
+});
+
+test('fresh S.I.T. progress messages name the exact source scope and stay paired with their original reports', () => {
+  const project = create('SIT-TEXT01');
+  const second = create('SIT-TEXT02');
+  for (const report of project.reports.filter((entry) => !entry.vo)) {
+    const item = project.sourceItems.find((entry) => entry.id === report.itemId);
+    const message = project.whatsappMessages.find((entry) => entry.id === report.sourceMessageId);
+    assert.ok(report.message.startsWith(`${project.code} | ${item.location} | ${report.area} | ${item.id}\n`));
+    assert.ok(report.message.includes(`CONTRACT=${item.ref} | ${item.description}`));
+    assert.ok(report.message.includes(`SCOPE=${item.subsection}`));
+    assert.ok(report.message.includes(`COMPLETE=${report.completion}% TOTAL`));
+    assert.match(report.message, /Simulated physical progress.*not actual site activity/);
+    assert.equal(message.text, report.message);
+    assert.equal(message.itemId, item.id);
+    assert.equal(message.area, report.area);
+    assert.equal(message.completion, report.completion);
+    assert.ok(!message.text.includes(second.code));
+    assert.ok(second.whatsappMessages.some((entry) => entry.id.endsWith(message.id.slice(project.id.length))
+      && entry.text.startsWith(`${second.code} |`)));
+  }
+  // The separate fictional campus factory keeps its original message format.
+  const campus = createProvidedContractDemo({ code: 'CAMPUS-TEXT01', name: 'Fictional campus' }, now);
+  for (const report of campus.reports.filter((entry) => !entry.vo)) {
+    assert.equal(report.message, `${campus.code} | ${report.location} | ${report.area} | ${report.itemId}\nCOMPLETE=${report.completion}% TOTAL\nFictional campus scenario progress; not actual site activity.`);
+  }
+  assert.ok(campus.whatsappMessages.every((message) => !message.text.includes('CONTRACT CONTEXT=')
+    && !message.text.includes('Possible source context')));
+});
+
+test('S.I.T. scope queries cite source rows and areas as context without inventing a progress match or entitlement', () => {
+  const project = create();
+  for (const [sequence, itemId] of [['005', 'WI-001'], ['007', 'WI-005'], ['008', 'WI-002']]) {
+    const message = project.whatsappMessages.find((entry) => entry.id.endsWith(`-WA-${sequence}`));
+    const report = project.reports.find((entry) => entry.sourceMessageId === message.id);
+    const item = project.sourceItems.find((entry) => entry.id === itemId);
+    const area = getDrawingMapping(project).areas.find((entry) => entry.workItemIds.includes(itemId));
+    assert.ok(message.text.includes(`CONTRACT CONTEXT=${item.ref} | ${item.description}`));
+    assert.ok(message.text.includes(`SCOPE=${item.subsection}`));
+    assert.ok(message.text.includes(`Area ${area.code}`));
+    assert.match(message.text, /source row is context only.*QS must confirm scope, instruction and any variation entitlement/);
+    assert.equal(message.itemId, null);
+    assert.equal(report.itemId, null);
+    assert.equal(message.completion, null);
+    assert.equal(report.vo, true);
+    assert.equal(report.message, message.text);
+  }
+  const unclear = project.whatsappMessages.find((entry) => entry.kind === 'clarification');
+  assert.equal(unclear.itemId, null);
+  assert.equal(unclear.completionBasis, 'unclear');
+  assert.equal(unclear.area, 'W5');
+  assert.match(unclear.text, /Possible source context \(not matched\)/);
+  for (const itemId of ['WI-004', 'WI-005']) {
+    const item = project.sourceItems.find((entry) => entry.id === itemId);
+    const area = getDrawingMapping(project).areas.find((entry) => entry.workItemIds.includes(itemId));
+    assert.ok(unclear.text.includes(`${item.ref} | ${item.description}`));
+    assert.ok(unclear.text.includes(`Area ${area.code}`));
+  }
+  assert.ok(!unclear.text.includes('COMPLETE=10% TOTAL'));
+  assert.equal(getVOCases(project).find((entry) => entry.status === 'flagged').approvedValue, null);
+  assert.deepEqual(project.claimDrafts[0].snapshot.totals, {
+    workCurrentValue: 14094, voCurrentValue: 1800, previousValue: 0, cumulativeValue: 15894, currentValue: 15894,
+  });
 });
 
 test('the S.I.T. draft uses explicit mock QS quantities at original rates and freezes the saved evidence', () => {
@@ -200,4 +309,21 @@ test('reload/reset preserve the new source scenario and never mix its records wi
   assert.equal(result.drawingMapping, undefined);
   assert.deepEqual(result.contract, project.contract);
   assert.deepEqual(reset.projects.filter(entry => entry.id !== project.id), saved.projects.filter(entry => entry.id !== project.id));
+});
+
+test('loading a saved S.I.T. project retains its earlier evidence and claim snapshots after fresh scenario text changes', () => {
+  const project = create('SIT-SAVED01');
+  const report = project.reports.find((entry) => !entry.vo);
+  const message = project.whatsappMessages.find((entry) => entry.id === report.sourceMessageId);
+  report.message = 'Earlier browser evidence retained exactly.';
+  message.text = report.message;
+  project.claimDrafts[0].snapshot.workRows[0].evidence.message = 'Earlier frozen claim evidence retained exactly.';
+  const before = structuredClone(project);
+  const workspace = { ...seedWorkspace(), activeProjectId: project.id, projects: [project] };
+  const entries = new Map([[WORKSPACE_STORE, JSON.stringify(workspace)]]);
+  create('SIT-FRESH01');
+  const loaded = loadWorkspace({ getItem: (key) => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value) });
+  assert.deepEqual(loaded.projects[0].reports, before.reports);
+  assert.deepEqual(loaded.projects[0].whatsappMessages, before.whatsappMessages);
+  assert.deepEqual(loaded.projects[0].claimDrafts, before.claimDrafts);
 });

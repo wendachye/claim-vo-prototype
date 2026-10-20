@@ -4,6 +4,7 @@ import { processWhatsAppMessage } from './whatsapp.js';
 import { updateVOReview } from './vo.js';
 import { saveClaimDraft } from './claims.js';
 import { contract as sitContract, initialItems as sitItems } from './sit-contract-source.js';
+import { getSITAreaDefinitions } from './sit-area-definitions.js';
 
 const clone = (value) => structuredClone(value);
 const photoAlt = 'Generated construction illustration used as a demo site photo; not project evidence.';
@@ -55,10 +56,7 @@ const sitProfile = {
     id: 'provided-site-plan', asset: '/assets/site-plan.png', fileName: 'site-plan.png', mimeType: 'image/png',
     label: 'Provided site plan', note: 'Source drawing; area pins are illustrative manual links, not surveyed positions.',
   },
-  areas: [
-    ['W3-ST31', 'WI-001', { x: 0.5, y: 0.83 }], ['W3-ST34', 'WI-002', { x: 0.65, y: 0.87 }],
-    ['W5-ST51', 'WI-004', { x: 0.58, y: 0.48 }], ['W5-EAST', 'WI-005', { x: 0.78, y: 0.51 }],
-  ],
+  areas: getSITAreaDefinitions().map(({ code, itemIds, position }) => [code, itemIds[0], position, itemIds]),
   observationNote: 'Simulated physical progress for the provided-contract walkthrough; not actual site activity.',
   queryNote: 'Scope query only. Check the original scope and safety/staged-adjustment provisions in clauses 3(c)–(d); instruction and price remain unknown.',
   changedScopeNote: 'Fictional changed-scope example for recorded-approval review. This is not an actual instruction or entitlement under the provided contract.',
@@ -130,11 +128,17 @@ function createContractScenario(values, now, sample, profile) {
   project = installed.project;
   const areaRows = profile.areas;
   const areaCode = (itemId) => areaRows.find(([, linkedId]) => itemId === linkedId)[0];
-  for (const [code, itemId, position] of areaRows) {
+  const usesSITSource = sample.contract.sourceKind === 'provided' && sample.contract.sourceProfile === sitContract.sourceProfile;
+  const contractContext = (itemId, label = 'CONTRACT') => {
+    if (!usesSITSource) return '';
+    const item = cleanSource.find((entry) => entry.id === itemId);
+    return `\n${label}=${item.ref} | ${item.description}\nSCOPE=${item.subsection}`;
+  };
+  for (const [code, itemId, position, workItemIds = [itemId]] of areaRows) {
     const item = project.items.find((entry) => entry.id === itemId);
     const saved = saveAreaMapping(project, {
       drawingId: getDrawingMapping(project).drawing.id, code, name: item.description,
-      page: 1, position, workItemIds: [itemId],
+      page: 1, position, workItemIds,
     }, baselineAt);
     if (saved.outcome !== 'updated') throw new Error('A contract scenario area could not be linked.');
     project = saved.project;
@@ -151,7 +155,7 @@ function createContractScenario(values, now, sample, profile) {
       itemId, sourceMessageId: `${project.id}-CASE-WA-${sequence}`, channel: 'whatsapp-mock',
       area: `Area ${areaCode}`, areaMapping: snapshotMappedArea(area), location: item.location,
       sender: 'Scaffold worker (demo)', date: at(minutesAgo), completion, completionBasis: 'cumulative', status,
-      message: `${project.code} | ${item.location} | Area ${areaCode} | ${itemId}\nCOMPLETE=${completion}% TOTAL\n${profile.observationNote}`,
+      message: `${project.code} | ${item.location} | Area ${areaCode} | ${itemId}${contractContext(itemId)}\nCOMPLETE=${completion}% TOTAL\n${profile.observationNote}`,
       photo: '/assets/demo-scaffold.jpg', photoAlt, demo: true, origin: 'simulated', vo: false,
       note: 'Simulated physical observation only. Financial entitlement and QS assessed quantities are separate.',
       ...(status === 'verified' ? { approvedCompletion: completion, verifiedBy: 'Scaffold supervisor (demo)', verifiedAt: at(verifiedMinutesAgo) } : {}),
@@ -169,11 +173,11 @@ function createContractScenario(values, now, sample, profile) {
     projectId: project.id, projectCode: project.code, sender: 'Scaffold worker (demo)', senderRole: 'Site worker · demo',
     photoAlt, processingNote: 'Prefilled simulated scenario. No live WhatsApp or AI processing is connected.',
   };
-  const extraMessage = (sequence, areaCode, location, minutesAgo, text, processingNote) => ({
+  const extraMessage = (sequence, areaCode, location, minutesAgo, text, processingNote, contextItemId) => ({
     ...baseMessage, id: `${project.id}-CASE-WA-${sequence}`, kind: 'vo', status: 'new', itemId: null,
     area: `Area ${areaCode}`, location, date: at(minutesAgo), completion: null, completionBasis: 'unclear',
     photo: '/assets/demo-platform.jpg',
-    text: `${project.code} | ${location} | Area ${areaCode}\n${text}\nSimulated scenario message; generated demo photo attached. Not actual site activity.`,
+    text: `${project.code} | ${location} | Area ${areaCode}${contractContext(contextItemId, 'CONTRACT CONTEXT')}\n${text}${usesSITSource ? '\nThe source row is context only. QS must confirm scope, instruction and any variation entitlement; no contract item is automatically matched.' : ''}\nSimulated scenario message; generated demo photo attached. Not actual site activity.`,
     processingNote,
   });
   project.whatsappMessages = [
@@ -184,19 +188,19 @@ function createContractScenario(values, now, sample, profile) {
     })),
     extraMessage('005', areaCode('WI-001'), 'W3', 5,
       `A supervisor asked for an additional access platform. Please check the instruction and whether this is included in the existing scaffold scope before pricing.${sample.contract.sourceKind === 'provided' ? ' Demo QS scope check: compare clauses 3(c)–(d) before treating safety or staged adjustments as extra work.' : ''}`,
-      profile.queryNote),
+      profile.queryNote, 'WI-001'),
     {
       ...baseMessage, id: `${project.id}-CASE-WA-006`, kind: 'clarification', status: 'new', itemId: null,
       area: 'W5', location: 'W5', date: at(3), completion: 10, completionBasis: 'unclear',
-      photo: '/assets/demo-scaffold.jpg', text: `${project.code} | W5 another 10%.\nSimulated unclear message; confirm the work item, mapped area and cumulative total.`,
+      photo: '/assets/demo-scaffold.jpg', text: `${project.code} | W5 another 10%.${usesSITSource ? `\nPossible source context (not matched):${contractContext('WI-004', 'OPTION 1')} | Area ${areaCode('WI-004')}${contractContext('WI-005', 'OPTION 2')} | Area ${areaCode('WI-005')}` : ''}\nSimulated unclear message; confirm the work item, mapped area and cumulative total.`,
       processingNote: 'Several W5 items exist and “another 10%” is not a cumulative total. Ask for the item and total before changing progress.',
     },
     extraMessage('007', areaCode('WI-005'), 'W5', 35,
       'DEMO ONLY: a separate instruction adds temporary access to a new off-schedule work face. The demo QS will assess this hypothetical changed scope separately.',
-      profile.changedScopeNote),
+      profile.changedScopeNote, 'WI-005'),
     extraMessage('008', areaCode('WI-002'), 'W3', 30,
       'Please check if this routine scaffold safety adjustment can be claimed as extra work.',
-      profile.includedScopeNote),
+      profile.includedScopeNote, 'WI-002'),
   ];
   project.history = [{
     id: `${project.id}-CASE-CREATED`, action: profile.historyAction, date: at(0), actor: 'Alex Tan · Demo reviewer',

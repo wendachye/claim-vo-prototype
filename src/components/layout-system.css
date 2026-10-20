@@ -71,6 +71,9 @@
 .contract-review-page .editor-body { padding:16px; }
 .contract-review-page .editor-body > .notice:first-child { margin-top:0; }
 .contract-review-page .editor-footer { flex:0 0 auto; margin:0; padding:12px 16px; }
+.contract-site-message-link { display:inline-flex; align-items:center; gap:5px; margin-top:5px; padding:0; border:0; background:transparent; color:#4265df; font-size:12px; line-height:1.7; text-align:left; cursor:pointer; }
+.contract-site-message-link:hover { text-decoration:underline; }
+.contract-site-message-link:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
 @media screen and (max-width:1050px) {
   .contract-review-page .review-layout { height:auto; min-height:0; }
   .contract-review-page .review-layout .source-preview { height:560px; min-height:0; }

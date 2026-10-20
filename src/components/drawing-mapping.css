@@ -11,6 +11,17 @@
 .drawing-file-bar strong { display:block; overflow-wrap:anywhere; font-size:13px; font-weight:550; }
 .drawing-file-bar span:not(.badge) { display:block; margin-top:4px; color:#64748b; font-size:12px; line-height:1.6; }
 .drawing-workspace { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(360px,1fr); align-items:start; gap:20px; }
+.drawing-contract-coverage { margin:0 0 20px; padding:16px 18px; border:1px solid var(--border); border-radius:9px; background:#fff; }
+.drawing-contract-coverage > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+.drawing-contract-coverage h2 { margin:0; color:#334155; font-size:14px; font-weight:600; }
+.drawing-contract-coverage p { margin:6px 0 0; color:#64748b; font-size:12px; line-height:1.8; }
+.drawing-contract-coverage p strong { color:#475569; font-weight:550; }
+.drawing-contract-coverage details { margin-top:12px; color:#64748b; font-size:12px; line-height:1.7; }
+.drawing-contract-coverage summary { cursor:pointer; }
+.drawing-contract-coverage ul { margin:12px 0 0; padding-left:18px; }
+.drawing-contract-coverage li { margin-top:9px; }
+.drawing-contract-coverage li strong, .drawing-contract-coverage li span { display:block; }
+.drawing-contract-coverage li strong { color:#475569; font-weight:500; }
 .drawing-plan-panel, .drawing-area-panel { min-width:0; overflow:hidden; border:1px solid var(--border); border-radius:10px; background:#fff; scroll-margin-top:76px; }
 .drawing-panel-heading { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:18px; border-bottom:1px solid var(--border); }
 .drawing-panel-heading h2 { margin:0; color:#1e293b; font-size:15px; font-weight:600; }
@@ -102,8 +113,9 @@
 .drawing-progress-items { margin:0; padding:0; list-style:none; }
 .drawing-progress-items li { display:flex; align-items:flex-start; gap:12px; padding:13px 0; border-top:1px solid #eef1f5; }
 .drawing-progress-items li > div { min-width:0; flex:1; }
-.drawing-progress-items li strong { display:block; font-size:12px; font-weight:500; line-height:1.7; }
+.drawing-progress-items li strong { display:block; overflow-wrap:anywhere; font-size:12px; font-weight:500; line-height:1.7; }
 .drawing-progress-items li small { display:block; margin-top:3px; color:#64748b; font-size:11px; line-height:1.6; }
+.drawing-contract-item-link { margin-top:8px; }
 .drawing-item-completion { flex-shrink:0; min-width:72px; text-align:right; }
 .drawing-item-completion strong { color:#475569; }
 .drawing-item-completion.status-completed strong { color:#24765e; }
