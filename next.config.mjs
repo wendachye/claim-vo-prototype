@@ -7,6 +7,7 @@ const nextConfig = {
     distDir: '.next-sites',
   } : {}),
   devIndicators: false,
+  agentRules: false,
 };
 
 export default nextConfig;

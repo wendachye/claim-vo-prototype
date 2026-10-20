@@ -24,4 +24,6 @@ Flagged extra work shares VO review records across modules. Track Flagged, Needs
 
 Monthly claim preparation requires explicit QS-assessed quantities/values and checked prior claimed values. Respect the monthly cutoff, distinguish undated seed progress, exclude unapproved VOs and unsupported pricing types, and retain immutable draft revisions. Prepared drafts never become previous claimed values. Changed sources require a new revision before preparation.
 
+Claim preview and CSV/PDF exports must use the saved revision, including financial values and evidence. Capture project/contract details on new revisions; label legacy metadata fallback clearly. Keep unknown, zero and negative values distinct, neutralise spreadsheet formulas, and guard foreign project/draft IDs. Exporting must not change claim status, progress or previous claimed values. Use print styles for PDF and run `npm run test:claim-pack` after changes. Keep `agentRules: false` so Next.js does not overwrite these instructions.
+
 All approvals and prepared claims are local demos; they submit nothing and certify no payment. Backend, live WhatsApp, AI extraction and real approval permissions remain future work. Run the relevant state tests and production build after changes.

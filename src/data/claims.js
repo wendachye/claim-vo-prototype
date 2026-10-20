@@ -1,4 +1,5 @@
 import { getVOCases } from './vo.js';
+import { captureClaimProjectDetails } from './claim-pack.js';
 
 // Preparation only: these records never certify, submit or pay a claim.
 const clone = (value) => structuredClone(value);
@@ -202,13 +203,16 @@ export function saveClaimDraft(project, period, assessment = {}) {
   if (!validPeriod(period)) return { project, outcome: 'invalid', error: 'Choose a valid claim month.' };
   if (snapshot.validationErrors.length) return { project, outcome: 'invalid', error: snapshot.validationErrors.join(' ') };
   const drafts = normalizeClaimDrafts(project);
+  const projectDetails = captureClaimProjectDetails(project);
   const previous = drafts.filter((entry) => entry.period === period).sort((a, b) => b.revision - a.revision)[0];
-  if (previous && JSON.stringify(previous.snapshot) === JSON.stringify(snapshot)) return { project, outcome: 'unchanged', draft: clone(previous) };
+  if (previous && JSON.stringify(previous.snapshot) === JSON.stringify(snapshot)
+    && JSON.stringify(previous.projectDetails) === JSON.stringify(projectDetails)) return { project, outcome: 'unchanged', draft: clone(previous) };
   const revision = (previous?.revision || 0) + 1;
   const date = new Date().toISOString();
   const draft = {
     id: `CLAIM-${project.id}-${period}-R${revision}`, projectId: project.id, period, revision,
     status: 'draft', createdAt: date, assessment: clone(snapshot.assessment), snapshot: clone(snapshot),
+    projectDetails,
   };
   return { outcome: 'updated', draft: clone(draft), project: {
     ...project, claimDrafts: [...drafts, draft],

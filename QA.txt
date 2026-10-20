@@ -8,7 +8,7 @@ Publication copy
 - No credentials, environment files, browser state, dependency folders or built artifacts are part of the publication source.
 
 Validation
-- Production build passed. All 30 checks passed: 8 project-state, 10 WhatsApp-state, 8 VO-state and 4 hosting checks.
+- All 40 current state and export checks passed: 8 project-state, 10 WhatsApp-state, 8 VO-state, 8 claim-state and 6 claim-pack checks. The 4 hosting checks passed during the Next.js migration.
 - These checks validate a local frontend prototype, not production readiness, legal entitlement or payment certification.
 
 Manual demo
@@ -16,3 +16,12 @@ Manual demo
 - Process a mock progress photo and review cumulative reported versus verified percentages.
 - Process extra work, assess the VO, record a fictional approval or rejection and inspect its history.
 - Switch projects to confirm each workspace remains independent.
+
+Claim preview and export verification
+- All 40 project, WhatsApp, VO, claim and claim-pack state checks passed.
+- Production build passed before the final print CSS repair. The final repair was validated through Chrome PDF output.
+- Regular Chrome saved a two-page A4 landscape PDF. Both rendered pages were inspected: no clipped content or blank pages.
+- Actual CSV download retained 16 columns, frozen values and evidence references.
+- Project switching guards foreign drafts; returning to saved drafts, reload, frozen revisions and captured metadata were checked.
+- The in-app browser could not open a print window. PDF output was verified through regular Chrome.
+- Final print CSS is identical to the validated live implementation; responsive layout rules apply to screen only.
