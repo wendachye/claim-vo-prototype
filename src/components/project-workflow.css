@@ -7,6 +7,17 @@
 .workflow-link-arrow { position:absolute; right:-6px; z-index:1; color:#cbd5e1; }
 .project-overview { max-width:1180px; margin:0 auto; }
 .project-overview .page-description { font-size:13px; }
+.contract-scenario-guide { margin:0 0 24px; padding:20px; border:1px solid #dfe6ef; border-radius:10px; background:#fff; }
+.contract-scenario-heading { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.contract-scenario-heading h2 { color:#334155; font-size:14px; font-weight:600; }
+.contract-scenario-guide p, .contract-scenario-guide li { color:#64748b; font-size:12px; line-height:1.8; }
+.contract-scenario-guide p { margin:10px 0 14px; }
+.contract-scenario-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.contract-scenario-guide details { margin-top:16px; border-top:1px solid #edf2f7; padding-top:14px; }
+.contract-scenario-guide summary { color:#475569; font-size:12px; cursor:pointer; }
+.contract-scenario-guide ol { padding-left:20px; margin:12px 0 0; }
+.contract-scenario-guide li + li { margin-top:8px; }
+.contract-scenario-guide li strong { color:#334155; }
 .next-task { padding:25px 28px; border:1px solid #bfdbfe; border-radius:12px; background:#f4f8ff; margin:2px 0 30px; }
 .next-task-heading { display:flex; align-items:center; gap:8px; }
 .next-task-heading h2 { color:#1e40af; font-size:12px; font-weight:600; }

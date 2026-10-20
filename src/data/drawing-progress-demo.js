@@ -1,4 +1,6 @@
 import { createDemoProject } from './demo-project.js';
+import { processWhatsAppMessage } from './whatsapp.js';
+import { updateVOReview } from './vo.js';
 import { DEMO_DRAWING_FILENAME, getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea } from './drawing-mapping.js';
 
 const clone = (value) => structuredClone(value);
@@ -94,6 +96,20 @@ export function createDrawingProgressDemo(workspace, now = new Date()) {
       text: `${project.code} | Block B | Area B1 done 50%.\nFictional showcase message; demo photo attached.`,
       processingNote: 'Work item and completion basis are unclear. Ask for the item reference and total completion before changing progress.',
     },
+    {
+      ...messageBase, id: `${project.id}-MAP-WA-007`, kind: 'vo', status: 'new',
+      itemId: null, area: 'Area B2', location: 'Block B', completion: null, completionBasis: 'unclear',
+      sender: 'Warehouse worker (demo)', date: at(30), photo: '/assets/demo-platform.jpg',
+      text: `${project.code} | Block B | Area B2\nSupervisor requested additional loading-bay protection beyond the existing schedule. Please review the instruction.\nFictional showcase message; demo photo attached.`,
+      processingNote: 'Fictional additional work for demonstrating a locally recorded demo approval.',
+    },
+    {
+      ...messageBase, id: `${project.id}-MAP-WA-008`, kind: 'vo', status: 'new',
+      itemId: null, area: 'Area A1', location: 'Block A', completion: null, completionBasis: 'unclear',
+      sender: 'Warehouse worker (demo)', date: at(35), photo: '/assets/demo-scaffold.jpg',
+      text: `${project.code} | Block A | Area A1\nPlease check whether the final cladding touch-up is extra work or included in the contract.\nFictional showcase message; demo photo attached.`,
+      processingNote: 'Fictional scope query for demonstrating a rejected extra-work review.',
+    },
   ];
   project.voReviews = [];
   project.claimDrafts = [];
@@ -102,10 +118,57 @@ export function createDrawingProgressDemo(workspace, now = new Date()) {
     detail: 'Fictional plan with linked work items, a confirmed mock baseline and seeded progress. Reported and verified totals are separate.',
     date: new Date(time).toISOString(), actor: 'Alex Tan · Demo reviewer',
   }];
+  // Use the same validation/transitions as the UI. Only these new fictional
+  // event timestamps/IDs are made deterministic for the supplied showcase date.
+  const processDemoVO = (sequence, minutesAgo) => {
+    const messageId = `${project.id}-MAP-WA-${sequence}`;
+    const previousHistory = new Set(project.history.map((entry) => entry.id));
+    const result = processWhatsAppMessage(project, messageId);
+    if (result.outcome !== 'processed') return null;
+    project = {
+      ...result.project,
+      whatsappMessages: result.project.whatsappMessages.map((message) => message.id === messageId ? { ...message, processedAt: at(minutesAgo) } : message),
+      history: result.project.history.map((entry) => previousHistory.has(entry.id) ? entry : { ...entry, date: at(minutesAgo) }),
+    };
+    return result.reportId;
+  };
+  const reviewDemoVO = (caseId, action, values, minutesAgo) => {
+    const previousHistory = new Set(project.history.map((entry) => entry.id));
+    const result = updateVOReview(project, caseId, action, values);
+    if (result.outcome !== 'updated') return false;
+    const date = at(minutesAgo), eventId = `${caseId}-${action}-DEMO`;
+    project = {
+      ...result.project,
+      voReviews: result.project.voReviews.map((review) => review.id !== caseId ? review : {
+        ...review, updatedAt: date,
+        history: review.history.map((event, eventIndex) => eventIndex === review.history.length - 1 ? { ...event, id: eventId, date } : event),
+      }),
+      history: result.project.history.map((entry) => previousHistory.has(entry.id) ? entry : { ...entry, id: eventId, date }),
+    };
+    return true;
+  };
+  const flaggedId = processDemoVO('005', 4);
+  const approvedId = processDemoVO('007', 29);
+  const rejectedId = processDemoVO('008', 34);
+  if (!flaggedId || !approvedId || !rejectedId) return invalid('The fictional extra-work showcase could not be created.');
+  if (!reviewDemoVO(approvedId, 'submit', {
+    title: 'Additional loading-bay protection (demo)',
+    scopeAssessment: 'Fictional QS assessment: additional protection is outside the existing loading-bay installation scope.',
+    instructionReference: `${project.code}-DEMO-INSTR-007`, proposedValue: 2500,
+    relatedItemId: 'WI-004', reviewNote: 'Fictional QS review for the prototype. No instruction was submitted externally.',
+  }, 25) || !reviewDemoVO(approvedId, 'approve', {
+    approvedValue: 2500, approvalReference: `${project.code}-DEMO-APPROVAL-007`,
+    approver: 'Fictional demo approver', reviewNote: 'Locally recorded demonstration approval only. No payment or claim was created.',
+  }, 20) || !reviewDemoVO(rejectedId, 'reject', {
+    title: 'Final cladding touch-up (demo)', relatedItemId: 'WI-001',
+    scopeAssessment: 'Fictional QS assessment: this touch-up is already included in the existing cladding scope.',
+    reviewNote: 'Demo rejection: this work is included in the contract and is not an additional variation.',
+  }, 30)) return invalid('The fictional extra-work review states could not be created.');
+  project.history.sort((first, second) => Date.parse(second.date) - Date.parse(first.date));
   project.drawingProgressDemo = true;
   project.contract = {
     ...project.contract,
-    sampleNote: 'Fictional drawing showcase with a confirmed mock work list and seeded progress.',
+    sampleNote: 'Fictional drawing showcase with a confirmed mock work list, seeded progress and flagged, approved and rejected extra-work examples.',
     demoNotice: 'Fully fictional drawing and progress showcase. No real site verification, claim approval or live service is connected.',
   };
   project.seed = clone(Object.fromEntries([

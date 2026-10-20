@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   DEMO_AREAS, DEMO_DRAWING_ASSET, DEMO_DRAWING_FILENAME, MAX_DRAWING_FILE_SIZE,
-  getDrawingMapping, installDrawing, saveAreaMapping, removeMappedArea,
+  getDrawingMapping, getDrawingAsset, getProvidedDrawingSource, installDrawing, saveAreaMapping, removeMappedArea,
   getAreasForItem, getAreaForMessage, getAreaLinkStatus, snapshotMappedArea, validateDrawingFile,
 } from '../src/data/drawing-mapping.js';
 import { seedWorkspace, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
@@ -220,4 +220,101 @@ test('report area snapshots whitelist saved mapping fields and share no mutable 
   assert.deepEqual(source.workItemIds, ['WI-001']);
   assert.equal(snapshotMappedArea(null), null);
   assert.equal(snapshotMappedArea({}), null);
+});
+
+
+const providedProject = () => {
+  const value = project();
+  value.contract = { ...value.contract, sourceKind: 'provided', drawingSource: {
+    id: 'provided-site-plan', asset: '/assets/site-plan.png', fileName: 'site-plan.png', mimeType: 'image/png',
+    label: 'Provided site plan', note: 'Source drawing; area pins are illustrative manual links, not surveyed positions.',
+  } };
+  return value;
+};
+
+test('a bundled provided drawing round-trips without file bytes or session URLs and starts without fictional areas', () => {
+  const value = providedProject();
+  const before = structuredClone(value);
+  const result = installDrawing(value, { inputKind: 'provided', url: 'blob:ignored', file: { bytes: 'ignored' }, fileSize: 99 }, now);
+  assert.equal(result.outcome, 'updated');
+  assert.equal(result.drawing.kind, 'image');
+  assert.equal(result.drawing.inputKind, 'provided');
+  assert.equal(result.drawing.sourceId, 'provided-site-plan');
+  assert.equal(result.drawing.fileName, 'site-plan.png');
+  assert.equal(result.drawing.fileSize, null);
+  assert.equal('url' in result.drawing, false);
+  assert.equal('asset' in result.drawing, false);
+  assert.equal('file' in result.drawing, false);
+  assert.deepEqual(result.project.drawingMapping.areas, []);
+  assert.deepEqual(value, before);
+  const saved = saveAreaMapping(result.project, {
+    areaId: '', drawingId: result.drawing.id, code: 'W3-A', name: 'W3 manually linked area',
+    page: 1, position: { x: .24, y: .35 }, workItemIds: ['WI-001'],
+  }, now);
+  assert.equal(saved.outcome, 'updated');
+  const workspace = seedWorkspace();
+  workspace.projects[1] = saved.project;
+  const restored = loadWorkspace({ getItem: (key) => key === WORKSPACE_STORE ? JSON.stringify(workspace) : null }).projects[1];
+  assert.deepEqual(getDrawingMapping(restored), saved.project.drawingMapping);
+  assert.equal(getDrawingAsset(restored), '/assets/site-plan.png');
+  assert.equal(getProvidedDrawingSource(restored).label, 'Provided site plan');
+  const source = getProvidedDrawingSource(restored); source.asset = '/assets/other.png';
+  assert.equal(getProvidedDrawingSource(restored).asset, '/assets/site-plan.png');
+  assert.deepEqual(restored.items, before.items);
+  assert.deepEqual(restored.reports, before.reports);
+  assert.deepEqual(restored.claimDrafts, before.claimDrafts);
+  assert.equal(getDrawingAsset(withDrawing()), DEMO_DRAWING_ASSET);
+  assert.equal(getDrawingAsset(installDrawing(value, image, now).project), null);
+});
+
+test('provided drawing assets require a matching project contract descriptor and safe local image path', () => {
+  const value = providedProject();
+  for (const patch of [
+    { asset: 'https://example.com/site-plan.png' }, { asset: '//example.com/site-plan.png' },
+    { asset: '/assets/../site-plan.png' }, { asset: '/assets/site-plan.png?token=x' },
+    { asset: '/other/site-plan.png' }, { asset: '/assets/site-plan.svg', fileName: 'site-plan.svg', mimeType: 'image/svg+xml' },
+    { fileName: 'different.png' }, { mimeType: 'application/pdf' }, { id: '' },
+  ]) {
+    const malformed = { ...value, contract: { ...value.contract, drawingSource: { ...value.contract.drawingSource, ...patch } } };
+    assert.equal(getProvidedDrawingSource(malformed), null, JSON.stringify(patch));
+    assert.equal(installDrawing(malformed, { inputKind: 'provided' }, now).outcome, 'invalid');
+  }
+  for (const contract of [{ ...value.contract, sourceKind: 'illustrative' }, { ...value.contract, drawingSource: null }]) {
+    assert.equal(installDrawing({ ...value, contract }, { inputKind: 'provided' }, now).outcome, 'invalid');
+  }
+  assert.equal(installDrawing(value, { inputKind: 'provided', sourceId: 'foreign-source' }, now).outcome, 'invalid');
+  const installed = installDrawing(value, { inputKind: 'provided' }, now).project;
+  for (const patch of [{ projectId: 'OTHER' }, { sourceId: 'OTHER' }, { fileName: 'other.png' }, { mimeType: 'image/jpeg' }, { fileSize: 12 }, { kind: 'sample' }]) {
+    const malformed = { ...installed, drawingMapping: { ...installed.drawingMapping, drawing: { ...installed.drawingMapping.drawing, ...patch } } };
+    assert.equal(getDrawingMapping(malformed).drawing, null, JSON.stringify(patch));
+    assert.equal(getDrawingAsset(malformed), null, JSON.stringify(patch));
+  }
+  const foreign = { ...installed, id: 'OTHER' };
+  assert.equal(getDrawingAsset(foreign, installed.drawingMapping.drawing), null);
+  assert.equal(getDrawingMapping(foreign).drawing, null);
+});
+
+test('replacing a provided drawing retains named links and evidence while requiring pins to be placed again', () => {
+  const value = installDrawing(providedProject(), { inputKind: 'provided' }, now).project;
+  const saved = saveAreaMapping(value, {
+    areaId: '', drawingId: value.drawingMapping.drawing.id, code: 'W5-E', name: 'W5 east elevation',
+    page: 2, position: { x: .2, y: .6 }, workItemIds: ['WI-001', 'WI-002'],
+  }, now).project;
+  const before = structuredClone(saved);
+  const replaced = installDrawing(saved, image, now).project;
+  const area = getDrawingMapping(replaced).areas[0];
+  assert.equal(area.id, saved.drawingMapping.areas[0].id);
+  assert.equal(area.code, 'W5-E');
+  assert.deepEqual(area.workItemIds, ['WI-001', 'WI-002']);
+  assert.equal(area.position, null);
+  assert.equal(area.page, 1);
+  assert.notEqual(area.drawingId, saved.drawingMapping.drawing.id);
+  assert.equal(getDrawingAsset(replaced), null);
+  assert.deepEqual(replaced.reports, saved.reports);
+  assert.deepEqual(replaced.claimDrafts, saved.claimDrafts);
+  assert.deepEqual(saved, before);
+  const restored = installDrawing(replaced, { inputKind: 'provided' }, now).project;
+  assert.equal(getDrawingMapping(restored).areas[0].position, null);
+  assert.deepEqual(getDrawingMapping(restored).areas[0].workItemIds, area.workItemIds);
+  assert.equal(getDrawingAsset(restored), '/assets/site-plan.png');
 });

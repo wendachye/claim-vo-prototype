@@ -40,20 +40,20 @@ test('completion showcase creates an independent fictional mapped project with a
   assert.equal(getDrawingMapping(project).areas.length, 4);
   assert.deepEqual(statusByCode(project, 'verified'), { A1: 'completed', A2: 'in-progress', B1: 'not-started', B2: 'not-started' });
   assert.deepEqual(statusByCode(project, 'reported'), { A1: 'completed', A2: 'in-progress', B1: 'not-started', B2: 'completed' });
-  assert.equal(project.whatsappMessages.length, 6);
-  assert.equal(project.whatsappMessages.filter((message) => message.status === 'processed').length, 4);
-  assert.equal(project.whatsappMessages.filter((message) => message.status === 'new').length, 2);
+  assert.equal(project.whatsappMessages.length, 8);
+  assert.equal(project.whatsappMessages.filter((message) => message.status === 'processed').length, 7);
+  assert.equal(project.whatsappMessages.filter((message) => message.status === 'new').length, 1);
   assert.deepEqual(project.claimDrafts, []);
-  assert.deepEqual(project.voReviews, []);
+  assert.equal(project.voReviews.length, 2);
   assert.equal(buildClaimReview(project, '2026-10', {}).canPrepare, false);
   assert.deepEqual(financial(project), financial(seedWorkspace().projects.find((entry) => entry.id === 'WH02')));
 });
 
 test('demo reports have project-scoped fictional evidence, cumulative totals and dated verification', () => {
   const { project } = createDrawingProgressDemo(seedWorkspace(), now);
-  assert.equal(project.reports.length, 4);
+  assert.equal(project.reports.length, 7);
   assert.equal(project.reports.filter((report) => report.status === 'pending').length, 2);
-  for (const report of project.reports) {
+  for (const report of project.reports.filter((entry) => !entry.vo)) {
     assert.ok(report.id.startsWith(`${project.id}-MAP-REPORT-`));
     assert.equal(report.projectId, project.id);
     assert.equal(report.projectCode, project.code);
@@ -115,6 +115,8 @@ test('reload keeps seeded progress and reset clears only this project drawing wh
   assert.deepEqual(reset.reports, original.projects.at(-1).seed.reports);
   assert.deepEqual(reset.baselines, original.projects.at(-1).seed.baselines);
   assert.deepEqual(reset.whatsappMessages, original.projects.at(-1).seed.whatsappMessages);
+  assert.deepEqual(getVOCases(reset).map((entry) => entry.status), ['flagged', 'approved', 'rejected']);
+  assert.deepEqual(loaded.projects.at(-1).voReviews, project.seed.voReviews);
   assert.deepEqual(loaded.projects.at(-1).whatsappMessages, project.seed.whatsappMessages);
   assert.equal(reset.drawingMapping, undefined);
   assert.equal(reset.locked, true);
@@ -136,13 +138,13 @@ test('processed showcase inbox messages match their original reports and cannot 
   const { project } = createDrawingProgressDemo(seedWorkspace(), now);
   const before = structuredClone(project);
   const messages = getWhatsAppMessages(project);
-  assert.equal(messages.length, 6);
+  assert.equal(messages.length, 8);
   for (const report of project.reports) {
     const message = messages.find((entry) => entry.id === report.sourceMessageId);
     assert.ok(message);
     assert.equal(message.status, 'processed');
     assert.equal(message.reportId, report.id);
-    assert.equal(message.kind, 'progress');
+    assert.equal(message.kind, report.vo ? 'vo' : 'progress');
     assert.equal(message.text, report.message);
     assert.equal(message.photo, report.photo);
     assert.equal(message.photoAlt, report.photoAlt);
@@ -159,42 +161,77 @@ test('processed showcase inbox messages match their original reports and cannot 
   assert.deepEqual(project, before);
 });
 
-test('new VO and unclear messages remain separate from progress until explicit processing', () => {
+test('flagged, approved and rejected VO examples retain source evidence without changing physical progress or making claims', () => {
   const { project } = createDrawingProgressDemo(seedWorkspace(), now);
   const before = structuredClone(project);
-  const voMessage = project.whatsappMessages.find((message) => message.id === `${project.id}-MAP-WA-005`);
+  const cases = getVOCases(project);
+  assert.equal(cases.length, 3);
+  const byArea = Object.fromEntries(cases.map((entry) => [entry.report.area, entry]));
+  assert.equal(byArea['Area A2'].status, 'flagged');
+  assert.equal(byArea['Area A2'].approvedValue, null);
+  assert.equal(byArea['Area B2'].status, 'approved');
+  assert.equal(byArea['Area B2'].approvedValue, 2500);
+  assert.equal(byArea['Area B2'].approvalReference, `${project.code}-DEMO-APPROVAL-007`);
+  assert.equal(byArea['Area B2'].approver, 'Fictional demo approver');
+  assert.deepEqual(byArea['Area B2'].history.map((event) => event.action), ['submit', 'approve']);
+  assert.equal(byArea['Area A1'].status, 'rejected');
+  assert.match(byArea['Area A1'].reviewNote, /included in the contract/);
+  assert.deepEqual(byArea['Area A1'].history.map((event) => event.action), ['reject']);
+  for (const entry of cases) {
+    assert.equal(entry.projectId, project.id);
+    assert.equal(entry.report.completion, null);
+    assert.equal(entry.report.itemId, null);
+    assert.equal(entry.report.channel, 'whatsapp-mock');
+    assert.equal(entry.report.vo, true);
+    assert.equal(entry.report.demo, true);
+    assert.ok(entry.report.areaMapping.areaId.startsWith(`AREA-${project.id}-`));
+    const message = project.whatsappMessages.find((candidate) => candidate.id === entry.report.sourceMessageId);
+    assert.equal(message.kind, 'vo');
+    assert.equal(message.status, 'processed');
+    assert.equal(message.text, entry.report.message);
+    assert.equal(message.photo, entry.report.photo);
+    assert.equal(message.date, entry.report.date);
+    assert.equal(message.sender, entry.report.sender);
+    assert.equal(message.reportId, entry.report.id);
+    assert.match(message.photoAlt, /not project evidence/);
+    assert.ok(Date.parse(message.processedAt) >= Date.parse(message.date));
+    assert.ok(Date.parse(message.processedAt) <= now.getTime());
+    for (const event of entry.history) {
+      assert.ok(Date.parse(event.date) >= Date.parse(message.date));
+      assert.ok(Date.parse(event.date) <= now.getTime());
+      assert.match(event.actor, /Demo/);
+    }
+  }
+  assert.equal(byArea['Area A2'].report.sourceMessageId, `${project.id}-MAP-WA-005`);
+  assert.equal(byArea['Area B2'].report.sourceMessageId, `${project.id}-MAP-WA-007`);
+  assert.equal(byArea['Area A1'].report.sourceMessageId, `${project.id}-MAP-WA-008`);
+  assert.deepEqual(project.items.map(({ id, reported, verified }) => ({ id, reported, verified })), [
+    { id: 'WI-001', reported: 100, verified: 100 }, { id: 'WI-002', reported: 65, verified: 40 },
+    { id: 'WI-003', reported: 0, verified: 0 }, { id: 'WI-004', reported: 100, verified: 0 },
+    { id: 'WI-005', reported: 0, verified: 0 }, { id: 'WI-006', reported: 0, verified: 0 },
+  ]);
+  assert.deepEqual(project.claimDrafts, []);
+  assert.deepEqual(project.items.map(({ id, quantity, rate, amount, pricingType }) => ({ id, quantity, rate, amount, pricingType })), financial(seedWorkspace().projects.find((entry) => entry.id === 'WH02')));
+  assert.ok(project.history.every((event) => Date.parse(event.date) <= now.getTime()));
+  assert.deepEqual(project, before);
+});
+
+test('the remaining unclear message needs explicit processing without changing progress or seeded VO decisions', () => {
+  const { project } = createDrawingProgressDemo(seedWorkspace(), now);
+  const before = structuredClone(project);
   const unclearMessage = project.whatsappMessages.find((message) => message.id === `${project.id}-MAP-WA-006`);
-  assert.equal(voMessage.kind, 'vo');
-  assert.equal(voMessage.status, 'new');
-  assert.equal(voMessage.area, 'Area A2');
-  assert.equal(voMessage.photo, '/assets/demo-platform.jpg');
   assert.equal(unclearMessage.kind, 'clarification');
   assert.equal(unclearMessage.status, 'new');
   assert.equal(unclearMessage.area, 'Area B1');
   assert.equal(unclearMessage.photo, '/assets/demo-scaffold.jpg');
-  for (const message of [voMessage, unclearMessage]) {
-    assert.equal(message.reportId, undefined);
-    assert.match(message.photoAlt, /not project evidence/);
-    assert.ok(message.text.includes(project.code));
-    assert.ok(Date.parse(message.date) <= now.getTime());
-    assert.ok(!project.reports.some((report) => report.sourceMessageId === message.id));
-  }
-  assert.deepEqual(getVOCases(project), []);
-  assert.equal(project.reports.length, 4);
-  assert.deepEqual(project.claimDrafts, []);
-  const vo = processWhatsAppMessage(project, voMessage.id);
-  assert.equal(vo.outcome, 'processed');
-  assert.equal(vo.project.reports.length, 5);
-  assert.equal(getVOCases(vo.project).length, 1);
-  assert.equal(getVOCases(vo.project)[0].status, 'flagged');
-  assert.deepEqual(vo.project.items, before.items);
-  assert.deepEqual(vo.project.claimDrafts, []);
-  assert.deepEqual(vo.project.baselines, before.baselines);
+  assert.equal(unclearMessage.reportId, undefined);
+  assert.ok(!project.reports.some((report) => report.sourceMessageId === unclearMessage.id));
   const clarification = processWhatsAppMessage(project, unclearMessage.id);
   assert.equal(clarification.outcome, 'clarification');
   assert.deepEqual(clarification.project.reports, before.reports);
   assert.deepEqual(clarification.project.items, before.items);
-  assert.deepEqual(getVOCases(clarification.project), []);
+  assert.deepEqual(clarification.project.voReviews, before.voReviews);
+  assert.deepEqual(clarification.project.claimDrafts, []);
   assert.equal(clarification.project.whatsappMessages.find((message) => message.id === unclearMessage.id).status, 'clarification');
   assert.deepEqual(project, before);
 });

@@ -106,4 +106,22 @@ Select a pin or area in **Drawing & areas** to see **Site updates & photos** ben
 
 **Open original update** opens the exact mock WhatsApp message, with **Back to drawing** to return to the area. Older report-only records offer **Review site report**. Viewing cards or photos leaves progress, VO decisions and claims unchanged. Saved reports and their inbox copies appear once, and old saved area references remain attached after mapping edits.
 
-New projects created through **Try completion demo** include six mock messages: four saved progress updates, one new possible VO and one unclear update. Existing projects keep their saved records. Photos are clearly labelled demonstration images; no live WhatsApp or backend service is connected.
+New projects created through **Try completion demo** include mock progress and extra-work messages with review examples. Existing projects keep their saved records. Photos are clearly labelled demonstration images; no live WhatsApp or backend service is connected.
+
+## Extra-work flags on the drawing
+
+Amber flags identify areas with VO cases to review. A separate **✓ VO** marker means extra work has a recorded approval; the area's completion colour still shows physical progress. Select the area, then **Review VO** to open the exact case. **Back to drawing** returns to that area, and saved review decisions update the marker. Rejected cases stay under rejected history.
+
+New extra-work messages can also appear as hints with **See message**. They become VO cases only after explicitly flagging them in Site updates. Opening a map or review does not process messages, approve work, update completion or create a claim.
+
+The latest **Try completion demo** creates a separate fictional project with an Area A2 flagged case, an Area B2 mock approval and an Area A1 rejected case, while preserving existing projects. All decisions stay in this browser.
+
+## Contract scenario walkthrough
+
+Open **All projects → New project → Sample campus contract — realistic scenario**. The new project starts with 18 fictional campus scaffold rows, a matching illustrative W3/W5 plan, a checked mock work list and a complete site-to-claim scenario. Existing projects and edits stay intact.
+
+Explore the drawing to see verified, pending and not-started work, related messages/photos, an extra-work scope query, a fictional approval and an included-scope rejection. The overview offers **Explore the drawing**, **View example claim** and a short walkthrough. All parties, values, activity, approvals and area pins are demonstration data.
+
+The example claim is a saved draft using explicitly mocked QS inputs, separate from physical percentages. It shows gross values before retention, GST or other deductions; nothing is submitted, certified or paid. **Reset demo** restores the selected project's seeded workflow and clears its drawing mappings, following the existing reset behavior.
+
+The public repository contains fictional fixtures and an original illustrative plan. User-supplied contracts, source drawings, browser-local projects and private contract fixtures are excluded. The local source-backed prototype retains its supplied-contract scenario separately. Run `npm run test:provided-demo` to check source isolation, evidence, VO status, claim snapshots and persistence.

@@ -20,7 +20,7 @@ function EvidencePhoto({ report, onOpen }) {
   return src && !failed ? <button type="button" className="vo-evidence-photo" aria-label="Enlarge VO evidence photo" onClick={() => onOpen({ src, alt: report.photoAlt })}><img src={src} alt={report.photoAlt || 'Demo photo attached to the original site update'} onError={() => setFailed(true)} loading="lazy" /><span className="vo-photo-label">{report.channel === 'whatsapp-mock' ? 'Generated demo photo' : 'Demo attachment'}</span><span className="vo-photo-open"><ZoomIn size={13} />View photo</span></button> : <div className="vo-no-photo"><ImageOff size={22} /><div><strong>{failed ? 'Photo unavailable' : 'No photo attached'}</strong><p>{failed ? 'The original message is retained. Check the attachment before deciding.' : 'This source update contains text only; no photo evidence is implied.'}</p></div></div>;
 }
 
-export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onOpenClaims }) {
+export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onOpenClaims, onBackToDrawing, onClearCaseSelection }) {
   const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -30,26 +30,32 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
   const currency = project.contract?.currency || 'SGD';
   const shown = cases.filter((entry) => (filter === 'all' || entry.status === filter)
     && (!search.trim() || `${entry.reference} ${entry.title} ${entry.report.message} ${entry.report.area} ${entry.report.location}`.toLowerCase().includes(search.trim().toLowerCase())));
-  const selected = shown.find((entry) => entry.id === selectedId) || shown[0];
+  const requested = initialCaseId ? cases.find((entry) => entry.id === initialCaseId) : null;
+  const unavailable = Boolean(initialCaseId && !requested);
+  const selected = unavailable ? null : initialCaseId && selectedId !== initialCaseId ? requested : shown.find((entry) => entry.id === selectedId) || shown[0];
   useEffect(() => {
     if (!initialCaseId || !cases.some((entry) => entry.id === initialCaseId)) return;
-    setSelectedId(initialCaseId);
+    setSelectedId(initialCaseId); setPhoto(null);
     if (!shown.some((entry) => entry.id === initialCaseId)) { setSearch(''); setFilter('all'); }
+    if (window.matchMedia('(max-width: 1050px)').matches) reviewRef.current?.scrollIntoView({ block: 'start' });
   }, [initialCaseId]);
   useEffect(() => {
+    if (initialCaseId && selectedId !== initialCaseId) return;
     if (selected && selected.id !== selectedId) {
       setSelectedId(selected.id);
       onSelect?.(selected.id);
     }
-  }, [selected?.id, selectedId, onSelect]);
+  }, [selected?.id, selectedId, initialCaseId, onSelect]);
+  useEffect(() => setPhoto(null), [selected?.id]);
   function choose(entry) {
-    setSelectedId(entry.id);
+    setSelectedId(entry.id); setPhoto(null);
     onSelect?.(entry.id);
     if (window.matchMedia('(max-width: 1050px)').matches) reviewRef.current?.scrollIntoView({ block: 'start' });
   }
 
   return <div className="vo-view">
-    <PageHeader title="Extra work (VO)" description="Check extra work against the contract and record its approval." actions={<Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Site updates<ArrowRight size={14} /></Button>} />
+    <PageHeader title="Extra work (VO)" description="Check extra work against the contract and record its approval." onBack={onBackToDrawing} backLabel="Back to drawing" actions={<Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Site updates<ArrowRight size={14} /></Button>} />
+    {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This extra-work case is not available in the selected project.</span><Button onClick={onClearCaseSelection}>Show all extra work</Button></div>}
     <p className="vo-demo-note">Demo review · decisions stay in this browser.</p>
 
     {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>Flag extra work from Site updates. Its message and photo will appear here for review.</p><Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button></div> : <div className="vo-workspace">
@@ -59,13 +65,13 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
         <footer className="vo-register-footer"><ShieldCheck size={12} />{project.code} records only</footer>
       </section>
 
-      <div ref={reviewRef} className="vo-review-anchor">{selected ? <VOCaseReview key={`${selected.id}-${selected.status}-${selected.history.length}`} entry={selected} project={project} currency={currency} onAction={onAction} onPhoto={setPhoto} onOpenContract={onOpenContract} onOpenClaims={onOpenClaims} onBack={() => registerRef.current?.scrollIntoView({ block: 'start' })} /> : <section className="vo-detail vo-list-empty"><Flag size={28} /><h3>Select extra work</h3><p>Its message, photo and review will appear here.</p></section>}</div>
+      <div ref={reviewRef} className="vo-review-anchor">{selected ? <VOCaseReview key={`${selected.id}-${selected.status}-${selected.history.length}`} entry={selected} project={project} currency={currency} onAction={onAction} onPhoto={setPhoto} onOpenContract={onOpenContract} onOpenClaims={onOpenClaims} onBack={onBackToDrawing || (() => registerRef.current?.scrollIntoView({ block: 'start' }))} backLabel={onBackToDrawing ? 'Back to drawing' : 'Back to extra work'} /> : <section className="vo-detail vo-list-empty"><Flag size={28} /><h3>Select extra work</h3><p>Its message, photo and review will appear here.</p></section>}</div>
     </div>}
     {photo && <div className="vo-photo-modal"><Modal title="Extra-work photo" description="Demo attachment · review alongside the original message" onClose={() => setPhoto(null)} footer={<Button onClick={() => setPhoto(null)}>Done</Button>}><img src={photo.src} alt={photo.alt || 'Photo attached to the demo variation report'} /></Modal></div>}
   </div>;
 }
 
-function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContract, onOpenClaims, onBack }) {
+function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContract, onOpenClaims, onBack, backLabel }) {
   const formRef = useRef(null);
   const formScope = `vo:${JSON.stringify([entry.id, entry.status, entry.history.length])}`;
   const [fields, setFields] = useBufferedState(project.id, formScope, () => fieldsFor(entry));
@@ -104,7 +110,7 @@ function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContr
   const history = [...(entry.history || [])].reverse();
 
   return <section className="vo-detail" aria-labelledby="vo-detail-heading">
-    <div className="vo-panel-back vo-back-register"><BackButton onClick={onBack}>Back to extra work</BackButton></div>
+    <div className="vo-panel-back vo-back-register"><BackButton onClick={onBack}>{backLabel || 'Back to extra work'}</BackButton></div>
     <header className="vo-panel-header"><div><span className="vo-reference">{entry.reference}</span><h2 id="vo-detail-heading">{entry.title || 'Flagged extra work'}</h2></div><Badge tone={tone(entry.status)}>{VO_STATUS_LABELS[entry.status]}</Badge></header>
     <div className="vo-next-step"><div><strong>{entry.status === 'approved' ? 'Approval recorded' : entry.status === 'rejected' ? 'Review closed' : 'Next step'}</strong><p>{editable ? entry.status === 'clarification' ? 'Add the missing information, then mark this ready for approval.' : 'Check the message and photo, then explain the extra work and add its instruction reference.' : pendingApproval ? 'Enter the approved amount, approval reference and who approved it.' : entry.status === 'approved' ? 'Review this approval in the monthly claim. The claim month and QS assessment still need checking.' : 'The work was rejected. Reopen the decision only if it needs another review.'}</p></div>{entry.status === 'approved' && onOpenClaims && <Button className="primary" icon={ArrowRight} onClick={onOpenClaims}>Review in monthly claim</Button>}</div>
     <div className="vo-detail-body">

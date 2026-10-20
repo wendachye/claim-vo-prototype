@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="620" viewBox="0 0 1000 620" role="img" aria-labelledby="title desc">
+  <title id="title">Fictional campus scaffold area plan</title>
+  <desc id="desc">A fictional plan with W3 teaching and library wings and W5 laboratory and workshop wings. Four illustrative work areas support the prototype walkthrough. Not to scale.</desc>
+  <defs><pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="#e9eef5" stroke-width="1"/></pattern></defs>
+  <rect x="1" y="1" width="998" height="618" rx="5" fill="#fff" stroke="#d6dfeb"/>
+  <text x="42" y="47" fill="#334155" font-family="Arial,sans-serif" font-size="24" font-weight="700">Campus scaffold area plan</text>
+  <text x="42" y="73" fill="#64748b" font-family="Arial,sans-serif" font-size="13">CAMPUS-DEMO-PLAN-01 · Manual area mapping</text>
+  <rect x="720" y="25" width="240" height="30" rx="5" fill="#eff6ff"/>
+  <text x="840" y="45" text-anchor="middle" fill="#1d4ed8" font-family="Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="1">FICTIONAL DEMONSTRATION</text>
+  <rect x="35" y="105" width="930" height="420" fill="url(#grid)" stroke="#e2e8f0"/>
+  <path d="M35 490H965" stroke="#e2e8f0" stroke-width="34"/>
+  <path d="M35 490H965" stroke="#fff" stroke-width="2" stroke-dasharray="10 10"/>
+  <text x="500" y="497" text-anchor="middle" fill="#64748b" font-family="Arial,sans-serif" font-size="13">Campus service road</text>
+  <rect x="70" y="175" width="410" height="280" fill="#f8fafc" stroke="#94a3b8" stroke-width="3"/>
+  <rect x="82" y="187" width="184" height="256" fill="#eef4fb" stroke="#cbd5e1" stroke-dasharray="7 5"/>
+  <rect x="284" y="187" width="184" height="256" fill="#f0f5fb" stroke="#cbd5e1" stroke-dasharray="7 5"/>
+  <path d="M275 175V455" stroke="#94a3b8" stroke-width="2"/>
+  <text x="70" y="153" fill="#334155" font-family="Arial,sans-serif" font-size="22" font-weight="700">BLOCK W3</text>
+  <text x="174" y="220" text-anchor="middle" fill="#475569" font-family="Arial,sans-serif" font-size="15" font-weight="700">W3-A · Teaching wing</text>
+  <text x="376" y="220" text-anchor="middle" fill="#475569" font-family="Arial,sans-serif" font-size="15" font-weight="700">W3-B · Library wing</text>
+  <text x="174" y="407" text-anchor="middle" fill="#64748b" font-family="Arial,sans-serif" font-size="12">Lower facade access</text>
+  <text x="376" y="407" text-anchor="middle" fill="#64748b" font-family="Arial,sans-serif" font-size="12">Upper facade access</text>
+  <rect x="570" y="175" width="360" height="280" fill="#f8fafc" stroke="#94a3b8" stroke-width="3"/>
+  <rect x="582" y="187" width="156" height="256" fill="#f0f5fb" stroke="#cbd5e1" stroke-dasharray="7 5"/>
+  <rect x="762" y="187" width="156" height="256" fill="#eef4fb" stroke="#cbd5e1" stroke-dasharray="7 5"/>
+  <path d="M750 175V455" stroke="#94a3b8" stroke-width="2"/>
+  <text x="570" y="153" fill="#334155" font-family="Arial,sans-serif" font-size="22" font-weight="700">BLOCK W5</text>
+  <text x="660" y="220" text-anchor="middle" fill="#475569" font-family="Arial,sans-serif" font-size="15" font-weight="700">W5-A · Laboratory</text>
+  <text x="840" y="220" text-anchor="middle" fill="#475569" font-family="Arial,sans-serif" font-size="15" font-weight="700">W5-B · Workshop</text>
+  <text x="660" y="407" text-anchor="middle" fill="#64748b" font-family="Arial,sans-serif" font-size="12">South facade access</text>
+  <text x="840" y="407" text-anchor="middle" fill="#64748b" font-family="Arial,sans-serif" font-size="12">East facade access</text>
+  <path d="M945 120V153M945 120L939 133M945 120L951 133" fill="none" stroke="#64748b" stroke-width="2"/>
+  <text x="945" y="115" text-anchor="middle" fill="#64748b" font-family="Arial,sans-serif" font-size="12">N</text>
+  <text x="42" y="558" fill="#475569" font-family="Arial,sans-serif" font-size="13">Illustrative work areas · Select a pin to review its linked contract item, site updates and extra work.</text>
+  <text x="42" y="584" fill="#64748b" font-family="Arial,sans-serif" font-size="12">Fictional drawing. Not to scale. No measurements or claim quantities are derived from this plan.</text>
+</svg>

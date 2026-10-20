@@ -38,15 +38,50 @@ function newId(prefix, date, used = []) {
   return `${base}-${index}`;
 }
 
+// Only a validated contract-source descriptor can restore an
+// image after reload. Saved drawing metadata never accepts an arbitrary URL.
+export function getProvidedDrawingSource(project) {
+  const source = project?.contract?.drawingSource;
+  if (!record(source) || !validCode(text(source.id).toUpperCase())) return null;
+  const fictional = project?.contract?.sourceKind === 'illustrative';
+  const expectedType = fictional ? 'image/svg+xml' : fileType(source.fileName);
+  const allowedAsset = fictional
+    ? source.asset === '/samples/campus-scaffold-area-plan.svg' && source.id === 'campus-demo-plan'
+    : project?.contract?.sourceKind === 'provided' && /^\/assets\/[A-Za-z0-9_-]+\.(?:png|jpe?g|webp)$/i.test(text(source.asset))
+      && ['image/png', 'image/jpeg', 'image/webp'].includes(expectedType);
+  if (!allowedAsset || text(source.fileName) !== text(source.asset).split('/').at(-1)
+    || source.mimeType !== expectedType) return null;
+  return {
+    id: text(source.id), asset: text(source.asset), fileName: text(source.fileName), mimeType: source.mimeType,
+    label: validName(text(source.label)) ? text(source.label) : fictional ? 'Fictional demo drawing' : 'Provided site drawing',
+    note: text(source.note) || 'Area pins are illustrative manual links, not surveyed positions.',
+  };
+}
+
 function normalizedDrawing(project, value) {
   if (!record(value) || !validId(value.id) || value.projectId !== project.id
-    || !['sample', 'image', 'pdf'].includes(value.kind) || !['sample', 'upload'].includes(value.inputKind)
+    || !['sample', 'image', 'pdf'].includes(value.kind) || !['sample', 'upload', 'provided'].includes(value.inputKind)
     || !text(value.fileName) || !atDate(value.uploadedAt)) return null;
+  const source = value.inputKind === 'provided' ? getProvidedDrawingSource(project) : null;
+  if (value.inputKind === 'provided' && (!source || value.sourceId !== source.id
+    || value.kind !== 'image' || value.fileName !== source.fileName
+    || value.mimeType !== source.mimeType || value.fileSize != null)) return null;
   return {
     id: value.id, projectId: project.id, inputKind: value.inputKind, kind: value.kind,
     fileName: value.fileName, fileSize: value.fileSize ?? null, mimeType: value.mimeType,
     uploadedAt: value.uploadedAt,
+    ...(source ? { sourceId: source.id } : {}),
   };
+}
+
+// The upload branch deliberately has no permanent asset: its preview stays in session memory.
+export function getDrawingAsset(project, drawing = getDrawingMapping(project).drawing) {
+  if (!record(project) || !validId(project.id)) return null;
+  const saved = normalizedDrawing(project, drawing);
+  if (!saved) return null;
+  if (saved.inputKind === 'sample' && saved.kind === 'sample') return DEMO_DRAWING_ASSET;
+  if (saved.inputKind === 'provided') return getProvidedDrawingSource(project)?.asset || null;
+  return null;
 }
 
 export function getDrawingMapping(project) {
@@ -72,21 +107,24 @@ export function getDrawingMapping(project) {
 }
 
 function drawingMetadata(project, input, now, mapping) {
-  if (!record(input) || !['sample', 'upload'].includes(input.inputKind)) return null;
+  if (!record(input) || !['sample', 'upload', 'provided'].includes(input.inputKind)) return null;
   const uploadedAt = atDate(now);
   if (!uploadedAt) return null;
-  const fileName = input.inputKind === 'sample' ? DEMO_DRAWING_FILENAME : text(input.fileName).replaceAll('\\', '/').split('/').at(-1);
-  const fileSize = input.fileSize == null ? null : Number(input.fileSize);
+  const source = input.inputKind === 'provided' ? getProvidedDrawingSource(project) : null;
+  if (input.inputKind === 'provided' && (!source || (input.sourceId && input.sourceId !== source.id))) return null;
+  const fileName = source ? source.fileName : input.inputKind === 'sample' ? DEMO_DRAWING_FILENAME : text(input.fileName).replaceAll('\\', '/').split('/').at(-1);
+  const fileSize = source || input.fileSize == null ? null : Number(input.fileSize);
   if (!fileName || fileName.length > 255 || /[\u0000-\u001f\u007f]/.test(fileName)
     || (fileSize !== null && (!Number.isSafeInteger(fileSize) || fileSize < 0 || fileSize > MAX_DRAWING_FILE_SIZE))) return null;
   const expectedType = fileType(fileName);
-  const mimeType = input.inputKind === 'sample' ? 'image/svg+xml' : text(input.mimeType) || expectedType;
+  const mimeType = source ? source.mimeType : input.inputKind === 'sample' ? 'image/svg+xml' : text(input.mimeType) || expectedType;
   if (input.inputKind === 'upload' && (!(fileSize > 0) || !expectedType || mimeType !== expectedType)) return null;
   const priorIds = [mapping.drawing?.id, ...mapping.history.flatMap((event) => [event.drawingId, event.previousDrawing?.id])];
   return {
     id: newId(`DRAW-${project.id}`, uploadedAt, priorIds), projectId: project.id, inputKind: input.inputKind,
     kind: input.inputKind === 'sample' ? 'sample' : mimeType === 'application/pdf' ? 'pdf' : 'image',
     fileName, fileSize, mimeType, uploadedAt,
+    ...(source ? { sourceId: source.id } : {}),
   };
 }
 

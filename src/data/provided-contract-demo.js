@@ -1,0 +1,209 @@
+import { createProject, seedWorkspace } from './projects.js';
+import { getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea } from './drawing-mapping.js';
+import { processWhatsAppMessage } from './whatsapp.js';
+import { updateVOReview } from './vo.js';
+import { saveClaimDraft } from './claims.js';
+
+const clone = (value) => structuredClone(value);
+const photoAlt = 'Generated construction illustration used as a demo site photo; not project evidence.';
+const workflowFields = ['sourceItems', 'items', 'reports', 'history', 'baselines', 'voReviews', 'claimDrafts', 'locked', 'version', 'whatsappMessages'];
+
+// Read the bundled fictional campus fixture, never browser-edited project data.
+// This public scenario contains no uploaded contract, drawing or commercial data.
+export function getProvidedContractSample() {
+  return seedWorkspace().projects.find((project) => project.id === 'SIT01' && project.contract?.sourceKind === 'illustrative') || null;
+}
+
+function demoCalendar(now) {
+  let time;
+  try { time = new Date(now).getTime(); } catch { /* Invalid dates get the same useful error. */ }
+  if (!Number.isFinite(time)) throw new TypeError('Choose a valid date for the contract scenario.');
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit',
+  }).formatToParts(time);
+  const part = (type) => parts.find((entry) => entry.type === type).value;
+  const period = `${part('year')}-${part('month')}`;
+  const monthStart = Date.parse(`${period}-01T00:00:00+08:00`);
+  // Keep the showcase's dated observations in its chosen local claim month.
+  return { period, at: (minutesAgo) => new Date(Math.max(monthStart, time - minutesAgo * 60_000)).toISOString() };
+}
+
+/** A realistic workflow with entirely fictional contract and site data. */
+export function createProvidedContractDemo(values, now = new Date()) {
+  const sample = getProvidedContractSample();
+  if (!sample) throw new Error('No fictional campus sample is available in this prototype.');
+  const { period, at } = demoCalendar(now);
+  const baselineAt = at(60);
+  let project = createProject({ ...values, country: sample.country, subcontractor: sample.contract.subcontractor });
+  const cleanSource = clone(sample.sourceItems).map((item) => {
+    const next = { ...item, reported: 0, verified: 0, needsReview: false };
+    delete next.rawExtractedQuantity;
+    delete next.extractionNote;
+    delete next.demoArea;
+    return next;
+  });
+  for (const id of ['WI-001', 'WI-002', 'WI-004', 'WI-005']) {
+    if (!cleanSource.some((item) => item.id === id)) throw new Error('The fictional campus sample is missing a scenario work item.');
+  }
+  project = {
+    ...project, providedContractDemo: true,
+    description: project.description || 'Fictional campus scaffold scenario with mock site updates, QS review and a draft claim.',
+    contract: {
+      ...clone(sample.contract), id: project.id,
+      demoNotice: 'All contract parties, rows, values, drawings, site updates, photos, progress, VO decisions and claim assessments are fictional.',
+      sampleNote: '18 fictional contract rows. Mock work-list checks and a separate illustrative claim draft are already saved.',
+      demoAreas: [],
+      drawingSource: {
+        id: 'campus-demo-plan', asset: '/samples/campus-scaffold-area-plan.svg', fileName: 'campus-scaffold-area-plan.svg', mimeType: 'image/svg+xml',
+        label: 'Fictional campus plan',
+        note: 'Illustrative demo drawing and manual area links; not to scale.',
+      },
+    },
+    sourceItems: cleanSource,
+    items: clone(cleanSource).map((item) => ({ ...item, reviewedAt: baselineAt, reviewedBy: 'Demo contract reviewer' })),
+    reports: [], history: [], baselines: [], voReviews: [], claimDrafts: [], whatsappMessages: [],
+    version: 1, locked: true, lockedAt: baselineAt,
+  };
+  project.baselines = [{ version: 1, items: clone(project.items), date: baselineAt, demo: true }];
+  const installed = installDrawing(project, { inputKind: 'provided' }, baselineAt);
+  if (installed.outcome !== 'updated') throw new Error('The fictional campus plan could not be added to the scenario.');
+  project = installed.project;
+  const areaRows = [
+    ['W3-A', 'WI-001', { x: 0.17, y: 0.5 }],
+    ['W3-B', 'WI-002', { x: 0.385, y: 0.5 }],
+    ['W5-A', 'WI-004', { x: 0.66, y: 0.5 }],
+    ['W5-B', 'WI-005', { x: 0.84, y: 0.5 }],
+  ];
+  for (const [code, itemId, position] of areaRows) {
+    const item = project.items.find((entry) => entry.id === itemId);
+    const saved = saveAreaMapping(project, {
+      drawingId: getDrawingMapping(project).drawing.id, code, name: item.description,
+      page: 1, position, workItemIds: [itemId],
+    }, baselineAt);
+    if (saved.outcome !== 'updated') throw new Error('A fictional campus scenario area could not be linked.');
+    project = saved.project;
+  }
+  project.contract.demoAreas = getDrawingMapping(project).areas.map((area) => ({
+    id: area.id, name: `Area ${area.code}`, location: project.items.find((item) => item.id === area.workItemIds[0]).location,
+    itemIds: clone(area.workItemIds), demo: true,
+  }));
+  const reportFor = (sequence, itemId, areaCode, completion, status, minutesAgo, verifiedMinutesAgo) => {
+    const item = project.items.find((entry) => entry.id === itemId);
+    const area = getDrawingMapping(project).areas.find((entry) => entry.code === areaCode);
+    return {
+      id: `${project.id}-CASE-REPORT-${sequence}`, projectId: project.id, projectCode: project.code,
+      itemId, sourceMessageId: `${project.id}-CASE-WA-${sequence}`, channel: 'whatsapp-mock',
+      area: `Area ${areaCode}`, areaMapping: snapshotMappedArea(area), location: item.location,
+      sender: 'Scaffold worker (demo)', date: at(minutesAgo), completion, completionBasis: 'cumulative', status,
+      message: `${project.code} | ${item.location} | Area ${areaCode} | ${itemId}\nCOMPLETE=${completion}% TOTAL\nFictional campus scenario progress; not actual site activity.`,
+      photo: '/assets/demo-scaffold.jpg', photoAlt, demo: true, origin: 'simulated', vo: false,
+      note: 'Simulated physical observation only. Financial entitlement and QS assessed quantities are separate.',
+      ...(status === 'verified' ? { approvedCompletion: completion, verifiedBy: 'Scaffold supervisor (demo)', verifiedAt: at(verifiedMinutesAgo) } : {}),
+    };
+  };
+  project.reports = [
+    reportFor('001', 'WI-001', 'W3-A', 50, 'verified', 50, 45),
+    reportFor('002', 'WI-002', 'W3-B', 100, 'verified', 45, 40),
+    reportFor('003', 'WI-001', 'W3-A', 65, 'pending', 15),
+    reportFor('004', 'WI-004', 'W5-A', 50, 'pending', 10),
+  ];
+  const totals = { 'WI-001': [65, 50], 'WI-002': [100, 100], 'WI-004': [50, 0] };
+  project.items = project.items.map((item) => ({ ...item, reported: totals[item.id]?.[0] ?? 0, verified: totals[item.id]?.[1] ?? 0 }));
+  const baseMessage = {
+    projectId: project.id, projectCode: project.code, sender: 'Scaffold worker (demo)', senderRole: 'Site worker · demo',
+    photoAlt, processingNote: 'Prefilled simulated scenario. No live WhatsApp or AI processing is connected.',
+  };
+  const extraMessage = (sequence, areaCode, location, minutesAgo, text, processingNote) => ({
+    ...baseMessage, id: `${project.id}-CASE-WA-${sequence}`, kind: 'vo', status: 'new', itemId: null,
+    area: `Area ${areaCode}`, location, date: at(minutesAgo), completion: null, completionBasis: 'unclear',
+    photo: '/assets/demo-platform.jpg',
+    text: `${project.code} | ${location} | Area ${areaCode}\n${text}\nSimulated scenario message; generated demo photo attached. Not actual site activity.`,
+    processingNote,
+  });
+  project.whatsappMessages = [
+    ...project.reports.map((report) => ({
+      ...baseMessage, id: report.sourceMessageId, kind: 'progress', status: 'processed', reportId: report.id,
+      itemId: report.itemId, area: report.area, location: report.location, date: report.date, processedAt: report.date,
+      completion: report.completion, completionBasis: 'cumulative', text: report.message, photo: report.photo,
+    })),
+    extraMessage('005', 'W3-A', 'W3', 5,
+      'A supervisor asked for an additional access platform. Please check the instruction and whether this is included in the existing scaffold scope before pricing.',
+      'Fictional scope query only. Check the demo schedule and instruction before pricing; instruction and price remain unknown.'),
+    {
+      ...baseMessage, id: `${project.id}-CASE-WA-006`, kind: 'clarification', status: 'new', itemId: null,
+      area: 'W5', location: 'W5', date: at(3), completion: 10, completionBasis: 'unclear',
+      photo: '/assets/demo-scaffold.jpg', text: `${project.code} | W5 another 10%.\nSimulated unclear message; confirm the work item, mapped area and cumulative total.`,
+      processingNote: 'Several W5 items exist and “another 10%” is not a cumulative total. Ask for the item and total before changing progress.',
+    },
+    extraMessage('007', 'W5-B', 'W5', 35,
+      'DEMO ONLY: a separate instruction adds temporary access to a new off-schedule work face. The demo QS will assess this hypothetical changed scope separately.',
+      'Fictional changed-scope example for recorded-approval review. This is a fictional instruction and approval example only.'),
+    extraMessage('008', 'W3-B', 'W3', 30,
+      'Please check if this routine scaffold safety adjustment can be claimed as extra work.',
+      'Fictional included-scope query. QS must compare the work with the demo schedule before deciding.'),
+  ];
+  project.history = [{
+    id: `${project.id}-CASE-CREATED`, action: 'Fictional campus scenario created', date: at(0), actor: 'Alex Tan · Demo reviewer',
+    detail: 'Entirely fictional contract rows, drawing, work-list checks, site observations, manual area links, VO reviews and QS draft inputs.',
+  }];
+  const processVO = (sequence, minutesAgo) => {
+    const id = `${project.id}-CASE-WA-${sequence}`;
+    const priorIds = new Set(project.history.map((entry) => entry.id));
+    const result = processWhatsAppMessage(project, id);
+    if (result.outcome !== 'processed') throw new Error('A simulated extra-work message could not be linked.');
+    project = {
+      ...result.project,
+      whatsappMessages: result.project.whatsappMessages.map((message) => message.id === id ? { ...message, processedAt: at(minutesAgo) } : message),
+      history: result.project.history.map((event) => priorIds.has(event.id) ? event : { ...event, date: at(minutesAgo) }),
+    };
+    return result.reportId;
+  };
+  const reviewVO = (caseId, action, input, minutesAgo) => {
+    const priorIds = new Set(project.history.map((entry) => entry.id));
+    const result = updateVOReview(project, caseId, action, input);
+    if (result.outcome !== 'updated') throw new Error('A simulated extra-work review could not be saved.');
+    const date = at(minutesAgo), eventId = `${caseId}-${action}-DEMO`;
+    project = {
+      ...result.project,
+      voReviews: result.project.voReviews.map((review) => review.id !== caseId ? review : {
+        ...review, updatedAt: date,
+        history: review.history.map((event, index) => index === review.history.length - 1 ? { ...event, id: eventId, date } : event),
+      }),
+      history: result.project.history.map((event) => priorIds.has(event.id) ? event : { ...event, id: eventId, date }),
+    };
+  };
+  processVO('005', 4);
+  const approvedId = processVO('007', 34);
+  const rejectedId = processVO('008', 29);
+  reviewVO(approvedId, 'submit', {
+    title: 'Access to separate off-schedule work face (demo)', relatedItemId: 'WI-005',
+    scopeAssessment: 'Fictional QS assumption: a separate new work face is outside the demo schedule. Routine safety/staged adjustments remain included and are not priced here.',
+    instructionReference: `${project.code}-DEMO-INSTRUCTION-007`, proposedValue: 1800,
+    reviewNote: 'Hypothetical scope and instruction for the UI walkthrough only; not an actual contractual assessment.',
+  }, 25);
+  reviewVO(approvedId, 'approve', {
+    approvedValue: 1800, approvalReference: `${project.code}-DEMO-APPROVAL-007`, approver: 'Fictional demo approver',
+    reviewNote: 'Locally recorded fictional approval. No external instruction, certification, payment or claim submission.',
+  }, 20);
+  reviewVO(rejectedId, 'reject', {
+    title: 'Routine scaffold safety adjustment (demo)', relatedItemId: 'WI-002',
+    scopeAssessment: 'Fictional QS assessment: this routine scaffold adjustment is already included in this demo work scope.',
+    reviewNote: 'Demo rejection: no separate variation for this included-scope scenario. This is not a real contract decision.',
+  }, 24);
+  const claim = saveClaimDraft(project, period, {
+    projectId: project.id, priorConfirmed: true,
+    work: { 'WI-001': { include: true, assessedQuantity: 1000, previousValue: 0 } },
+    vos: { [approvedId]: { include: true, assessedValue: 1800, previousValue: 0 } },
+    note: 'Simulated QS inputs: separately assessed 1,000 m² at the fictional rate, fictional VO SGD 1,800, and assumed previous claims zero. Quantity is not calculated from the progress percentage. Gross draft only; retention, GST and other deductions are not calculated. Not submitted, certified or paid.',
+  });
+  if (claim.outcome !== 'updated' || !claim.draft.snapshot.canPrepare) throw new Error('The simulated QS draft could not be prepared for review.');
+  const priorIds = new Set(project.history.map((entry) => entry.id));
+  project = {
+    ...claim.project,
+    claimDrafts: claim.project.claimDrafts.map((draft) => draft.id === claim.draft.id ? { ...draft, createdAt: at(1) } : draft),
+    history: claim.project.history.map((event) => priorIds.has(event.id) ? event : { ...event, id: `${project.id}-CASE-CLAIM-DRAFT`, date: at(1) }),
+  };
+  project.history.sort((first, second) => Date.parse(second.date) - Date.parse(first.date));
+  project.seed = clone(Object.fromEntries(workflowFields.map((field) => [field, project[field]])));
+  return project;
+}

@@ -10,6 +10,10 @@ export const VO_STATUS_LABELS = Object.freeze({
 const clone = (value) => structuredClone(value);
 const record = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value) => typeof value === 'string' ? value.trim() : '';
+const inProject = (project, entry) => record(entry)
+  && (entry.projectId == null || entry.projectId === '' || entry.projectId === project?.id)
+  && (entry.projectCode == null || entry.projectCode === '' || (typeof entry.projectCode === 'string'
+    && text(entry.projectCode).toUpperCase() === text(project?.code).toUpperCase()));
 const statuses = Object.keys(VO_STATUS_LABELS);
 const editable = ['flagged', 'clarification'];
 const open = [...editable, 'pendingApproval'];
@@ -21,7 +25,7 @@ export function normalizeVOReviews(project) {
   const seen = new Set();
   return (Array.isArray(project?.voReviews) ? project.voReviews : []).filter((entry) => {
     if (!record(entry) || typeof entry.id !== 'string' || !entry.id
-      || entry.projectId !== project.id || entry.reportId !== entry.id || seen.has(entry.id)) return false;
+      || entry.projectId !== project.id || !inProject(project, entry) || entry.reportId !== entry.id || seen.has(entry.id)) return false;
     seen.add(entry.id);
     return true;
   }).map((entry) => {
@@ -39,8 +43,12 @@ function titleFor(report) {
 
 export function getVOCases(project) {
   const saved = normalizeVOReviews(project);
-  return (project?.reports || []).filter((report) => report.vo
-    && (!report.projectId || report.projectId === project.id)).map((report, index) => {
+  const seen = new Set();
+  return (Array.isArray(project?.reports) ? project.reports : []).filter((report) => {
+    if (!inProject(project, report) || !report.vo || typeof report.id !== 'string' || !report.id.trim() || seen.has(report.id)) return false;
+    seen.add(report.id);
+    return true;
+  }).map((report, index) => {
     const review = saved.find((entry) => entry.id === report.id);
     const base = {
       id: report.id, reportId: report.id, projectId: project.id,
@@ -48,7 +56,7 @@ export function getVOCases(project) {
       status: report.status === 'rejected' ? 'rejected' : 'flagged',
       title: titleFor(report), scopeAssessment: '', instructionReference: '',
       proposedValue: null, approvedValue: null, approvalReference: '', approver: '',
-      reviewNote: '', relatedItemId: project.items.some((item) => item.id === report.itemId) ? report.itemId : null,
+      reviewNote: '', relatedItemId: (Array.isArray(project.items) ? project.items : []).some((item) => record(item) && item.id === report.itemId) ? report.itemId : null,
       history: [],
     };
     return {
