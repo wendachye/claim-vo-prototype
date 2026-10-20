@@ -22,6 +22,8 @@
 .drawing-contract-coverage li { margin-top:9px; }
 .drawing-contract-coverage li strong, .drawing-contract-coverage li span { display:block; }
 .drawing-contract-coverage li strong { color:#475569; font-weight:500; }
+.drawing-contract-coverage .drawing-area-message-action { justify-content:flex-start; margin-top:14px; padding-top:14px; border-top:1px solid #eef1f5; }
+.drawing-area-message-action > span { flex:1; min-width:180px; color:#64748b; font-size:12px; line-height:1.8; }
 .drawing-plan-panel, .drawing-area-panel { min-width:0; overflow:hidden; border:1px solid var(--border); border-radius:10px; background:#fff; scroll-margin-top:76px; }
 .drawing-panel-heading { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:18px; border-bottom:1px solid var(--border); }
 .drawing-panel-heading h2 { margin:0; color:#1e293b; font-size:15px; font-weight:600; }

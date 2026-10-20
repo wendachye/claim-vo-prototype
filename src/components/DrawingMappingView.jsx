@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ArrowUpRight, Check, CircleAlert, FileText, Flag, ImageOff, Info, MapPin, Minus, Plus, RotateCcw, Save, Trash2, Upload } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Check, CircleAlert, FileText, Flag, ImageOff, Info, MapPin, MessageSquare, Minus, Plus, RotateCcw, Save, Trash2, Upload } from 'lucide-react';
 import { DEMO_DRAWING_FILENAME, getDrawingAsset, getDrawingMapping, getProvidedDrawingSource, validateDrawingFile } from '../data/drawing-mapping.js';
 import { getAreaProgress, getDrawingProgress } from '../data/drawing-progress.js';
 import { getAreaVOFlags, getDrawingVOFlags } from '../data/drawing-vo.js';
 import { getSITAreaUpdate } from '../data/sit-area-update.js';
 import { getSITAreaDefinitions, getSITAreaExclusions } from '../data/sit-area-definitions.js';
+import { getSITAreaMessageUpdate } from '../data/sit-area-messages.js';
 import { clearFormBuffer } from '../data/form-buffer.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { AreaEvidencePanel } from './AreaEvidencePanel.jsx';
@@ -28,7 +29,7 @@ const completionText = (value) => `${Math.round(value * 10) / 10}%`;
 const pinDetail = (progress) => !progress || !progress.totalCount ? 'Not linked' : progress.totalCount === 1 ? progress.items[0].completion === null ? 'Needs update' : completionText(progress.items[0].completion) : `${progress.completedCount}/${progress.totalCount} done`;
 const voDescription = (flags) => flags?.markerLabel ? `Extra work: ${flags.markerLabel}` : 'No active extra-work flags';
 
-export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onAddContractAreas, onRemoveArea, onOpenProgress, onOpenContractItem, onOpenEvidence, onOpenVO, onStartCompletionDemo, onPreviewFile }) {
+export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onAddContractAreas, onAddAreaMessages, onOpenSiteUpdates, onRemoveArea, onOpenProgress, onOpenContractItem, onOpenEvidence, onOpenVO, onStartCompletionDemo, onPreviewFile }) {
   const mapping = getDrawingMapping(project);
   const drawing = mapping.drawing;
   const areas = mapping.areas || [];
@@ -54,6 +55,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   const providedSource = drawing?.inputKind === 'provided' ? getProvidedDrawingSource(project) : null;
   const suppliedReference = Boolean(providedSource && project.contract?.sourceKind === 'provided');
   const contractAreaUpdate = getSITAreaUpdate(project);
+  const areaMessageUpdate = getSITAreaMessageUpdate(project);
   const linkedItemCount = new Set(areas.flatMap((area) => area.workItemIds)).size;
   const permanentAsset = getDrawingAsset(project, drawing);
   const asset = permanentAsset || previewUrl || localPreviewUrl;
@@ -157,6 +159,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
           return item ? <li key={itemId}><strong>{item.ref} · {item.description}</strong><span>{reason}</span></li> : null;
         })}</ul></details>
         {contractAreaUpdate.skipped.length > 0 && <details><summary>Links that need manual review</summary><ul>{contractAreaUpdate.skipped.map((entry, index) => <li key={`${entry.code}-${index}`}><strong>{entry.code} · {entry.itemIds.map((id) => project.items.find((item) => item.id === id)?.ref || id).join(' · ')}</strong><span>{entry.reason}</span></li>)}</ul></details>}
+        {onOpenSiteUpdates && <div className="drawing-area-message-action">{areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages ? <Button icon={MessageSquare} onClick={onAddAreaMessages} disabled={showEditor}>Add demo area messages</Button> : <Button icon={ArrowRight} onClick={onOpenSiteUpdates}>Open site updates</Button>}<span>Review worker messages and photos before changing completion or flagging extra work.</span></div>}
       </section>}
       <div className="drawing-workspace">
         <section className="drawing-plan-panel" ref={viewerRef} aria-labelledby="drawing-plan-heading">

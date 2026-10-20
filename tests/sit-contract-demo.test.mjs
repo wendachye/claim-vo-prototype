@@ -115,7 +115,7 @@ test('original drawing references map named source scopes without inventing new 
   for (const area of getDrawingProgress(project).slice(4)) assert.equal(area.status, 'not-started');
 });
 
-test('shared included decking is linked to both platform scopes without splitting quantities or creating site evidence', () => {
+test('shared included decking is linked to both platform scopes without splitting quantities or processing new sample activity', () => {
   const project = create();
   const mapping = getDrawingMapping(project);
   const decking = project.items.find(item => item.id === 'WI-012');
@@ -129,14 +129,17 @@ test('shared included decking is linked to both platform scopes without splittin
   assert.equal(access.pricingType, 'included');
   assert.equal(mapping.areas.filter(area => area.workItemIds.includes(access.id)).length, 1);
   for (const area of mapping.areas.slice(4)) {
-    assert.equal(getAreaEvidence(project, area.id).entries.length, 0);
+    const evidence = getAreaEvidence(project, area.id).entries;
+    assert.ok(evidence.length >= 1);
+    assert.ok(evidence.every(entry => entry.messageId && !entry.reportId));
     assert.equal(getAreaVOFlags(project, area.id).openCount, 0);
+    assert.equal(getAreaVOFlags(project, area.id).newMessageCount, ['W5-ESCALATOR', 'W3-COLUMNS'].includes(area.code) ? 1 : 0);
   }
   const excludedIds = ['WI-014', 'WI-015', 'WI-016', 'WI-017', 'WI-018'];
   assert.ok(mapping.areas.every(area => area.workItemIds.every(id => !excludedIds.includes(id))));
   assert.deepEqual(financialRows(project.items.filter(item => excludedIds.includes(item.id))), financialRows(source.initialItems.filter(item => excludedIds.includes(item.id))));
   assert.equal(project.reports.length, 7);
-  assert.equal(project.whatsappMessages.length, 8);
+  assert.equal(project.whatsappMessages.length, 18);
   assert.equal(project.claimDrafts[0].snapshot.totals.currentValue, 15894);
 });
 
@@ -144,7 +147,7 @@ test('source-linked messages, photos and three VO decisions stay simulated and r
   const project = create();
   const before = structuredClone(project);
   assert.equal(project.reports.length, 7);
-  assert.equal(project.whatsappMessages.length, 8);
+  assert.equal(project.whatsappMessages.length, 18);
   for (const report of project.reports) {
     const message = project.whatsappMessages.find(entry => entry.id === report.sourceMessageId);
     assert.equal(message.reportId, report.id);

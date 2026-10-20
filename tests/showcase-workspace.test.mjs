@@ -38,7 +38,8 @@ test('a fresh visitor starts on the complete original S.I.T. showcase with other
   assert.equal(areas.filter(area => area.position !== null).length, 4);
   assert.equal(areas.find(area => area.code === 'W3-ST36').position, null);
   assert.equal(sit.reports.length, 7);
-  assert.equal(sit.whatsappMessages.length, 8);
+  assert.equal(sit.whatsappMessages.length, 18);
+  assert.equal(sit.whatsappMessages.filter(message => message.mockSampleSet === 'sit-mapped-areas-v1').length, 10);
   assert.ok(sit.reports.every((report) => report.demo && report.origin === 'simulated'));
   assert.deepEqual(getVOCases(sit).map((entry) => entry.status).sort(), ['approved', 'flagged', 'rejected']);
   assert.equal(sit.claimDrafts.length, 1);

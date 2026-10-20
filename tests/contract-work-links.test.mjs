@@ -133,7 +133,9 @@ test('samples use current work descriptions and saved mapped areas, with an expl
   assert.deepEqual(project, before);
   const newlyMapped = getWorkItemMessageSample(project, 'WI-003');
   assert.ok(newlyMapped.includes('Area W3-ST36'));
-  assert.equal(getWorkItemSiteMessage(project, 'WI-003'), null);
+  const siteMessage = getWorkItemSiteMessage(project, 'WI-003');
+  assert.equal(siteMessage, project.whatsappMessages.find(message => message.id === `${project.id}-SIT-AREA-W3-ST36-PROGRESS`));
+  assert.equal(siteMessage.status, 'new');
   const unmappedProject = structuredClone(project);
   unmappedProject.drawingMapping.areas = unmappedProject.drawingMapping.areas.filter(area => !area.workItemIds.includes('WI-003'));
   const unmapped = getWorkItemMessageSample(freeze(unmappedProject), 'WI-003');

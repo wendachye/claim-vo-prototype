@@ -5,6 +5,8 @@ import { updateVOReview } from './vo.js';
 import { saveClaimDraft } from './claims.js';
 import { contract as sitContract, initialItems as sitItems } from './sit-contract-source.js';
 import { getSITAreaDefinitions } from './sit-area-definitions.js';
+import { addSITAreaMessages } from './sit-area-messages.js';
+import { refreshSITDemoPhotos } from './sit-demo-photos.js';
 
 const clone = (value) => structuredClone(value);
 const photoAlt = 'Generated construction illustration used as a demo site photo; not project evidence.';
@@ -206,6 +208,7 @@ function createContractScenario(values, now, sample, profile) {
     id: `${project.id}-CASE-CREATED`, action: profile.historyAction, date: at(0), actor: 'Alex Tan · Demo reviewer',
     detail: profile.historyDetail,
   }];
+  if (usesSITSource) project = refreshSITDemoPhotos(project, now).project;
   const processVO = (sequence, minutesAgo) => {
     const id = `${project.id}-CASE-WA-${sequence}`;
     const priorIds = new Set(project.history.map((entry) => entry.id));
@@ -264,6 +267,11 @@ function createContractScenario(values, now, sample, profile) {
     history: claim.project.history.map((event) => priorIds.has(event.id) ? event : { ...event, id: `${project.id}-CASE-CLAIM-DRAFT`, date: at(1) }),
   };
   project.history.sort((first, second) => Date.parse(second.date) - Date.parse(first.date));
+  if (usesSITSource) {
+    const inbox = addSITAreaMessages(project, now);
+    if (inbox.outcome !== 'updated') throw new Error('The S.I.T. area message samples could not be added.');
+    project = inbox.project;
+  }
   project.seed = clone(Object.fromEntries(workflowFields.map((field) => [field, project[field]])));
   return project;
 }
