@@ -4,11 +4,12 @@ import {
 } from 'lucide-react';
 import { contract as sampleContract } from '../data/contract.js';
 import { DEMO_CONTRACT_FILENAME, DEMO_CONTRACT_PDF } from '../data/contract-import.js';
+import { getSourceDocuments } from '../data/source-documents.js';
 import './source-preview.css';
 
 const DOCUMENTS = {
-  schedule: { asset: '/assets/contract-schedule.jpg', label: 'Schedule', icon: FileText, ratio: 1697 / 2400 },
-  drawing: { asset: '/assets/site-plan.png', label: 'Site drawing', icon: Map, ratio: 1.414 },
+  schedule: { label: 'Schedule', icon: FileText, ratio: 1697 / 2400 },
+  drawing: { label: 'Site drawing', icon: Map, ratio: 1.414 },
 };
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
@@ -39,11 +40,12 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
   const scheduleRef = useRef(null);
   const sourceKind = contract?.sourceKind ?? (contract === sampleContract ? 'provided' : 'none');
   const sourceFilename = contract?.sourceFilename ?? contract?.sourceFile;
-  const hasProvidedAssets = sourceKind === 'provided' && sourceFilename === sampleContract.sourceFile;
+  const sourceDocuments = getSourceDocuments(contract);
+  const hasProvidedAssets = Boolean(sourceDocuments?.schedule);
   const hasDemoAssets = Boolean(contract?.demoImport) && sourceFilename === DEMO_CONTRACT_FILENAME && contract.sourceFile === DEMO_CONTRACT_PDF;
-  const hasDrawing = hasProvidedAssets && (contract?.hasDrawing ?? contract === sampleContract);
+  const hasDrawing = Boolean(sourceDocuments?.drawing);
   const activeType = hasDrawing ? documentType : 'schedule';
-  const document = hasDemoAssets ? { ...DOCUMENTS.schedule, asset: '/samples/warehouse-contract-demo.png', ratio: 210 / 297 } : DOCUMENTS[activeType];
+  const document = hasDemoAssets ? { ...DOCUMENTS.schedule, asset: '/samples/warehouse-contract-demo.png', ratio: 210 / 297 } : sourceDocuments?.[activeType] || DOCUMENTS[activeType];
   const isSchedule = activeType === 'schedule';
   const showUploaded = isSchedule && Boolean(uploadedDocument?.url);
   const showIllustrative = !showUploaded && !hasDemoAssets && sourceKind === 'illustrative';
@@ -60,7 +62,8 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
   const page = item?.sourcePage ?? contract?.sourcePage;
   const pageCount = contract?.sourcePageCount;
   const reference = item?.ref ?? 'Contract schedule';
-  const projectKey = `${contract?.id ?? ''}:${contract?.reference ?? ''}:${sourceKind}:${sourceFilename ?? ''}`;
+  const projectKey = JSON.stringify([contract?.id ?? '', contract?.reference ?? '', sourceKind,
+    contract?.sourceProfile ?? '', contract?.sourceFile ?? '', sourceFilename ?? '', hasDrawing]);
 
   useEffect(() => {
     setDocumentType('schedule');
@@ -70,7 +73,7 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
 
   useEffect(() => {
     setImageStatus('loading');
-    setImageRatio(DOCUMENTS[activeType].ratio);
+    setImageRatio(document.ratio);
   }, [activeType, asset, projectKey]);
 
   useEffect(() => {

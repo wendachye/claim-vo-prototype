@@ -3,16 +3,73 @@ import { getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea 
 import { processWhatsAppMessage } from './whatsapp.js';
 import { updateVOReview } from './vo.js';
 import { saveClaimDraft } from './claims.js';
+import { contract as sitContract, initialItems as sitItems } from './sit-contract-source.js';
 
 const clone = (value) => structuredClone(value);
 const photoAlt = 'Generated construction illustration used as a demo site photo; not project evidence.';
 const workflowFields = ['sourceItems', 'items', 'reports', 'history', 'baselines', 'voReviews', 'claimDrafts', 'locked', 'version', 'whatsappMessages'];
 
 // Read the bundled fictional campus fixture, never browser-edited project data.
-// This public scenario contains no uploaded contract, drawing or commercial data.
 export function getProvidedContractSample() {
   return seedWorkspace().projects.find((project) => project.id === 'SIT01' && project.contract?.sourceKind === 'illustrative') || null;
 }
+
+// The supplied source is a separate template. It never replaces the stable
+// fictional campus project or copies a browser-edited project into a new demo.
+export function getSITContractSample() {
+  return {
+    id: 'SIT-LOA-SOURCE', code: 'SIT-LOA-SOURCE', name: 'S.I.T. Plot 1', country: 'Singapore',
+    contract: clone(sitContract), sourceItems: clone(sitItems), items: clone(sitItems),
+  };
+}
+
+const campusProfile = {
+  description: 'Fictional campus scaffold scenario with mock site updates, QS review and a draft claim.',
+  demoNotice: 'All contract parties, rows, values, drawings, site updates, photos, progress, VO decisions and claim assessments are fictional.',
+  sampleNote: '18 fictional contract rows. Mock work-list checks and a separate illustrative claim draft are already saved.',
+  drawingSource: {
+    id: 'campus-demo-plan', asset: '/samples/campus-scaffold-area-plan.svg', fileName: 'campus-scaffold-area-plan.svg', mimeType: 'image/svg+xml',
+    label: 'Fictional campus plan', note: 'Illustrative demo drawing and manual area links; not to scale.',
+  },
+  areas: [
+    ['W3-A', 'WI-001', { x: 0.17, y: 0.5 }], ['W3-B', 'WI-002', { x: 0.385, y: 0.5 }],
+    ['W5-A', 'WI-004', { x: 0.66, y: 0.5 }], ['W5-B', 'WI-005', { x: 0.84, y: 0.5 }],
+  ],
+  observationNote: 'Fictional campus scenario progress; not actual site activity.',
+  queryNote: 'Fictional scope query only. Check the demo schedule and instruction before pricing; instruction and price remain unknown.',
+  changedScopeNote: 'Fictional changed-scope example for recorded-approval review. This is a fictional instruction and approval example only.',
+  includedScopeNote: 'Fictional included-scope query. QS must compare the work with the demo schedule before deciding.',
+  approvalAssessment: 'Fictional QS assumption: a separate new work face is outside the demo schedule. Routine safety/staged adjustments remain included and are not priced here.',
+  rejectionAssessment: 'Fictional QS assessment: this routine scaffold adjustment is already included in this demo work scope.',
+  historyAction: 'Fictional campus scenario created',
+  historyDetail: 'Entirely fictional contract rows, drawing, work-list checks, site observations, manual area links, VO reviews and QS draft inputs.',
+  assessedQuantity: 1000,
+  claimNote: 'Simulated QS inputs: separately assessed 1,000 m² at the fictional rate, fictional VO SGD 1,800, and assumed previous claims zero. Quantity is not calculated from the progress percentage. Gross draft only; retention, GST and other deductions are not calculated. Not submitted, certified or paid.',
+};
+
+const sitProfile = {
+  description: 'Provided S.I.T. scaffolding contract with simulated site updates, QS review and a draft claim.',
+  demoNotice: 'Provided contract and drawing; all site updates, people, photos, progress, area pins, VO decisions and claim assessments are simulated.',
+  sampleNote: '18 representative contract rows, not the full schedule. Mock work-list checks and a separate illustrative claim draft are already saved.',
+  drawingSource: {
+    id: 'provided-site-plan', asset: '/assets/site-plan.png', fileName: 'site-plan.png', mimeType: 'image/png',
+    label: 'Provided site plan', note: 'Source drawing; area pins are illustrative manual links, not surveyed positions.',
+  },
+  areas: [
+    ['W3-ST31', 'WI-001', { x: 0.5, y: 0.83 }], ['W3-ST34', 'WI-002', { x: 0.65, y: 0.87 }],
+    ['W5-ST51', 'WI-004', { x: 0.58, y: 0.48 }], ['W5-EAST', 'WI-005', { x: 0.78, y: 0.51 }],
+  ],
+  observationNote: 'Simulated physical progress for the provided-contract walkthrough; not actual site activity.',
+  queryNote: 'Scope query only. Check the original scope and safety/staged-adjustment provisions in clauses 3(c)–(d); instruction and price remain unknown.',
+  changedScopeNote: 'Fictional changed-scope example for recorded-approval review. This is not an actual instruction or entitlement under the provided contract.',
+  includedScopeNote: 'Illustrative included-scope query. Check the supplied contract and instruction before deciding whether a variation exists.',
+  approvalAssessment: 'Fictional QS assumption: a separate new work face is outside the original schedule. Routine safety/staged adjustments remain included and are not priced here.',
+  rejectionAssessment: 'Illustrative QS assessment: this routine safety adjustment is included under the original scope; review clauses 3(c)–(d).',
+  historyAction: 'Provided-contract scenario created',
+  historyDetail: 'Supplied contract rows and drawing with simulated work-list checks, physical observations, manual area links, VO decisions and QS claim inputs.',
+  assessedQuantity: 1044,
+  claimNote: 'Simulated QS inputs: separately assessed 1,044 m² at the source rate, fictional VO SGD 1,800, and assumed previous claims zero. Quantity is not calculated from the progress percentage. Gross draft only; retention, GST and other deductions are not calculated. Not submitted, certified or paid.',
+};
 
 function demoCalendar(now) {
   let time;
@@ -30,7 +87,14 @@ function demoCalendar(now) {
 
 /** A realistic workflow with entirely fictional contract and site data. */
 export function createProvidedContractDemo(values, now = new Date()) {
-  const sample = getProvidedContractSample();
+  return createContractScenario(values, now, getProvidedContractSample(), campusProfile);
+}
+
+export function createSITContractDemo(values, now = new Date()) {
+  return createContractScenario(values, now, getSITContractSample(), sitProfile);
+}
+
+function createContractScenario(values, now, sample, profile) {
   if (!sample) throw new Error('No fictional campus sample is available in this prototype.');
   const { period, at } = demoCalendar(now);
   const baselineAt = at(60);
@@ -43,21 +107,17 @@ export function createProvidedContractDemo(values, now = new Date()) {
     return next;
   });
   for (const id of ['WI-001', 'WI-002', 'WI-004', 'WI-005']) {
-    if (!cleanSource.some((item) => item.id === id)) throw new Error('The fictional campus sample is missing a scenario work item.');
+    if (!cleanSource.some((item) => item.id === id)) throw new Error('The contract sample is missing a scenario work item.');
   }
   project = {
     ...project, providedContractDemo: true,
-    description: project.description || 'Fictional campus scaffold scenario with mock site updates, QS review and a draft claim.',
+    description: project.description || profile.description,
     contract: {
       ...clone(sample.contract), id: project.id,
-      demoNotice: 'All contract parties, rows, values, drawings, site updates, photos, progress, VO decisions and claim assessments are fictional.',
-      sampleNote: '18 fictional contract rows. Mock work-list checks and a separate illustrative claim draft are already saved.',
+      demoNotice: profile.demoNotice,
+      sampleNote: profile.sampleNote,
       demoAreas: [],
-      drawingSource: {
-        id: 'campus-demo-plan', asset: '/samples/campus-scaffold-area-plan.svg', fileName: 'campus-scaffold-area-plan.svg', mimeType: 'image/svg+xml',
-        label: 'Fictional campus plan',
-        note: 'Illustrative demo drawing and manual area links; not to scale.',
-      },
+      drawingSource: clone(profile.drawingSource),
     },
     sourceItems: cleanSource,
     items: clone(cleanSource).map((item) => ({ ...item, reviewedAt: baselineAt, reviewedBy: 'Demo contract reviewer' })),
@@ -66,21 +126,17 @@ export function createProvidedContractDemo(values, now = new Date()) {
   };
   project.baselines = [{ version: 1, items: clone(project.items), date: baselineAt, demo: true }];
   const installed = installDrawing(project, { inputKind: 'provided' }, baselineAt);
-  if (installed.outcome !== 'updated') throw new Error('The fictional campus plan could not be added to the scenario.');
+  if (installed.outcome !== 'updated') throw new Error('The contract plan could not be added to the scenario.');
   project = installed.project;
-  const areaRows = [
-    ['W3-A', 'WI-001', { x: 0.17, y: 0.5 }],
-    ['W3-B', 'WI-002', { x: 0.385, y: 0.5 }],
-    ['W5-A', 'WI-004', { x: 0.66, y: 0.5 }],
-    ['W5-B', 'WI-005', { x: 0.84, y: 0.5 }],
-  ];
+  const areaRows = profile.areas;
+  const areaCode = (itemId) => areaRows.find(([, linkedId]) => itemId === linkedId)[0];
   for (const [code, itemId, position] of areaRows) {
     const item = project.items.find((entry) => entry.id === itemId);
     const saved = saveAreaMapping(project, {
       drawingId: getDrawingMapping(project).drawing.id, code, name: item.description,
       page: 1, position, workItemIds: [itemId],
     }, baselineAt);
-    if (saved.outcome !== 'updated') throw new Error('A fictional campus scenario area could not be linked.');
+    if (saved.outcome !== 'updated') throw new Error('A contract scenario area could not be linked.');
     project = saved.project;
   }
   project.contract.demoAreas = getDrawingMapping(project).areas.map((area) => ({
@@ -95,17 +151,17 @@ export function createProvidedContractDemo(values, now = new Date()) {
       itemId, sourceMessageId: `${project.id}-CASE-WA-${sequence}`, channel: 'whatsapp-mock',
       area: `Area ${areaCode}`, areaMapping: snapshotMappedArea(area), location: item.location,
       sender: 'Scaffold worker (demo)', date: at(minutesAgo), completion, completionBasis: 'cumulative', status,
-      message: `${project.code} | ${item.location} | Area ${areaCode} | ${itemId}\nCOMPLETE=${completion}% TOTAL\nFictional campus scenario progress; not actual site activity.`,
+      message: `${project.code} | ${item.location} | Area ${areaCode} | ${itemId}\nCOMPLETE=${completion}% TOTAL\n${profile.observationNote}`,
       photo: '/assets/demo-scaffold.jpg', photoAlt, demo: true, origin: 'simulated', vo: false,
       note: 'Simulated physical observation only. Financial entitlement and QS assessed quantities are separate.',
       ...(status === 'verified' ? { approvedCompletion: completion, verifiedBy: 'Scaffold supervisor (demo)', verifiedAt: at(verifiedMinutesAgo) } : {}),
     };
   };
   project.reports = [
-    reportFor('001', 'WI-001', 'W3-A', 50, 'verified', 50, 45),
-    reportFor('002', 'WI-002', 'W3-B', 100, 'verified', 45, 40),
-    reportFor('003', 'WI-001', 'W3-A', 65, 'pending', 15),
-    reportFor('004', 'WI-004', 'W5-A', 50, 'pending', 10),
+    reportFor('001', 'WI-001', areaCode('WI-001'), 50, 'verified', 50, 45),
+    reportFor('002', 'WI-002', areaCode('WI-002'), 100, 'verified', 45, 40),
+    reportFor('003', 'WI-001', areaCode('WI-001'), 65, 'pending', 15),
+    reportFor('004', 'WI-004', areaCode('WI-004'), 50, 'pending', 10),
   ];
   const totals = { 'WI-001': [65, 50], 'WI-002': [100, 100], 'WI-004': [50, 0] };
   project.items = project.items.map((item) => ({ ...item, reported: totals[item.id]?.[0] ?? 0, verified: totals[item.id]?.[1] ?? 0 }));
@@ -126,25 +182,25 @@ export function createProvidedContractDemo(values, now = new Date()) {
       itemId: report.itemId, area: report.area, location: report.location, date: report.date, processedAt: report.date,
       completion: report.completion, completionBasis: 'cumulative', text: report.message, photo: report.photo,
     })),
-    extraMessage('005', 'W3-A', 'W3', 5,
-      'A supervisor asked for an additional access platform. Please check the instruction and whether this is included in the existing scaffold scope before pricing.',
-      'Fictional scope query only. Check the demo schedule and instruction before pricing; instruction and price remain unknown.'),
+    extraMessage('005', areaCode('WI-001'), 'W3', 5,
+      `A supervisor asked for an additional access platform. Please check the instruction and whether this is included in the existing scaffold scope before pricing.${sample.contract.sourceKind === 'provided' ? ' Demo QS scope check: compare clauses 3(c)–(d) before treating safety or staged adjustments as extra work.' : ''}`,
+      profile.queryNote),
     {
       ...baseMessage, id: `${project.id}-CASE-WA-006`, kind: 'clarification', status: 'new', itemId: null,
       area: 'W5', location: 'W5', date: at(3), completion: 10, completionBasis: 'unclear',
       photo: '/assets/demo-scaffold.jpg', text: `${project.code} | W5 another 10%.\nSimulated unclear message; confirm the work item, mapped area and cumulative total.`,
       processingNote: 'Several W5 items exist and “another 10%” is not a cumulative total. Ask for the item and total before changing progress.',
     },
-    extraMessage('007', 'W5-B', 'W5', 35,
+    extraMessage('007', areaCode('WI-005'), 'W5', 35,
       'DEMO ONLY: a separate instruction adds temporary access to a new off-schedule work face. The demo QS will assess this hypothetical changed scope separately.',
-      'Fictional changed-scope example for recorded-approval review. This is a fictional instruction and approval example only.'),
-    extraMessage('008', 'W3-B', 'W3', 30,
+      profile.changedScopeNote),
+    extraMessage('008', areaCode('WI-002'), 'W3', 30,
       'Please check if this routine scaffold safety adjustment can be claimed as extra work.',
-      'Fictional included-scope query. QS must compare the work with the demo schedule before deciding.'),
+      profile.includedScopeNote),
   ];
   project.history = [{
-    id: `${project.id}-CASE-CREATED`, action: 'Fictional campus scenario created', date: at(0), actor: 'Alex Tan · Demo reviewer',
-    detail: 'Entirely fictional contract rows, drawing, work-list checks, site observations, manual area links, VO reviews and QS draft inputs.',
+    id: `${project.id}-CASE-CREATED`, action: profile.historyAction, date: at(0), actor: 'Alex Tan · Demo reviewer',
+    detail: profile.historyDetail,
   }];
   const processVO = (sequence, minutesAgo) => {
     const id = `${project.id}-CASE-WA-${sequence}`;
@@ -177,7 +233,7 @@ export function createProvidedContractDemo(values, now = new Date()) {
   const rejectedId = processVO('008', 29);
   reviewVO(approvedId, 'submit', {
     title: 'Access to separate off-schedule work face (demo)', relatedItemId: 'WI-005',
-    scopeAssessment: 'Fictional QS assumption: a separate new work face is outside the demo schedule. Routine safety/staged adjustments remain included and are not priced here.',
+    scopeAssessment: profile.approvalAssessment,
     instructionReference: `${project.code}-DEMO-INSTRUCTION-007`, proposedValue: 1800,
     reviewNote: 'Hypothetical scope and instruction for the UI walkthrough only; not an actual contractual assessment.',
   }, 25);
@@ -187,14 +243,14 @@ export function createProvidedContractDemo(values, now = new Date()) {
   }, 20);
   reviewVO(rejectedId, 'reject', {
     title: 'Routine scaffold safety adjustment (demo)', relatedItemId: 'WI-002',
-    scopeAssessment: 'Fictional QS assessment: this routine scaffold adjustment is already included in this demo work scope.',
+    scopeAssessment: profile.rejectionAssessment,
     reviewNote: 'Demo rejection: no separate variation for this included-scope scenario. This is not a real contract decision.',
   }, 24);
   const claim = saveClaimDraft(project, period, {
     projectId: project.id, priorConfirmed: true,
-    work: { 'WI-001': { include: true, assessedQuantity: 1000, previousValue: 0 } },
+    work: { 'WI-001': { include: true, assessedQuantity: profile.assessedQuantity, previousValue: 0 } },
     vos: { [approvedId]: { include: true, assessedValue: 1800, previousValue: 0 } },
-    note: 'Simulated QS inputs: separately assessed 1,000 m² at the fictional rate, fictional VO SGD 1,800, and assumed previous claims zero. Quantity is not calculated from the progress percentage. Gross draft only; retention, GST and other deductions are not calculated. Not submitted, certified or paid.',
+    note: profile.claimNote,
   });
   if (claim.outcome !== 'updated' || !claim.draft.snapshot.canPrepare) throw new Error('The simulated QS draft could not be prepared for review.');
   const priorIds = new Set(project.history.map((entry) => entry.id));

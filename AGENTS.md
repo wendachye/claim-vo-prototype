@@ -8,7 +8,7 @@ Never create or amend Git commits or deploy without the user's explicit request.
 
 ## Public demonstration data
 
-All public fixtures must remain fictional. Do not add uploaded contracts, commercial records, client drawings, personal data, credentials or machine-specific paths. Generated site photos must be labelled as demonstration images.
+Default public fixtures remain fictional. The user explicitly requested the original S.I.T. contract scenario for the deployed Vercel showcase on 21 October 2026. This is a scoped exception for the 18 reviewed schedule rows, contract metadata, schedule-page image and site-plan image in the S.I.T. source profile. Keep the original 115-page PDF, other uploaded documents, personal data, credentials, machine-specific paths and browser-edited project state out of the repository. Generated site photos must be labelled as demonstration images.
 
 The campus dataset uses the stable internal ID `SIT01` for migration compatibility. It does not identify an actual project.
 
@@ -84,6 +84,6 @@ Selecting an area offers its actual VO cases and a direct Review VO action. Open
 
 ## Contract scenario demo
 
-New projects offer a complete campus contract scenario using pristine fictional fixtures and a matching illustrative W3/W5 plan. Keep existing browser edits separate. Source labels must distinguish a supplied source in a local private prototype from fictional public samples; never describe the public sample as extracted from an uploaded contract. All parties, values, drawings, activity, people, photos, VO decisions and QS inputs in this distribution are fictional.
+New projects offer a complete campus contract scenario using pristine fictional fixtures and a matching illustrative W3/W5 plan, plus a separate original S.I.T. contract scenario explicitly requested by the user. Keep existing browser edits separate. Source labels must distinguish supplied S.I.T. rows and images from fictional campus samples. In the S.I.T. scenario only the contract metadata, representative rows and source images are real; site activity, people, generated photos, pin positions, VO decisions and QS inputs remain simulated. Do not imply actual historic site verification or contractual approval.
 
-Keep physical completion separate from explicit QS claim assessment. Demo creation may seed a checked mock baseline, paired source evidence, pending/approved/rejected VO examples and a saved gross claim draft. Drafts do not submit, certify or pay anything, and retention/GST are not calculated. A persistent bundled drawing uses a validated local descriptor; arbitrary saved URLs are rejected. Keep user-supplied source files and their private fixtures out of the public repository. Backend and live integrations stay deferred; commit and push only on explicit user request.
+Keep physical completion separate from explicit QS claim assessment. Demo creation may seed a checked mock baseline, paired source evidence, pending/approved/rejected VO examples and a saved gross claim draft. Drafts do not submit, certify or pay anything, and retention/GST are not calculated. A persistent bundled drawing uses a validated local descriptor; arbitrary saved URLs are rejected. Preserve existing campus and warehouse fixtures and project IDs when adding source profiles. Backend and live integrations stay deferred; commit and push only on explicit user request.

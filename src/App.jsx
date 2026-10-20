@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Building2, Check, CheckCheck, ChevronLeft, ChevronRight, CircleAlert, ClipboardList, Clock3, FileCheck2, FileText, Flag, History, ImagePlus, Info, ListChecks, LockKeyhole, MessageSquare, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, RotateCcw, Search, ShieldCheck, Upload, X } from 'lucide-react';
 import { WORKSPACE_STORE, loadWorkspace, createProject, resetProject, updateProjectState } from './data/projects.js';
 import { createDemoProject } from './data/demo-project.js';
-import { createProvidedContractDemo, getProvidedContractSample } from './data/provided-contract-demo.js';
+import { createProvidedContractDemo, getProvidedContractSample, createSITContractDemo, getSITContractSample } from './data/provided-contract-demo.js';
 import { getAreaVOFlags } from './data/drawing-vo.js';
 import { resolveAreaEvidenceSource } from './data/drawing-evidence.js';
 import { createDrawingProgressDemo } from './data/drawing-progress-demo.js';
@@ -139,9 +139,9 @@ export function App(){
   }
   function addProject(values){
     if(workspace.projects.some(p=>[p.id,p.code].some(code=>code.toUpperCase()===values.code.toUpperCase())))return notify('Use a unique project code.',true);
-    const next=values.template==='provided'?createProvidedContractDemo(values):values.template==='warehouse'?createDemoProject(values):createProject(values);
+    const next=values.template==='sit-original'?createSITContractDemo(values):values.template==='provided'?createProvidedContractDemo(values):values.template==='warehouse'?createDemoProject(values):createProject(values);
     setWorkspace(old=>({...old,activeProjectId:next.id,projects:[...old.projects,next]}));
-    select('');setTab('items');setModal(null);nav(values.template==='provided'?'projects':'contract');window.scrollTo({top:0});notify(values.template==='provided'?`${next.name} created. The fictional contract scenario is ready, with mock progress, VO reviews and an example claim.`:values.template==='warehouse'?`${next.name} created with mock contract items and site messages. Start by checking the highlighted quantity.`:`${next.name} created. Its contract register starts empty.`);
+    select('');setTab('items');setModal(null);nav(['provided','sit-original'].includes(values.template)?'projects':'contract');window.scrollTo({top:0});notify(values.template==='sit-original'?`${next.name} created from the supplied S.I.T. schedule. Site activity and the example claim are simulated.`:values.template==='provided'?`${next.name} created. The fictional contract scenario is ready, with mock progress, VO reviews and an example claim.`:values.template==='warehouse'?`${next.name} created with mock contract items and site messages. Start by checking the highlighted quantity.`:`${next.name} created. Its contract register starts empty.`);
   }
   function importContract(input){
     const result=applyMockContract(workspace,project.id,input);
@@ -285,7 +285,7 @@ export function App(){
     {modal==='project'&&<Modal title={project.name} description={`${project.code} · ${project.country}`}  onClose={()=>setModal(null)}><div className="detail-grid">{[['Reference',contract.reference],['Main contractor',contract.mainContractor],['Subcontractor',contract.subcontractor],['Contract date',contract.dateLabel||'Not added'],['Declared sum',contract.totalAmount==null?'Not added':`${currency} ${money(contract.totalAmount)}`],['Sample scope',contract.sampleNote||'Empty register']].map(([label,value])=><div className="detail-block" key={label}><div className="detail-label">{label}</div><div className="detail-value">{value}</div></div>)}</div><div className="notice info"><Info size={16}/><span>{contract.pricingNote||'Contract extraction will be connected later. Each project has separate records in this browser.'}</span></div></Modal>}
     {modal==='history'&&<Modal title="Activity history" description={`${project.code} · Local demo actions`} onClose={()=>setModal(null)}>{s.history.length?<div className="activity-list">{s.history.map(h=><div className="activity-item" key={h.id}><History size={16}/><section><strong>{h.action}</strong><p>{h.detail}</p><small>{time(h.date)} · {h.actor}</small></section></div>)}</div>:<div className="empty-state"><History size={25}/><h3>No activity yet</h3><p>Contract checks and progress decisions appear here.</p></div>}</Modal>}
 
-    {modal==='create'&&<CreateProjectModal projects={workspace.projects} providedContract={getProvidedContractSample()} onClose={()=>setModal(null)} onCreate={addProject}/>}
+    {modal==='create'&&<CreateProjectModal projects={workspace.projects} providedContract={getProvidedContractSample()} originalContract={getSITContractSample()} onClose={()=>setModal(null)} onCreate={addProject}/>}
     {modal==='report'&&s.items.length>0&&<AddReport key={project.id} project={project} items={s.items} onClose={()=>setModal(null)} onSave={addReport} notify={notify}/>}
     {modal==='upload'&&<ContractUploadFlow key={project.id} project={project} onClose={()=>setModal(null)} onApply={importContract}/>}
   </div>;

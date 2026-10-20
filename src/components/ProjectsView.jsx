@@ -47,26 +47,33 @@ export function ProjectsView({ projects = [], activeProjectId, onOpen, onCreate,
   </div>;
 }
 
-export function CreateProjectModal({ projects = [], providedContract = null, onClose, onCreate }) {
+export function CreateProjectModal({ projects = [], providedContract = null, originalContract = null, onClose, onCreate }) {
   const formId = useId();
   const nameRef = useRef(null);
   const codeRef = useRef(null);
   const [form, setForm] = useState({ name: '', code: '', country: 'Singapore', subcontractor: '', description: '', template: 'warehouse' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const isProvided = form.template === 'provided' && Boolean(providedContract);
-  const usesProvidedSource = providedContract?.contract?.sourceKind === 'provided';
+  const suggestions = useRef({ name: '', code: '' });
+  const scenario = form.template === 'sit-original' ? originalContract : form.template === 'provided' ? providedContract : null;
+  const isProvided = Boolean(scenario);
+  const usesProvidedSource = scenario?.contract?.sourceKind === 'provided';
   const update = (field, value) => { setForm((current) => ({ ...current, [field]: value })); setErrors((current) => ({ ...current, [field]: undefined, submit: undefined })); };
   function chooseTemplate(template) {
-    if (template !== 'provided' || !providedContract) return update('template', template);
+    const source = template === 'sit-original' ? originalContract : template === 'provided' ? providedContract : null;
+    if (!source) return update('template', template);
     const used = new Set(list(projects).flatMap(project => [project.id, project.code].map(value => String(value).toUpperCase())));
+    const prefix = template === 'sit-original' ? 'SIT-DEMO' : 'CASE';
     let index = 1;
-    while (used.has(`CASE${String(index).padStart(2, '0')}`)) index += 1;
-    setForm(current => ({ ...current, template, name: current.name || `${providedContract.name.replace(/\s*\(Demo\)\s*$/i, '')} — Scenario (Demo)`, code: current.code || `CASE${String(index).padStart(2, '0')}`, country: providedContract.country || 'Singapore', subcontractor: providedContract.contract.subcontractor || '' }));
+    while (used.has(`${prefix}${String(index).padStart(2, '0')}`)) index += 1;
+    const next = { name: `${source.name.replace(/\s*\(Demo\)\s*$/i, '')} — Scenario (Demo)`, code: `${prefix}${String(index).padStart(2, '0')}` };
+    const previous = suggestions.current;
+    suggestions.current = next;
+    setForm(current => ({ ...current, template, name: !current.name || current.name === previous.name ? next.name : current.name, code: !current.code || current.code === previous.code ? next.code : current.code, country: source.country || 'Singapore', subcontractor: source.contract.subcontractor || '' }));
     setErrors({});
   }
   const templateHint = isProvided
-    ? `${providedContract.items.length} ${usesProvidedSource ? 'original schedule rows, the supplied drawing' : 'fictional schedule rows, a demo plan'} and a simulated site-to-claim scenario.`
+    ? `${scenario.items.length} ${usesProvidedSource ? 'original schedule rows, the supplied drawing' : 'fictional schedule rows, a demo plan'} and a simulated site-to-claim scenario.`
     : form.template === 'warehouse' ? 'Six fictional work items and four mock messages, ready for the full walkthrough.' : 'Start without work items, then try the mock contract upload.';
 
   async function submit(event) {
@@ -87,7 +94,7 @@ export function CreateProjectModal({ projects = [], providedContract = null, onC
 
   return <Modal title="New project" description="Choose sample data to try the full workflow, or start empty." onClose={onClose} footer={<><Button onClick={onClose} disabled={submitting}>Cancel</Button><Button className="primary" icon={Plus} type="submit" form={formId} disabled={submitting || !onCreate}>{submitting ? 'Creating…' : form.template === 'empty' ? 'Create empty project' : 'Create mock project'}</Button></>}>
     <form id={formId} className="projects-create-form" onSubmit={submit} noValidate>
-      <FormField className="projects-form-field" label="Project data" id={`${formId}-template`} hint={templateHint}><select id={`${formId}-template`} className="form-select" value={form.template} onChange={(event) => chooseTemplate(event.target.value)} disabled={submitting}><option value="warehouse">Sample warehouse — full workflow</option>{providedContract && <option value="provided">{usesProvidedSource ? 'Uploaded contract' : 'Sample campus contract'} — realistic scenario</option>}<option value="empty">Empty project — upload a contract</option></select></FormField>
+      <FormField className="projects-form-field" label="Project data" id={`${formId}-template`} hint={templateHint}><select id={`${formId}-template`} className="form-select" value={form.template} onChange={(event) => chooseTemplate(event.target.value)} disabled={submitting}><option value="warehouse">Sample warehouse — full workflow</option>{providedContract && <option value="provided">{providedContract.contract?.sourceKind === 'provided' ? 'Uploaded contract' : 'Sample campus contract'} — realistic scenario</option>}{originalContract && <option value="sit-original">Original S.I.T. contract — realistic scenario</option>}<option value="empty">Empty project — upload a contract</option></select></FormField>
       <FormField className="projects-form-field" label="Project name" id={`${formId}-name`} required error={errors.name}><input ref={nameRef} id={`${formId}-name`} className="form-input" value={form.name} maxLength={100} placeholder="e.g. Riverside residences" required aria-invalid={Boolean(errors.name)} onChange={(event) => update('name', event.target.value)} disabled={submitting} /></FormField>
       <div className="projects-form-row">
         <FormField className="projects-form-field" label="Project code" id={`${formId}-code`} required hint="A unique code for site reports." error={errors.code}><input ref={codeRef} id={`${formId}-code`} className="form-input projects-code-input" value={form.code} maxLength={20} placeholder="e.g. RIV01" required aria-invalid={Boolean(errors.code)} onChange={(event) => update('code', event.target.value.toUpperCase())} disabled={submitting} /></FormField>

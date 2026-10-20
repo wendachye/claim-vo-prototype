@@ -2,7 +2,7 @@
 
 A frontend-only construction workflow demo built with Next.js and React. It includes project workspaces, contract review, completion tracking, mock WhatsApp processing, QS variation review and monthly claim preparation with saved assessment preview/export.
 
-All seeded projects, parties, schedule values, site activity and approvals are fictional. Generated photos illustrate the workflow; they are not evidence from an actual project. No uploaded contract pages, commercial records or drawings are included.
+The default campus and warehouse projects are fictional. A separate, explicitly requested **Original S.I.T. contract** scenario uses the supplied contract metadata, 18 reviewed schedule rows and two source-page images. All site activity, people, progress, generated photos, VO decisions and claim assessments remain simulated. The complete original PDF is not bundled.
 
 ## Simple workflow
 
@@ -124,4 +124,14 @@ Explore the drawing to see verified, pending and not-started work, related messa
 
 The example claim is a saved draft using explicitly mocked QS inputs, separate from physical percentages. It shows gross values before retention, GST or other deductions; nothing is submitted, certified or paid. **Reset demo** restores the selected project's seeded workflow and clears its drawing mappings, following the existing reset behavior.
 
-The public repository contains fictional fixtures and an original illustrative plan. User-supplied contracts, source drawings, browser-local projects and private contract fixtures are excluded. The local source-backed prototype retains its supplied-contract scenario separately. Run `npm run test:provided-demo` to check source isolation, evidence, VO status, claim snapshots and persistence.
+The fictional campus fixture and plan remain available alongside the source-backed S.I.T. option. Browser-local projects and existing edits are never copied into a new demo. Run `npm run test:provided-demo` to check the fictional scenario.
+
+## Original S.I.T. contract scenario
+
+Open **All projects → New project → Original S.I.T. contract — realistic scenario**. The form suggests an independent **SIT-DEMO01** code (or the next unused code), preserving existing campus, warehouse and original-demo projects. Create the project, then use **Explore the drawing** or **View example claim** from its overview.
+
+The contract identity, parties, original rates, source quantities and source dates come from the supplied S.I.T. scaffolding schedule. The 18 rows are a representative subset, not the full contract schedule. **Compare with contract** displays the source schedule; **Drawing & areas** displays the supplied site plan with illustrative W3/W5 links. The two images persist across refreshes without a database or file upload.
+
+The scenario includes a newer 65% worker report against 50% verified work, completed and not-started items, an unclear incremental message, an additional-platform scope query and explicitly simulated approval/rejection examples. The saved claim uses separately specified mock QS inputs and remains an unsubmitted gross draft before retention, GST and deductions. No source percentage automatically creates claim money.
+
+This source profile is intended for the user-requested deployed showcase. Deploying it makes the included real contract metadata, prices and two source images accessible with the app. The full original PDF and other uploaded documents are excluded. Run `node --test tests/sit-contract-demo.test.mjs tests/source-documents.test.mjs` for source integrity, project isolation, preview resolution and saved-evidence checks.
