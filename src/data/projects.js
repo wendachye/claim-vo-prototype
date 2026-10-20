@@ -1,6 +1,7 @@
 import { contract, initialItems, initialReports } from './contract.js';
 import { getWhatsAppMessages, seedWhatsAppMessages } from './whatsapp.js';
 import { normalizeVOReviews } from './vo.js';
+import { normalizeClaimDrafts } from './claims.js';
 
 export const WORKSPACE_STORE = 'claim-vo-frontend-v2';
 export const LEGACY_STORE = 'claim-vo-frontend-v1';
@@ -34,6 +35,7 @@ function initialWorkflow(sourceItems, reports = []) {
     history: [],
     baselines: [],
     voReviews: [],
+    claimDrafts: [],
   };
 }
 
@@ -266,6 +268,7 @@ function normalizeProject(project) {
     ...base, ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   }));
   seed.voReviews = normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews });
+  seed.claimDrafts = normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts });
   return {
     ...base,
     ...clone(project),
@@ -277,6 +280,7 @@ function normalizeProject(project) {
     version: project.version ?? 1,
     whatsappMessages: clone(getWhatsAppMessages(project)),
     voReviews: normalizeVOReviews(project),
+    claimDrafts: normalizeClaimDrafts(project),
     seed,
   };
 }
@@ -330,6 +334,7 @@ export function loadWorkspace(storage = globalThis.localStorage) {
     };
     workspace.projects[0].whatsappMessages = seedWhatsAppMessages(workspace.projects[0]);
     workspace.projects[0].voReviews = normalizeVOReviews({ ...workspace.projects[0], voReviews: legacy.voReviews });
+    workspace.projects[0].claimDrafts = normalizeClaimDrafts({ ...workspace.projects[0], claimDrafts: legacy.claimDrafts });
   }
   // The v1 key is deliberately never changed or removed.
   return persisted(storage, workspace);
@@ -343,7 +348,8 @@ export function resetProject(project) {
     ? project.seed : fallback.seed;
   const resetSeed = { ...clone(seed), whatsappMessages: clone(getWhatsAppMessages({
     ...project, ...seed, whatsappMessages: seed.whatsappMessages,
-  })), voReviews: normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews }) };
+  })), voReviews: normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews }),
+  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }) };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   delete next.lockedAt;
   return next;

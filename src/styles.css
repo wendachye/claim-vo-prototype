@@ -452,3 +452,5 @@ table tbody tr:last-child td { border-bottom: 0; }
 .sidebar-collapsed .project-modules-label { display:none; }
 @media(max-width:1050px) { .topbar-module { display:none; } }
 @media(max-width:760px) { .topbar-left { gap:8px; } .topbar-divider { display:none; } .topbar-right { flex-shrink:0; } .sidebar-collapsed .project-modules-label { display:flex; } }
+
+.workspace-loading { min-height: 100vh; display: grid; place-items: center; color: #64748b; font-size: 14px; }

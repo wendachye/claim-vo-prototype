@@ -1,0 +1,118 @@
+.claim-view { min-width:0; }
+.claim-period-picker { display:flex; align-items:center; gap:9px; padding:7px 10px; background:#fff; border:1px solid var(--border); border-radius:8px; }
+.claim-period-picker > svg { color:#64748b; }
+.claim-period-picker label { display:flex; flex-direction:column; gap:3px; color:#94a3b8; font-size:9px; }
+.claim-period-picker input { max-width:154px; padding:0; border:0; background:transparent; color:#334155; font-size:12px; font-weight:550; }
+.claim-context { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px; padding:13px 16px; border:1px solid var(--border); border-radius:9px; background:#fff; }
+.claim-context > div { display:flex; align-items:center; gap:10px; min-width:0; }
+.claim-context-icon { display:grid; place-items:center; width:35px; height:35px; border-radius:8px; color:#2563eb; background:#eff6ff; }
+.claim-context strong { display:block; color:#334155; font-size:12px; line-height:1.5; }
+.claim-context p { color:#94a3b8; font-size:10px; margin-top:3px; line-height:1.6; }
+.claim-context-meta { text-align:right; }
+.claim-context-meta > span { display:block; font-size:10px; color:#64748b; line-height:1.7; }
+.claim-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:13px; margin-bottom:20px; }
+.claim-metric { padding:15px 17px; border:1px solid var(--border); border-radius:10px; background:#fff; min-width:0; }
+.claim-metric .summary-label { margin-bottom:9px; font-size:10px; }
+.claim-metric > strong { display:block; color:#334155; font-size:23px; font-weight:600; letter-spacing:-.6px; line-height:1.4; }
+.claim-metric > strong small { color:#94a3b8; font-size:11px; font-weight:450; margin-right:5px; letter-spacing:0; }
+.claim-metric > p { margin-top:4px; color:#94a3b8; font-size:10px; line-height:1.6; }
+.claim-metric.primary { border-color:#bfdbfe; background:#f8fbff; }
+.claim-metric.primary strong { color:#2563eb; }
+.claim-workspace { display:grid; grid-template-columns:minmax(0,1fr) 273px; align-items:start; gap:18px; }
+.claim-main { min-width:0; }
+.claim-tabs { display:flex; gap:22px; border-bottom:1px solid var(--border); margin-bottom:15px; }
+.claim-tabs button { display:flex; align-items:center; gap:6px; padding:0 0 13px; border:0; border-bottom:2px solid transparent; background:transparent; color:#94a3b8; font-size:12px; white-space:nowrap; }
+.claim-tabs button.active { border-bottom-color:#2563eb; color:#2563eb; font-weight:550; }
+.claim-tabs button span { padding:2px 5px; background:#edf2f7; color:#64748b; font-size:9px; border-radius:4px; }
+.claim-tabs button.active span { background:#dbeafe; color:#2563eb; }
+.claim-panel { border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden; min-width:0; }
+.claim-panel-header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:15px 16px; border-bottom:1px solid var(--border); }
+.claim-panel-header h2 { color:#334155; font-size:12px; font-weight:600; line-height:1.6; }
+.claim-panel-header p { color:#94a3b8; font-size:10px; line-height:1.7; margin-top:3px; }
+.claim-panel-header button { display:flex; align-items:center; gap:5px; flex-shrink:0; padding:0; color:#2563eb; background:transparent; border:0; font-size:10px; }
+.claim-method { display:flex; align-items:flex-start; gap:7px; padding:11px 15px; border-bottom:1px solid #e9eef5; color:#64748b; background:#f8fafc; font-size:10px; line-height:1.8; }
+.claim-method > svg { margin-top:2px; color:#94a3b8; }
+.claim-table-wrap { width:100%; overflow-x:auto; }
+.claim-table { width:100%; border-collapse:collapse; min-width:670px; font-size:11px; }
+.claim-table th { padding:11px 12px; background:#fcfdfe; color:#94a3b8; border-bottom:1px solid var(--border); font-size:9px; font-weight:500; text-align:left; line-height:1.6; white-space:nowrap; }
+.claim-table td { padding:13px 12px; border-bottom:1px solid #edf1f5; vertical-align:top; }
+.claim-table tr:last-child td { border-bottom:0; }
+.claim-table tr.claim-row-selected td { background:#fbfdff; }
+.claim-table th:first-child,.claim-table td:first-child { width:29px; padding-right:0; }
+.claim-table input[type=checkbox] { accent-color:#2563eb; width:13px; height:13px; margin:3px 0 0; }
+.claim-item-title { min-width:160px; max-width:230px; }
+.claim-item-title > strong { display:block; color:#475569; font-size:11px; font-weight:550; line-height:1.65; }
+.claim-item-title > span { display:block; margin-top:4px; color:#94a3b8; font-size:9px; line-height:1.7; }
+.claim-item-ref { display:block; color:#64748b; font-size:9px; font-weight:500; margin-bottom:4px; }
+.claim-evidence { min-width:112px; max-width:145px; color:#64748b; font-size:10px; }
+.claim-evidence strong { display:block; font-size:12px; font-weight:550; margin-bottom:6px; }
+.claim-evidence > span { display:block; font-size:9px; color:#94a3b8; line-height:1.7; }
+.claim-evidence .badge { margin-top:2px; font-size:8px; min-height:19px; padding:3px 5px; }
+.claim-date-confirm { display:flex; align-items:flex-start; gap:5px; margin-top:9px; color:#64748b; font-size:9px; line-height:1.6; }
+.claim-date-confirm > input[type=checkbox] { flex-shrink:0; width:11px; height:11px; margin-top:2px; }
+.claim-table .claim-input { width:91px; min-height:32px; padding:7px 8px; border:1px solid #dce3ec; border-radius:6px; background:#fff; color:#334155; text-align:right; font-size:11px; }
+.claim-table .claim-input:disabled { background:#f8fafc; }
+.claim-table .claim-input::placeholder { color:#b5c0ce; font-size:10px; }
+.claim-table input::-webkit-inner-spin-button { appearance:none; }
+.claim-input-unit { display:block; text-align:right; color:#94a3b8; font-size:8px; margin-top:4px; }
+.claim-row-value { min-width:83px; color:#334155; text-align:right; font-size:11px; font-variant-numeric:tabular-nums; line-height:1.8; }
+.claim-row-value strong { font-weight:550; }
+.claim-row-value span { display:block; color:#94a3b8; font-size:9px; }
+.claim-row-value.negative strong { color:#b45309; }
+.claim-row-problem { display:block; color:#b45309; font-size:9px; line-height:1.7; margin-top:7px; }
+.claim-excluded-note { display:flex; align-items:flex-start; gap:6px; padding:12px 15px; color:#94a3b8; background:#fcfdfe; font-size:9px; line-height:1.8; border-top:1px solid var(--border); }
+.claim-excluded-note svg { margin-top:2px; }
+.claim-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:38px 20px; min-height:240px; color:#94a3b8; text-align:center; }
+.claim-empty h3 { color:#475569; font-size:13px; font-weight:550; margin-top:12px; }
+.claim-empty p { max-width:360px; margin:8px 0 17px; font-size:11px; line-height:1.8; }
+.claim-assessment-notes { padding:16px; margin-top:15px; background:#fff; border:1px solid var(--border); border-radius:9px; }
+.claim-assessment-notes > label:not(.claim-confirm) { display:block; margin-top:15px; color:#64748b; font-size:10px; }
+.claim-assessment-notes textarea { display:block; width:100%; margin-top:6px; min-height:62px; font-size:11px; line-height:1.8; }
+.claim-confirm { display:flex; gap:8px; align-items:flex-start; color:#64748b; font-size:10px; line-height:1.8; }
+.claim-confirm > input { margin:3px 0 0; accent-color:#2563eb; flex-shrink:0; }
+.claim-confirm strong { display:block; color:#475569; font-size:11px; font-weight:550; margin-bottom:2px; }
+.claim-summary { position:sticky; top:67px; background:#fff; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.claim-summary > header { padding:15px 16px; border-bottom:1px solid var(--border); }
+.claim-summary h2 { color:#334155; font-size:12px; font-weight:600; }
+.claim-summary header p { margin-top:5px; font-size:10px; color:#94a3b8; }
+.claim-summary-body { padding:16px; }
+.claim-summary-line { display:flex; align-items:baseline; justify-content:space-between; gap:10px; color:#64748b; font-size:10px; line-height:1.8; margin-bottom:10px; }
+.claim-summary-line strong { color:#475569; font-size:11px; font-weight:500; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.claim-summary-total { border-top:1px solid var(--border); padding-top:14px; margin-top:3px; }
+.claim-summary-total > span { font-size:10px; color:#64748b; }
+.claim-summary-total strong { display:block; margin-top:5px; color:#2563eb; font-size:24px; font-weight:600; letter-spacing:-.7px; }
+.claim-summary-total strong small { font-weight:450; font-size:12px; color:#94a3b8; margin-right:5px; letter-spacing:0; }
+.claim-summary-total p { margin-top:6px; color:#94a3b8; font-size:9px; line-height:1.8; }
+.claim-readiness { padding:13px 0 0; margin-top:13px; border-top:1px solid var(--border); }
+.claim-readiness > strong { display:flex; align-items:center; gap:6px; color:#64748b; font-size:10px; font-weight:550; }
+.claim-readiness > strong.ready { color:#059669; }
+.claim-readiness ul { margin:9px 0 0; padding-left:14px; color:#94a3b8; font-size:9px; line-height:1.9; }
+.claim-save { margin-top:16px; width:100%; }
+.claim-save-note { margin-top:8px; color:#94a3b8; font-size:9px; line-height:1.8; text-align:center; }
+.claim-form-feedback { display:flex; align-items:flex-start; gap:6px; margin-top:13px; padding:10px; border-radius:6px; color:#b91c1c; background:#fef2f2; font-size:10px; line-height:1.8; }
+.claim-form-feedback.success { color:#047857; background:#f0fdf4; }
+.claim-form-feedback svg { margin-top:2px; }
+.claim-draft-list { padding:0 16px; }
+.claim-draft { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:17px 0; border-bottom:1px solid var(--border); }
+.claim-draft:last-child { border-bottom:0; }
+.claim-draft-heading { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.claim-draft-heading > strong { color:#475569; font-size:11px; font-weight:550; }
+.claim-draft-heading .badge { font-size:8px; min-height:19px; }
+.claim-draft p { color:#94a3b8; font-size:9px; line-height:1.8; margin-top:6px; }
+.claim-draft-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:6px; }
+.claim-draft-actions > strong { font-size:12px; color:#334155; font-weight:550; margin-right:5px; }
+.claim-draft-actions .button { min-height:29px; padding:6px 8px; font-size:9px; }
+.claim-snapshot-head { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+.claim-snapshot-head > div { background:#f8fafc; border-radius:7px; padding:12px; }
+.claim-snapshot-head span { display:block; color:#94a3b8; font-size:9px; }
+.claim-snapshot-head strong { display:block; margin-top:6px; color:#334155; font-size:13px; font-weight:550; }
+.claim-snapshot-items { max-height:320px; overflow:auto; border:1px solid var(--border); border-radius:7px; }
+.claim-snapshot-items > div { display:flex; justify-content:space-between; gap:12px; padding:12px; border-bottom:1px solid var(--border); color:#64748b; font-size:11px; line-height:1.8; }
+.claim-snapshot-items > div:last-child { border-bottom:0; }
+.claim-snapshot-items small { display:block; color:#94a3b8; font-size:9px; }
+.claim-snapshot-items strong { flex-shrink:0; color:#334155; font-size:11px; font-weight:550; }
+.claim-snapshot-note { margin-top:14px; font-size:10px; line-height:1.8; color:#94a3b8; }
+@media(max-width:1280px) { .claim-workspace { grid-template-columns:minmax(0,1fr) 245px; gap:14px; } .claim-summary-body { padding:14px; } .claim-summary-total strong { font-size:21px; } }
+@media(max-width:1120px) { .claim-workspace { grid-template-columns:minmax(0,1fr); } .claim-summary { position:static; } .claim-summary-body { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 24px; } .claim-summary-values { grid-column:1; } .claim-readiness { grid-column:2; grid-row:1; margin-top:0; padding-top:0; border-top:0; } .claim-save { grid-column:1/-1; } .claim-save-note,.claim-form-feedback { grid-column:1/-1; } }
+@media(max-width:760px) { .claim-view .page-header { gap:12px; } .claim-period-picker { width:100%; } .claim-period-picker label { flex:1; } .claim-period-picker input { max-width:none; width:100%; } .claim-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; } .claim-metric { padding:12px 11px; } .claim-metric .summary-label { font-size:8px; line-height:1.7; margin-bottom:6px; } .claim-metric > strong { font-size:17px; } .claim-metric > strong small { display:block; font-size:9px; margin-bottom:2px; } .claim-metric > p { font-size:8px; } .claim-context { padding:12px; } .claim-context-meta { width:100%; text-align:left; padding-left:45px; } .claim-context-meta > span { font-size:9px; } .claim-tabs { gap:18px; overflow-x:auto; } .claim-tabs button { font-size:11px; } .claim-panel-header { padding:13px; } .claim-panel-header p { font-size:9px; } .claim-panel-header button { font-size:9px; } .claim-draft { align-items:flex-start; flex-direction:column; } .claim-draft-actions { justify-content:flex-start; } .claim-summary-body { display:block; } .claim-readiness { margin-top:13px; padding-top:13px; border-top:1px solid var(--border); } .claim-snapshot-head { gap:7px; } .claim-snapshot-head > div { padding:10px 8px; } .claim-snapshot-head strong { font-size:11px; } }
+.claim-view .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }

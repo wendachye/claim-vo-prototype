@@ -1,34 +1,34 @@
 # Claim & VO prototype
 
-A frontend-only construction workflow demo built with React and Vite. It includes project workspaces, contract review, completion tracking, mock WhatsApp processing and QS variation review.
+A frontend-only construction workflow demo built with Next.js and React. It includes project workspaces, contract review, completion tracking, mock WhatsApp processing, QS variation review and monthly claim preparation.
 
-All seeded projects, parties, schedule values, site activity and approvals in this public repository are fictional. The generated photos illustrate the workflow; they are not evidence from an actual construction project. No uploaded contract pages, commercial records or drawings are included.
+All seeded projects, parties, schedule values, site activity and approvals are fictional. Generated photos illustrate the workflow; they are not evidence from an actual project. No uploaded contract pages, commercial records or drawings are included.
 
 ## Run
 
-Use Node.js 20.19+ or 22.12+ and npm.
+Use Node.js **22.12+** and npm.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. The modules use these routes:
+Open the address printed by Next.js (normally http://localhost:3000). The project dropdown applies to every module:
 
 - `#projects` — create and select project workspaces
 - `#contract` — review illustrative schedule values and confirm a baseline
 - `#completion` — review cumulative reported and verified physical progress
 - `#whatsapp` — process mock worker messages and generated photos
 - `#vo` — assess flagged extra work and track local approval decisions
+- `#claims` — prepare monthly assessments from verified work and approved VOs
 
 ## Demo walkthrough
 
-1. Select **Campus Scaffold (Demo)**. Review WI-001's simulated extraction mismatch: 2,800 m² was read, while the fictional reference quantity is 2,000 m². Use the reference value, confirm the item and confirm the baseline.
-2. Open **WhatsApp processing** and process the WI-001 photo message. Reported total changes to 65%; verified progress stays at 25% until reviewed.
-3. Review and verify the report. Cumulative percentages replace the total; they are not added together. Replay the event to see duplicate prevention.
-4. Process the extra-platform message. In **VO review**, inspect the original message/photo, save a scope assessment and instruction reference, then mark awaiting approval.
-5. Record a fictional approved value, approver and reference, or reject with a reason. Requests for information and reopening also retain a decision history.
-6. Switch to **Warehouse Extension (Demo)**. Its schedule, messages, progress and variation records remain separate. New projects start empty.
+1. Select **Campus Scaffold (Demo)**. Review WI-001's simulated extraction mismatch: 2,800 m² was read; the fictional reference is 2,000 m². Confirm the item and baseline.
+2. In **WhatsApp processing**, process the WI-001 photo update. Reported completion changes to 65%; verified completion stays at 25% until reviewed. Cumulative percentages replace the total. Replaying an event creates no duplicate report.
+3. Process an extra-work message. In **VO review**, inspect the evidence, record a scope assessment and instruction reference, then track approval. Decisions retain their history.
+4. In **Monthly claims**, choose a month and enter QS-assessed cumulative quantities and VO values. Review prior claimed values, confirm any undated evidence as of the cutoff, save a revision and mark a valid draft prepared. Prepared drafts do not become prior claimed values.
+5. Switch to **Warehouse Extension (Demo)**. Its schedule, activity, VO reviews and claim drafts remain separate. New projects start empty.
 
 ## Checks
 
@@ -37,18 +37,21 @@ npm run build
 npm run test:projects
 npm run test:whatsapp
 npm run test:vo
-npm run test:sites
+npm run test:claims
+npm run preview
 ```
 
-The build prepares `dist/client`, `dist/server/index.js` and `dist/.openai/hosting.json`. The hosting tests validate the static hosting shell. Project, WhatsApp and VO tests validate local state transitions, isolation, migration and reset behavior.
+The normal build uses `.next`; `npm start` runs production and `npm run preview` uses port 4173. Optional Sites packaging remains available with `npm run build:sites`, followed by `npm run test:sites`. That produces `dist/client`, `dist/server/index.js` and `dist/.openai/hosting.json`.
+
+## Vercel
+
+Import this repository using the **Next.js** framework preset and the repository root. Keep default install/build settings and leave the output-directory override blank. No environment variables are required. Existing hash links and browser-local storage remain supported; another domain has separate demo storage.
 
 ## Limits
 
-- There is no backend, production authentication, live WhatsApp integration or AI extraction.
-- Interpreted message fields are predefined fixtures. Uploading a PDF opens a browser-local preview; it does not extract or replace the seeded schedule.
-- Browser `localStorage` retains demo changes on the same origin. It does not provide access control, server sync or a durable audit service.
-- Physical completion does not automatically establish a claim amount. VO approval is recorded locally and does not submit a claim, certify payment or change contract totals.
-- The illustrative scaffold rates bundle several activities; they must not be multiplied by duration as a billing rule.
-- Reset restores only the selected project's seed. Existing data migrates between supported local storage versions.
+- Backend, production authentication, live WhatsApp and AI extraction are future work. Message interpretation uses predefined fixtures. Uploading a PDF opens a local preview and does not replace the seeded schedule.
+- Browser storage retains changes on the same origin; it provides no server sync or durable audit service. Reset restores only the selected project's seed.
+- Physical completion does not automatically establish a claim amount. QS assessments require explicit quantities and values; bundled scaffold rates must not be multiplied by duration as a billing rule.
+- VO approvals and prepared claims are local demonstrations. They do not submit a claim, certify payment, change contract totals or establish previous claimed amounts. Claim snapshots remain frozen, and changed sources require a new revision.
 
-Generated photo files and their prompts are documented in [public/assets/DEMO-PHOTOS.md](public/assets/DEMO-PHOTOS.md).
+Generated photo files and prompts are documented in [public/assets/DEMO-PHOTOS.md](public/assets/DEMO-PHOTOS.md).

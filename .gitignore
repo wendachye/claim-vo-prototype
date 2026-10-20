@@ -6,3 +6,8 @@ dist/
 !.env.example
 *.local
 *.log
+
+.next/
+.next-sites/
+out/
+.vercel/

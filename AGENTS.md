@@ -1,25 +1,27 @@
 # Prototype instructions
 
-Preserve the existing React, Vite and UI conventions. App UI belongs in `src/`. Run the local preview when verifying visual changes.
+Follow the existing React and UI conventions. Use Next.js App Router for the shell and standard production builds for Vercel. App UI belongs in `src/`. The workspace mounts in a client-only dynamic boundary to preserve browser-storage initialization and hash links. Keep assets local and verify the preview after visual changes. Vite is retired.
 
-Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs` and `tests/sites-worker.test.mjs` intact. Before a hosting handoff, run the production build and hosting checks.
+Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs` and `tests/sites-worker.test.mjs` intact. The optional Sites handoff requires `npm run build:sites` and `npm run test:sites`, producing `dist/client/index.html`, `dist/server/index.js` and `dist/.openai/hosting.json`.
 
-Never create or amend Git commits without the user's explicit request.
+Never create or amend Git commits or deploy without the user's explicit request.
 
 ## Public demonstration data
 
 All public fixtures must remain fictional. Do not add uploaded contracts, commercial records, client drawings, personal data, credentials or machine-specific paths. Generated site photos must be labelled as demonstration images.
 
-The public campus dataset intentionally uses the stable internal ID `SIT01` for migration compatibility. It does not identify an actual project.
+The campus dataset uses the stable internal ID `SIT01` for migration compatibility. It does not identify an actual project.
 
 ## Project workspaces
 
-Keep items, source references, baselines, messages, reports, physical progress, VO reviews and history isolated by project. The top-navigation project dropdown is available from every module and switching preserves the module. New projects start empty. Preserve existing local edits during migration and reset only the selected project.
+Keep items, source references, baselines, messages, reports, physical progress, VO reviews, claim drafts and history isolated by project. The top-navigation dropdown is available from every module and switching preserves the module. New projects start empty. Preserve edits during migration and reset only the selected project.
 
-## Mock WhatsApp and VO workflow
+## Mock workflow
 
-Processing a matched cumulative message changes reported completion only. Supervisor verification requires a confirmed contract baseline. Ambiguous messages need clarification and cannot change progress. Retain original messages/photos and prevent duplicate events.
+Matched cumulative messages update reported completion only. Supervisor verification requires a confirmed baseline. Ambiguous messages require clarification without changing progress. Retain messages/photos and prevent duplicate events.
 
-Flagged extra work uses the same VO review records across modules. Track Flagged, Needs information, Awaiting approval, Approved and Rejected, retaining evidence and decision history. Unknown values remain unknown and zero remains valid. Approval records are local demo decisions; they do not change completion, contract totals, claims or payments. Reopen final decisions with a reason before editing.
+Flagged extra work shares VO review records across modules. Track Flagged, Needs information, Awaiting approval, Approved and Rejected, retaining evidence and decision history. Unknown values remain unknown and zero remains valid. Reopen final decisions with a reason before editing.
 
-Backend, live WhatsApp, AI extraction and real approval permissions remain future work.
+Monthly claim preparation requires explicit QS-assessed quantities/values and checked prior claimed values. Respect the monthly cutoff, distinguish undated seed progress, exclude unapproved VOs and unsupported pricing types, and retain immutable draft revisions. Prepared drafts never become previous claimed values. Changed sources require a new revision before preparation.
+
+All approvals and prepared claims are local demos; they submit nothing and certify no payment. Backend, live WhatsApp, AI extraction and real approval permissions remain future work. Run the relevant state tests and production build after changes.
