@@ -4,7 +4,7 @@ import './project-dropdown.css';
 
 const matches = (project, search) => `${project.name ?? ''} ${project.code ?? ''}`.toLowerCase().includes(search.trim().toLowerCase());
 
-export function ProjectDropdown({ projects = [], activeProjectId, onSelect, onManage, onCreate }) {
+export function ProjectDropdown({ projects = [], activeProjectId, showcaseProjectId, onSelect, onManage, onCreate }) {
   const available = Array.isArray(projects) ? projects : [];
   const activeProject = available.find((project) => project.id === activeProjectId) || available[0];
   const [open, setOpen] = useState(false);
@@ -135,7 +135,7 @@ export function ProjectDropdown({ projects = [], activeProjectId, onSelect, onMa
       <div className="project-dropdown-search"><Search size={15} aria-hidden="true" /><input ref={searchRef} type="text" role="combobox" aria-label="Search projects by name or code" aria-expanded="true" aria-controls={listId} aria-autocomplete="list" aria-activedescendant={currentIndex >= 0 ? optionId(currentIndex) : undefined} placeholder="Search project name or code…" value={search} onChange={(event) => updateSearch(event.target.value)} onKeyDown={handleKeys} autoComplete="off" spellCheck="false" />{search && <button type="button" aria-label="Clear project search" onClick={() => { updateSearch(''); searchRef.current?.focus(); }}><X size={14} aria-hidden="true" /></button>}</div>
       <div className="project-dropdown-list" role="listbox" id={listId} aria-label="Projects">
         {shown.map((project, index) => <button type="button" role="option" aria-selected={project.id === activeProjectId} aria-disabled={!onSelect} tabIndex={-1} key={project.id} id={optionId(index)} ref={(element) => { optionRefs.current[index] = element; }} className={`project-dropdown-option${project.id === activeProjectId ? ' is-selected' : ''}${currentIndex === index ? ' is-highlighted' : ''}`} onMouseEnter={() => setHighlighted(index)} onClick={() => selectProject(project)}>
-          <span className="project-dropdown-option-icon"><Building2 size={16} aria-hidden="true" /></span><span className="project-dropdown-option-copy"><strong>{project.name || 'Untitled project'}</strong><small>{project.code}{project.country ? ` · ${project.country}` : ''}</small></span>{project.id === activeProjectId && <Check className="project-dropdown-selected-check" size={16} aria-hidden="true" />}
+          <span className="project-dropdown-option-icon"><Building2 size={16} aria-hidden="true" /></span><span className="project-dropdown-option-copy"><strong>{project.name || 'Untitled project'}</strong><small>{project.code}{project.country ? ` · ${project.country}` : ''}{project.id===showcaseProjectId ? ' · Showcase' : ''}</small></span>{project.id === activeProjectId && <Check className="project-dropdown-selected-check" size={16} aria-hidden="true" />}
         </button>)}
       </div>
       {!shown.length && <div className="project-dropdown-empty" role="status"><FolderOpen size={23} aria-hidden="true" /><strong>{available.length ? 'No matching projects' : 'No projects yet'}</strong><span>{available.length ? 'Try another name or project code.' : 'Create a project to get started.'}</span></div>}
