@@ -2,6 +2,7 @@ import { getWhatsAppMessages } from './whatsapp.js';
 import { getVOCases } from './vo.js';
 import { isReviewableProgressReport, needsProgressClarification } from './report-status.js';
 import { getClaimTracking } from './claim-tracking.js';
+import { getClaimRevisionContext } from './claim-revisions.js';
 
 const list = (value) => Array.isArray(value) ? value : [];
 const timestamp = (value) => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
@@ -46,9 +47,12 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   const latestDraft = currentDrafts[0];
   const claimTracking = latestDraft?.status === 'prepared' ? getClaimTracking(project, latestDraft.id) : null;
   const claimStatus = claimTracking?.status || 'prepared';
-  const claimStatusLabels = { prepared: 'Prepared locally', submitted: 'Submitted · demo', certified: 'Certified · demo', paid: 'Paid · demo' };
+  const revisionContext = latestDraft?.revisionOf ? getClaimRevisionContext(project, latestDraft.revisionOf) : null;
+  const isRevision = !!revisionContext && revisionContext.query?.id === latestDraft?.queryId && revisionContext.revision?.id === latestDraft?.id;
+  const claimStatusLabels = { prepared: 'Prepared locally', submitted: isRevision ? 'Resubmitted · demo' : 'Submitted · demo', queried: 'Needs revision · demo', certified: 'Certified · demo', paid: 'Paid · demo' };
   const claimGuidance = {
-    prepared: `Record a mock submission for saved revision ${latestDraft?.revision}, then track certification and payment. Nothing is sent externally.`,
+    prepared: isRevision ? `Record a mock resubmission for saved revision ${latestDraft.revision}, responding to query ${revisionContext.query.reference}. The original claim stays unchanged.` : `Record a mock submission for saved revision ${latestDraft?.revision}, then track certification and payment. Nothing is sent externally.`,
+    queried: `Review the query on saved revision ${latestDraft?.revision}, then prepare a separate revised claim. The original claim stays unchanged.`,
     submitted: `Record the mock certification for saved revision ${latestDraft?.revision}, including the certified amount.`,
     certified: `Record payment against the certified amount for saved revision ${latestDraft?.revision}. Partial payments stay in progress.`,
     paid: `Review the completed mock payment history for saved revision ${latestDraft?.revision}.`,
@@ -82,8 +86,8 @@ export function getProjectWorkflow(project, period = currentMonth()) {
       detail: counts.openVOs ? `${numberOf(counts.openVOs, 'extra work case')} to review. Verified work can still be assessed separately.`
         : counts.approvedVOs ? `${numberOf(counts.approvedVOs, 'approval')} recorded; assess values in the claim.` : 'Review extra scope when it is flagged.' },
     { id: 'claims', label: 'Claims', route: 'claims',
-      status: latestDraft ? latestDraft.status === 'prepared' ? claimStatusLabels[claimStatus] : 'Draft saved' : 'Not started',
-      detail: latestDraft ? `${period} · saved revision ${latestDraft.revision}. ${latestDraft.status === 'prepared' ? claimStatus === 'prepared' ? 'Ready for mock submission tracking.' : `${claimStatusLabels[claimStatus]}. Open Claims to review its tracking.` : 'Continue the saved assessment before preparing.'}`
+      status: latestDraft ? latestDraft.status === 'prepared' ? claimStatusLabels[claimStatus] : isRevision ? 'Revision saved' : 'Draft saved' : 'Not started',
+      detail: latestDraft ? `${period} · saved revision ${latestDraft.revision}. ${latestDraft.status === 'prepared' ? claimStatus === 'prepared' ? 'Ready for mock submission tracking.' : `${claimStatusLabels[claimStatus]}. Open Claims to review its tracking.` : isRevision ? `Revises version ${revisionContext.source.revision}. Continue the query response before preparing.` : 'Continue the saved assessment before preparing.'}`
         : 'Enter QS quantities and previous claim values for the month.' },
   ];
 
@@ -98,8 +102,9 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   else if (counts.openVOs) next = { route: 'vo', label: 'Review extra work',
     description: 'Check the flagged scope and instruction. You can still claim verified work separately in Claims.', caseId: openVOs[0].id };
   else if (latestDraft) next = latestDraft.status === 'prepared'
-    ? { route: 'claim-status', label: 'Track claim status', description: claimGuidance[claimStatus], draftId: latestDraft.id }
-    : { route: 'claims', label: 'Continue monthly claim', description: 'Review the saved assessment and its outstanding checks before preparing it.' };
+    ? { route: 'claim-status', label: claimStatus === 'queried' ? 'Review claim query' : 'Track claim status', description: claimGuidance[claimStatus], draftId: latestDraft.id }
+    : isRevision ? { route: 'claims', revisionSourceId: revisionContext.source.id, label: 'Continue claim revision', description: `Review the response to ${revisionContext.query.reference} and the revised assessment before preparing version ${latestDraft.revision}.` }
+      : { route: 'claims', label: 'Continue monthly claim', description: 'Review the saved assessment and its outstanding checks before preparing it.' };
   else if (items.some((item) => item.pricingType === 'measured' && typeof item.verified === 'number' && item.verified > 0) || counts.approvedVOs) next = {
     route: 'claims', label: 'Prepare monthly claim', description: 'Assess verified work and recorded approvals. Enter claim quantities and values separately from physical progress.',
   };

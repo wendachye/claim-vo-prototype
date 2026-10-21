@@ -6,7 +6,7 @@ const record = (value) => value !== null && typeof value === 'object' && !Array.
 const text = (value) => typeof value === 'string' ? value.trim() : '';
 const money = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 const finite = (value) => typeof value === 'number' && Number.isFinite(value);
-const actions = ['submitted', 'certified', 'payment'];
+const actions = ['submitted', 'query', 'certified', 'payment'];
 
 function validDay(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -47,14 +47,24 @@ function baseline(project, draft) {
 function cleanFields(action, input) {
   const fields = record(input) ? input : {};
   return { stage: action, date: text(fields.date), reference: text(fields.reference), note: text(fields.note),
-    value: action === 'submitted' ? null : amount(fields.value) };
+    value: ['submitted', 'query'].includes(action) ? null : amount(fields.value),
+    ...(action === 'query' ? { targetType: text(fields.targetType) || 'claim', targetId: text(fields.targetId) } : {}),
+  };
 }
 
 function sameEvent(event, next) {
-  return ['stage', 'date', 'reference', 'note', 'value'].every((key) => event[key] === next[key]);
+  return ['stage', 'date', 'reference', 'note', 'value', 'targetType', 'targetId'].every((key) => event[key] === next[key]);
 }
 
-function transitionError(tracking, fields) {
+function queryTargetError(draft, fields) {
+  if (!['claim', 'work', 'vo'].includes(fields.targetType)) return 'Choose the claim, a saved work item or a saved VO for the query.';
+  if (fields.targetType === 'claim') return fields.targetId ? 'A whole-claim query cannot name a separate work item.' : '';
+  const rows = draft.snapshot[fields.targetType === 'work' ? 'workRows' : 'voRows'];
+  return Array.isArray(rows) && rows.some((row) => row.included === true && row.id === fields.targetId)
+    ? '' : 'Choose an included item from this saved claim revision.';
+}
+
+function transitionError(tracking, fields, draft) {
   if (!actions.includes(fields.stage)) return 'Choose a valid claim status action.';
   if (!validDay(fields.date)) return 'Enter a valid date.';
   if (!fields.reference) return 'Enter the reference for this status.';
@@ -64,7 +74,13 @@ function transitionError(tracking, fields) {
   if (fields.stage === 'submitted') {
     if (tracking.status !== 'prepared') return 'This revision has already been submitted in the demo.';
     if (!finite(tracking.claimedValue)) return 'The saved claim amount is unknown. Prepare a complete revision first.';
+  } else if (fields.stage === 'query') {
+    if (tracking.status !== 'submitted') return 'Queries can be recorded only for a submitted claim awaiting certification.';
+    if (!fields.note) return 'Enter the query remarks so the QS knows what to revise.';
+    const targetError = queryTargetError(draft, fields);
+    if (targetError) return targetError;
   } else if (fields.stage === 'certified') {
+    if (tracking.status === 'queried') return 'Respond to this query in a new revision before certification.';
     if (tracking.status !== 'submitted') return 'Record submission before certification.';
     if (fields.value === null) return 'Enter the certified amount, including zero if nothing was certified.';
     if (fields.value !== money(tracking.claimedValue) && !fields.note) return 'Explain why the certified amount differs from the claimed amount.';
@@ -85,6 +101,10 @@ function applyEvent(tracking, event) {
   if (event.stage === 'submitted') Object.assign(next, {
     status: 'submitted', submittedAt: event.date, submissionReference: event.reference, submissionNote: event.note,
   });
+  else if (event.stage === 'query') Object.assign(next, {
+    status: 'queried', query: { id: event.id, date: event.date, reference: event.reference, note: event.note,
+      targetType: event.targetType, targetId: event.targetId },
+  });
   else if (event.stage === 'certified') Object.assign(next, {
     status: 'certified', certifiedAt: event.date, certificationReference: event.reference,
     certifiedValue: event.value, certificationNote: event.note,
@@ -97,9 +117,24 @@ function applyEvent(tracking, event) {
   return next;
 }
 
+function revisionSubmissionError(project, draft, trackingRecords, date, visiting = new Set()) {
+  if (!draft.revisionOf && !draft.queryId && !draft.revisionResponse) return '';
+  if (!text(draft.revisionOf) || !text(draft.queryId) || !text(draft.revisionResponse)) return 'Save a response linked to the original claim query before resubmitting.';
+  if (visiting.has(draft.id)) return 'The revision link is invalid.';
+  visiting.add(draft.id);
+  const source = preparedDraft(project, draft.revisionOf);
+  const originalTracking = trackingRecords.find((entry) => entry.draftId === source?.id);
+  if (!source || source.period !== draft.period || source.revision >= draft.revision
+    || originalTracking?.status !== 'queried' || originalTracking.query?.id !== draft.queryId) {
+    return 'The original claim query is no longer available for this revision.';
+  }
+  if (date && date < originalTracking.query.date) return 'Use a resubmission date on or after the original query.';
+  return revisionSubmissionError(project, source, trackingRecords, originalTracking.submittedAt, visiting);
+}
+
 export function normalizeClaimTracking(project) {
   const seen = new Set();
-  return (Array.isArray(project?.claimTracking) ? project.claimTracking : []).flatMap((entry) => {
+  const trackingRecords = (Array.isArray(project?.claimTracking) ? project.claimTracking : []).flatMap((entry) => {
     if (!record(entry) || entry.projectId !== project.id || !text(entry.draftId) || seen.has(entry.draftId)
       || !Array.isArray(entry.history) || !entry.history.length) return [];
     const draft = preparedDraft(project, entry.draftId);
@@ -110,13 +145,14 @@ export function normalizeClaimTracking(project) {
       if (!record(event) || !text(event.id) || eventIds.has(event.id)
         || typeof event.recordedAt !== 'string' || !Number.isFinite(Date.parse(event.recordedAt))) return [];
       const fields = cleanFields(event.stage, event);
-      if (transitionError(tracking, fields) || tracking.history.some((prior) => sameEvent(prior, fields))) return [];
+      if (transitionError(tracking, fields, draft) || tracking.history.some((prior) => sameEvent(prior, fields))) return [];
       tracking = applyEvent(tracking, { ...fields, id: event.id, recordedAt: event.recordedAt });
       eventIds.add(event.id);
     }
     seen.add(entry.draftId);
     return [tracking];
   });
+  return trackingRecords.filter((entry) => !revisionSubmissionError(project, preparedDraft(project, entry.draftId), trackingRecords, entry.submittedAt));
 }
 
 export function getClaimTracking(project, draftId) {
@@ -131,16 +167,20 @@ export function recordClaimStage(project, draftId, action, input = {}) {
   if (!tracking) return invalid('Choose a prepared claim from the selected project.');
   const fields = cleanFields(action, input);
   if (tracking.history.some((event) => sameEvent(event, fields))) return { project, outcome: 'unchanged', tracking };
-  const error = transitionError(tracking, fields);
-  if (error) return invalid(error);
   const draft = preparedDraft(project, draftId);
+  const error = transitionError(tracking, fields, draft);
+  if (error) return invalid(error);
   if (action === 'submitted' && normalizeClaimDrafts(project).some((entry) => entry.period === draft.period && entry.revision > draft.revision)) {
     return invalid('Submit the latest saved revision for this month.');
+  }
+  if (action === 'submitted') {
+    const lineageError = revisionSubmissionError(project, draft, normalizeClaimTracking(project), fields.date);
+    if (lineageError) return invalid(lineageError);
   }
   const recordedAt = new Date().toISOString();
   const event = { ...fields, id: crypto.randomUUID(), recordedAt };
   const next = applyEvent(tracking, event);
-  const stage = action === 'payment' ? next.status === 'paid' ? 'paid' : 'part-payment recorded' : action;
+  const stage = action === 'query' ? 'queried' : action === 'payment' ? next.status === 'paid' ? 'paid' : 'part-payment recorded' : action;
   return { outcome: 'updated', tracking: clone(next), project: {
     ...project,
     claimTracking: [...normalizeClaimTracking(project).filter((entry) => entry.draftId !== draftId), next],

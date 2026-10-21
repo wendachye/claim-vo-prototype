@@ -45,6 +45,8 @@ After marking a saved claim **Prepared**, choose **Track claim status**. Record 
 
 The tracker keeps the saved version and claim amount intact. Its dates, references, amounts and history stay with that project and revision in browser storage. They do not change earlier claimed amounts or the saved assessment/export, and no real submission, certification or payment takes place.
 
+For a submitted claim, choose **Record a query** to flag the whole claim or a saved work item/VO. **Revise claim** opens a separate copy with the query and a required QS response. Review the quantities and prior values, **Save revised claim**, then mark the new version prepared and **Record resubmission**. The original query and assessment remain available, with links between versions. Unfinished revision edits stay separate from other claims while browsing; save before refreshing.
+
 ## Demo walkthrough
 
 1. Select **Campus Scaffold (Demo)**. Review WI-001's simulated extraction mismatch: 2,800 m² was read; the fictional reference is 2,000 m². Confirm the item and baseline.

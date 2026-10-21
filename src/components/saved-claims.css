@@ -9,6 +9,10 @@
 .claim-history-meta { margin-top:7px; }
 .claim-history-date { margin-top:2px; font-size:11px; }
 .claim-history-help { margin-top:9px; color:#a16207; font-size:12px; line-height:1.8; }
+.claim-history-revision { margin-top:7px; color:#475569; font-size:12px; line-height:1.8; }
+.claim-history-response { margin-top:7px; color:#64748b; font-size:12px; line-height:1.8; }
+.claim-history-response summary { cursor:pointer; }
+.claim-history-response p { margin-top:5px; white-space:pre-wrap; overflow-wrap:anywhere; }
 .claim-unsaved { color:#b45309; font-size:11px; }
 .claim-history-amount { text-align:right; font-variant-numeric:tabular-nums; }
 .claim-history-amount small { display:block; margin-bottom:5px; color:#64748b; font-size:12px; line-height:1.7; }

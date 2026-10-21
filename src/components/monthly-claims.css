@@ -33,6 +33,19 @@
 .claim-vo-handoff p { margin-top:5px; color:#475569; font-size:12px; line-height:1.8; }
 .claim-vo-handoff.needs-review { border-color:#fde6be; background:#fffcf5; color:#a16207; }
 .claim-vo-handoff-actions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.claim-query-context { margin-bottom:20px; padding:20px; border:1px solid #fde6be; border-radius:10px; background:#fffcf5; }
+.claim-query-context header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+.claim-query-context h2 { margin-top:8px; color:#334155; font-size:15px; line-height:1.6; }
+.claim-query-context p { margin-top:5px; color:#64748b; font-size:12px; line-height:1.8; }
+.claim-query-context .claim-query-target { margin-top:15px; color:#334155; font-weight:550; }
+.claim-query-context blockquote { margin:8px 0 14px; color:#475569; font-size:12px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
+.claim-query-context details { margin-top:14px; }
+.claim-query-context summary { display:flex; align-items:center; gap:10px; color:#475569; font-size:12px; line-height:1.8; cursor:pointer; }
+.claim-query-context summary > span { margin-left:auto; color:#64748b; font-size:11px; }
+.claim-query-context summary::before { content:'+'; font-size:15px; }
+.claim-query-context details[open] summary::before { content:'−'; }
+.claim-query-context details > .form-field { margin-top:18px; }
+.claim-value-card.query-target { border-color:#f5cc7d; box-shadow:inset 3px 0 #e5a43b; }
 .claim-group-heading { display:flex; align-items:center; justify-content:space-between; gap:13px; padding:20px 20px 12px; }
 .claim-group-heading h3 { display:flex; align-items:center; gap:7px; color:#475569; font-size:13px; font-weight:600; }
 .claim-group-heading h3 > svg { color:#64748b; }
@@ -115,6 +128,8 @@
 .claim-saved-result > .claim-saved-help { max-width:430px; margin-top:0 !important; color:#a16207 !important; }
 .claim-screen-reader { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media screen and (max-width:760px) {
+  .claim-query-context { padding:17px; }
+  .claim-query-context header { flex-wrap:wrap; }
   .claim-vo-handoff { flex-wrap:wrap; padding:15px 17px; }
   .claim-vo-handoff-actions { width:100%; padding-left:30px; }
   .claim-stepper { justify-content:space-between; gap:8px; padding:12px; margin-bottom:18px; }

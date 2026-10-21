@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getProjectWorkflow } from '../src/data/workflow.js';
 import { recordClaimStage } from '../src/data/claim-tracking.js';
+import { saveClaimRevision } from '../src/data/claim-revisions.js';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
 
 function project() {
   return { id: 'TEST', code: 'TEST', contract: { sourceKind: 'illustrative' }, version: 1,
@@ -228,4 +230,43 @@ test('tracking guidance stays bound to the selected project and exact prepared r
   newRevision.claimDrafts[1] = { ...newRevision.claimDrafts[1], status: 'draft' };
   assert.equal(workflow(newRevision).steps[3].status, 'Draft saved');
   assert.equal(workflow(newRevision).next.route, 'claims');
+});
+
+
+test('claim queries guide a separate revision and exact resubmission without rewriting the original', () => {
+  let value = project();
+  value.history = [];
+  value.lockedAt = '2026-10-01T12:00:00+08:00';
+  value.items = [{ id: 'A', ref: 'A/01', description: 'Measured scaffold', pricingType: 'measured', quantity: 100,
+    rate: 10, amount: 1000, unit: 'm²', reported: 50, verified: 50 }];
+  value.reports = [{ ...report('VERIFIED', '2026-10-02T09:00:00+08:00', 'verified'), verifiedAt: '2026-10-02T12:00:00+08:00' }];
+  const assessment = { work: { A: { include: true, assessedQuantity: 50, previousValue: 0 } }, priorConfirmed: true };
+  const saved = saveClaimDraft(value, '2026-10', assessment);
+  value = markClaimPrepared(saved.project, saved.draft.id).project;
+  const original = structuredClone(value.claimDrafts[0]);
+  value = recordClaimStage(value, saved.draft.id, 'submitted', { date: '2026-10-22', reference: 'DEMO-SUB' }).project;
+  const query = recordClaimStage(value, saved.draft.id, 'query', { date: '2026-10-23', reference: 'DEMO-QUERY', note: 'Check the quantity.', targetType: 'work', targetId: 'A' });
+  assert.equal(query.outcome, 'updated', query.error);
+  value = query.project;
+  assert.equal(workflow(value).steps[3].status, 'Needs revision · demo');
+  assert.equal(workflow(value).next.label, 'Review claim query');
+  assert.equal(workflow(value).next.draftId, saved.draft.id);
+  assert.match(workflow(value).next.description, /original claim stays unchanged/);
+  const revision = saveClaimRevision(value, saved.draft.id, assessment, 'Quantity confirmed with measurement notes.');
+  assert.equal(revision.outcome, 'updated', revision.error);
+  value = revision.project;
+  assert.equal(workflow(value).steps[3].status, 'Revision saved');
+  assert.equal(workflow(value).next.label, 'Continue claim revision');
+  assert.equal(workflow(value).next.revisionSourceId, saved.draft.id);
+  assert.match(workflow(value).steps[3].detail, /Revises version 1/);
+  value = markClaimPrepared(value, revision.draft.id).project;
+  assert.equal(workflow(value).next.route, 'claim-status');
+  assert.equal(workflow(value).next.draftId, revision.draft.id);
+  assert.match(workflow(value).next.description, /mock resubmission/);
+  value = recordClaimStage(value, revision.draft.id, 'submitted', { date: '2026-10-24', reference: 'DEMO-RESUB' }).project;
+  assert.equal(workflow(value).steps[3].status, 'Resubmitted · demo');
+  assert.equal(workflow(value).next.draftId, revision.draft.id);
+  assert.deepEqual(value.claimDrafts[0], original);
+  const foreign = { ...value, claimDrafts: value.claimDrafts.map((entry) => ({ ...entry, revisionOf: 'FOREIGN' })) };
+  assert.notEqual(workflow(foreign).steps[3].status, 'Resubmitted · demo');
 });
