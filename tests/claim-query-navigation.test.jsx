@@ -140,9 +140,9 @@ describe('claim queries revise and resubmit an independent project-scoped versio
     await user.type(quantityInput(), '999');
     await user.clear(responseInput());
     await user.type(responseInput(), 'Unfinished revised measurement response.');
-    await user.click(within(mainNav()).getByRole('button', { name: /^1\s*Contract$/ }));
+    await user.click(within(mainNav()).getByRole('button', { name: 'Contract', exact: true }));
     await screen.findByRole('heading', { name: 'Contract', exact: true });
-    await user.click(within(mainNav()).getByRole('button', { name: /^4\s*Monthly claims$/ }));
+    await user.click(within(mainNav()).getByRole('button', { name: 'Monthly claims', exact: true }));
     await screen.findByRole('heading', { name: 'Monthly claims' });
     expect(screen.getByRole('button', { name: 'Mark prepared' }).disabled).toBe(true);
     expect(screen.getByText('Unsaved edits')).toBeTruthy();

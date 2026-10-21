@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getProjectAttention } from '../src/data/project-attention.js';
+import { updateVOReview } from '../src/data/vo.js';
 import { createProject } from '../src/data/projects.js';
 import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
 import { recordClaimStage } from '../src/data/claim-tracking.js';
@@ -72,7 +73,7 @@ test('only the latest reviewable report drives an item; superseded, rejected and
   assert.deepEqual(tasks(project), []);
 });
 
-test('open VO tasks replace paired messages and disappear after approval or rejection', () => {
+test('VO tasks retain claim checks after price approval and clear after explicit exclusion or rejection', () => {
   const project = fixture();
   project.reports.push(...['ONE', 'TWO'].map((id) => ({ id, projectId: project.id, projectCode: project.code,
     vo: true, status: 'needsReview', sourceMessageId: `WA-${id}`, message: `Extra work ${id}`, date: '2026-10-21' })));
@@ -81,7 +82,12 @@ test('open VO tasks replace paired messages and disappear after approval or reje
   assert.deepEqual(tasks(project).map((task) => task.target.caseId), ['TWO', 'ONE']);
   project.voReviews.push({ id: 'ONE', reportId: 'ONE', projectId: project.id, status: 'approved', history: [] });
   project.voReviews[0].status = 'rejected';
-  assert.deepEqual(tasks(project), []);
+  assert.equal(tasks(project).length, 1);
+  assert.equal(tasks(project)[0].kind, 'vo-eligibility');
+  assert.equal(tasks(project)[0].actionLabel, 'Review claim eligibility');
+  const excluded = updateVOReview(project, 'ONE', 'assessEligibility', { claimEligibility: 'excluded', eligibilityNote: 'Not claimed in this mock assessment.' });
+  assert.equal(excluded.outcome, 'updated');
+  assert.deepEqual(tasks(excluded.project), []);
 });
 
 test('claim tasks advance through preparation, submission, certification and partial/full payment', () => {

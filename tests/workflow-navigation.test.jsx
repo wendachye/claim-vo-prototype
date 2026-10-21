@@ -28,6 +28,7 @@ function fixture() {
   project = updateVOReview(project, flagged.id, 'approve', {
     approvedValue: 777, approvalReference: 'NAV-APPROVAL', approver: 'Demo approver',
   }).project;
+  project = updateVOReview(project, flagged.id, 'assessEligibility', { scopeDisposition: 'variation', instructionStatus: 'documented', executionStatus: 'verified', executionReference: 'NAV-WORK-CHECK', claimEligibility: 'eligible', eligibilityNote: 'Verified fictional extra access is eligible for QS assessment.', reviewNote: 'Fictional scope and instruction checks recorded separately from price.' }).project;
   localStorage.setItem(WORKSPACE_STORE, JSON.stringify({
     schemaVersion: 2, activeProjectId: project.id, projects: [project, other],
     sitShowcase: { version: SIT_SHOWCASE_VERSION, projectId: project.id },

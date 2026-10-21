@@ -1,6 +1,6 @@
 import { getWhatsAppMessages, getMessageReport } from './whatsapp.js';
 import { getItemProgressReview } from './progress-review.js';
-import { getVOCases } from './vo.js';
+import { getVOCases, getVOClaimEligibility } from './vo.js';
 import { normalizeClaimDrafts } from './claims.js';
 import { getClaimTracking } from './claim-tracking.js';
 import { getClaimRevisionContext } from './claim-revisions.js';
@@ -61,12 +61,13 @@ export function getProjectAttention(project) {
   }
 
   for (const entry of getVOCases(scoped)) {
-    if (!['flagged', 'clarification', 'pendingApproval'].includes(entry.status)) continue;
-    add({ id: `vo:${entry.id}`, category: 'vo', kind: 'vo', title: entry.title || 'Review extra work',
+    const claimCheck = entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible;
+    if (!claimCheck && !['flagged', 'clarification', 'pendingApproval'].includes(entry.status)) continue;
+    add({ id: `vo:${entry.id}`, category: 'vo', kind: claimCheck ? 'vo-eligibility' : 'vo', title: claimCheck ? 'Check VO claim eligibility' : entry.title || 'Review extra work',
       detail: [entry.report.location, entry.report.area].filter(Boolean).join(' · ') || 'Extra work flagged for QS review',
-      reference: entry.reference, statusLabel: entry.status === 'pendingApproval' ? 'Awaiting approval' : entry.status === 'clarification' ? 'Needs information' : 'Needs review',
-      actionLabel: entry.status === 'pendingApproval' ? 'Review approval' : 'Review extra work',
-      date: entry.history.at(-1)?.date || entry.report.date, priority: entry.status === 'pendingApproval' ? 25 : 30,
+      reference: entry.reference, statusLabel: claimCheck ? 'Claim checks pending' : entry.status === 'pendingApproval' ? 'Awaiting approval' : entry.status === 'clarification' ? 'Needs information' : 'Needs review',
+      actionLabel: claimCheck ? 'Review claim eligibility' : entry.status === 'pendingApproval' ? 'Review approval' : 'Review extra work',
+      date: entry.history.at(-1)?.date || entry.report.date, priority: claimCheck ? 28 : entry.status === 'pendingApproval' ? 25 : 30,
       target: { route: 'vo', caseId: entry.id } });
   }
 

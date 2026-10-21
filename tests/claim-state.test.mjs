@@ -22,6 +22,10 @@ function project() {
   return { ...base, items, sourceItems: structuredClone(items), reports, locked: true, lockedAt: '2026-09-01T12:00:00+08:00',
     contract: { ...base.contract, sourceKind: 'illustrative', totalAmount: 4000 },
     voReviews: [{ id: 'VO-REPORT', reportId: 'VO-REPORT', projectId: 'T01', status: 'approved', title: 'Additional work', approvedValue: 200, proposedValue: 220, approvalReference: 'DEMO-APP-01', approver: 'Demo QS',
+      reviewChecksVersion: 1, scopeDisposition: 'variation', scopeAssessment: 'Fictional additional access outside the original scope.',
+      instructionStatus: 'documented', instructionReference: 'DEMO-INSTRUCTION',
+      executionStatus: 'verified', executionReference: 'DEMO-WORK-CHECK', executionVerifiedAt: '2026-10-17T12:00:00+08:00',
+      claimEligibility: 'eligible', eligibilityNote: 'Explicit fictional QS claim eligibility check.', eligibilityReviewedAt: '2026-10-17T12:00:00+08:00',
       history: [{ id: 'APP-1', action: 'approve', to: 'approved', date: '2026-10-16T12:00:00+08:00', values: { approvedValue: 200, approvalReference: 'DEMO-APP-01', approver: 'Demo QS' } }],
     }],
   };
@@ -214,4 +218,69 @@ test('project isolation, old-state migration, reload and reset preserve the righ
   const v1 = loadWorkspace(storage);
   assert.equal(storage.getItem(LEGACY_STORE), legacy);
   assert.deepEqual(v1.projects[0].claimDrafts, []);
+});
+
+test('price approval alone does not make legacy or incomplete VO checks eligible for a new claim', () => {
+  const original = project();
+  const legacy = structuredClone(original);
+  const review = legacy.voReviews[0];
+  for (const field of ['reviewChecksVersion', 'scopeDisposition', 'instructionStatus', 'executionStatus', 'executionReference', 'executionVerifiedAt', 'claimEligibility', 'eligibilityNote', 'eligibilityReviewedAt']) delete review[field];
+  const before = structuredClone(legacy);
+  const blocked = buildClaimReview(legacy, '2026-10', assessment());
+  assert.equal(blocked.voRows[0].status, 'approved');
+  assert.equal(blocked.voRows[0].eligible, false);
+  assert.equal(blocked.canPrepare, false);
+  assert.match(blocked.voRows[0].exclusionReason, /eligibility review/);
+  assert.equal(countPendingClaimVOs({ voRows: [{ ...blocked.voRows[0], included: false }] }), 1);
+  assert.deepEqual(legacy, before);
+  for (const fields of [
+    { scopeDisposition: 'existingScope' },
+    { instructionStatus: 'reported' },
+    { instructionStatus: 'disputed' },
+    { executionStatus: 'notVerified' },
+    { claimEligibility: 'needsReview' },
+  ]) {
+    const changed = structuredClone(original);
+    Object.assign(changed.voReviews[0], fields);
+    assert.equal(buildClaimReview(changed, '2026-10', assessment()).voRows[0].eligible, false);
+  }
+  const excluded = structuredClone(original);
+  excluded.voReviews[0].claimEligibility = 'excluded';
+  const excludedReview = buildClaimReview(excluded, '2026-10', assessment());
+  assert.equal(excludedReview.voRows[0].eligible, false);
+  assert.match(excludedReview.voRows[0].exclusionReason, /excluded/);
+  assert.equal(countPendingClaimVOs({ voRows: [{ ...excludedReview.voRows[0], included: false }] }), 0);
+  // A previous claim still needs reconciliation even when the VO is excluded.
+  assert.equal(excludedReview.voRows[0].included, true);
+  assert.equal(excludedReview.canPrepare, false);
+});
+
+test('VO claim eligibility and work verification must be recorded by the selected cutoff', () => {
+  for (const field of ['eligibilityReviewedAt', 'executionVerifiedAt']) {
+    const future = project();
+    future.voReviews[0][field] = '2026-11-01T00:00:00+08:00';
+    const october = buildClaimReview(future, '2026-10', assessment());
+    assert.equal(october.voRows[0].eligible, false);
+    assert.match(october.voRows[0].exclusionReason, /after this month’s cutoff/);
+    assert.equal(countPendingClaimVOs({ voRows: [{ ...october.voRows[0], included: false }] }), 0);
+    assert.equal(buildClaimReview(future, '2026-11', assessment()).voRows[0].eligible, true);
+  }
+});
+
+test('saved eligibility evidence is frozen and a changed VO review needs a new unissued claim revision', () => {
+  const saved = saveClaimDraft(project(), '2026-10', assessment());
+  const original = structuredClone(saved.draft);
+  assert.equal(saved.draft.snapshot.voRows[0].eligibilityReview.claimEligibility, 'eligible');
+  const changed = structuredClone(saved.project);
+  changed.voReviews[0].executionReference = 'DEMO-REVISED-WORK-CHECK';
+  const live = buildClaimReview(changed, '2026-10', assessment());
+  assert.deepEqual(live.totals, original.snapshot.totals);
+  const stale = markClaimPrepared(changed, saved.draft.id);
+  assert.equal(stale.outcome, 'invalid');
+  assert.match(stale.error, /Source records changed/);
+  assert.deepEqual(changed.claimDrafts[0], original);
+  const revised = saveClaimDraft(changed, '2026-10', assessment());
+  assert.equal(revised.draft.revision, 2);
+  assert.deepEqual(revised.project.claimDrafts[0], original);
+  assert.equal(markClaimPrepared(revised.project, revised.draft.id).outcome, 'updated');
 });

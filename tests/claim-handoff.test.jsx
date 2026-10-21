@@ -24,6 +24,10 @@ function fixture(approvalDate = '2026-10-17T12:00:00+08:00') {
   project.voReviews = ['OLD', 'NEW'].map((kind) => ({ id: `R-${kind}`, reportId: `R-${kind}`, projectId: project.id,
     status: 'approved', title: kind === 'NEW' ? 'Newly approved platform' : 'Existing approved access',
     approvedValue: kind === 'NEW' ? 500 : 200, approvalReference: `APP-${kind}`, approver: 'Example approver',
+    reviewChecksVersion: 1, scopeDisposition: 'variation', scopeAssessment: 'Fictional additional access outside the original scope.',
+    instructionStatus: 'documented', instructionReference: 'DEMO-INSTRUCTION',
+    executionStatus: 'verified', executionReference: 'DEMO-WORK-CHECK', executionVerifiedAt: '2026-10-18T12:00:00+08:00',
+    claimEligibility: 'eligible', eligibilityNote: 'Explicit fictional QS claim eligibility check.', eligibilityReviewedAt: '2026-10-18T12:00:00+08:00',
     history: [{ id: `APP-EVENT-${kind}`, action: 'approve', to: 'approved', date: kind === 'NEW' ? approvalDate : '2026-10-17T12:00:00+08:00', actor: 'Example QS' }] }));
   const saved = saveClaimDraft(project, '2026-10', { work: { A: { include: true, assessedQuantity: 40, previousValue: 5 } },
     vos: { 'R-OLD': { include: true, assessedValue: 100, previousValue: 20 } }, priorConfirmed: true, note: 'Saved measurement note.' });
@@ -79,6 +83,23 @@ describe('approved VO handoff to monthly claims', () => {
     expect(screen.getByRole('spinbutton', { name: 'A QS cumulative quantity' }).value).toBe('33.5');
     expect(screen.getByRole('textbox', { name: 'QS note' }).value).toBe('Unfinished measured total');
     expect(screen.queryByRole('spinbutton', { name: 'R-NEW QS cumulative value' })).toBeNull();
+  });
+
+  it('explains a later eligibility check without misreporting the earlier price approval date', () => {
+    const { project, target } = fixture();
+    const review = project.voReviews.find(entry => entry.id === target.id);
+    review.eligibilityReviewedAt = '2026-11-02T12:00:00+08:00';
+    const original = structuredClone(project);
+    render(<MonthlyClaimView project={project} initialVOId={target.id} />);
+    const notice = screen.getByRole('region', { name: 'Extra work from VO review' });
+    expect(notice.textContent).toContain('Claim eligibility or work verification is after this month’s cutoff.');
+    expect(notice.textContent).not.toContain('The approval on');
+    expect(screen.queryByRole('button', { name: 'Find this VO' })).toBeNull();
+    expect(screen.queryByRole('checkbox', { name: `Include ${target.reference} in claim` })).toBeNull();
+    fireEvent.change(screen.getByLabelText('Claim period'), { target: { value: '2026-11' } });
+    expect(screen.getByRole('checkbox', { name: `Include ${target.reference} in claim` }).getAttribute('aria-checked')).toBe('false');
+    expect(screen.getByRole('button', { name: 'Find this VO' })).toBeTruthy();
+    expect(project).toEqual(original);
   });
 
   it('explains a later approval cutoff and leaves the VO unselected after changing month', () => {

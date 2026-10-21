@@ -16,6 +16,10 @@ function fixture(code = 'QUERY') {
     { id: 'R-VO', projectId: project.id, vo: true, status: 'voApproved', date: '2026-10-20T09:00:00+08:00', message: 'Mock extra access' }],
     voReviews: [{ id: 'R-VO', reportId: 'R-VO', projectId: project.id, status: 'approved', title: 'Extra access',
       approvedValue: 300, approvalReference: 'DEMO-APP', approver: 'Demo approver',
+      reviewChecksVersion: 1, scopeDisposition: 'variation', scopeAssessment: 'Fictional additional access outside the original scope.',
+      instructionStatus: 'documented', instructionReference: 'DEMO-INSTRUCTION',
+      executionStatus: 'verified', executionReference: 'DEMO-WORK-CHECK', executionVerifiedAt: '2026-10-20T12:00:00+08:00',
+      claimEligibility: 'eligible', eligibilityNote: 'Explicit fictional QS claim eligibility check.', eligibilityReviewedAt: '2026-10-20T12:00:00+08:00',
       history: [{ id: 'APP-VO', action: 'approve', to: 'approved', date: '2026-10-20T12:00:00+08:00' }] }],
   });
   project.sourceItems = structuredClone(project.items);

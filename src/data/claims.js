@@ -1,4 +1,4 @@
-import { getVOCases } from './vo.js';
+import { getVOCases, getVOClaimEligibility } from './vo.js';
 import { captureClaimProjectDetails } from './claim-pack.js';
 
 // Preparation only: these records never certify, submit or pay a claim.
@@ -91,6 +91,18 @@ function approvedEvidence(entry, end) {
   if (!finite(entry.approvedValue) || entry.approvedValue < 0 || !entry.approvalReference || !entry.approver) {
     return { eligible: false, exclusionReason: 'Approval value, reference or approver is missing.', approval: clone(event) };
   }
+  const readiness = getVOClaimEligibility(entry);
+  if (!readiness.eligible) return {
+    eligible: false,
+    exclusionReason: readiness.status === 'excluded' ? 'QS excluded this extra work from claims.' : `Complete the VO claim eligibility review. ${readiness.issues.join(' ')}`,
+    needsEligibilityReview: readiness.status !== 'excluded', approval: clone(event),
+  };
+  if (!Number.isFinite(dateTime(readiness.decisionAt)) || !Number.isFinite(dateTime(readiness.executionVerifiedAt))) {
+    return { eligible: false, exclusionReason: 'Claim eligibility or work verification date is not recorded.', needsEligibilityReview: true, approval: clone(event) };
+  }
+  if (dateTime(readiness.decisionAt) > end || dateTime(readiness.executionVerifiedAt) > end) {
+    return { eligible: false, exclusionReason: 'Claim eligibility or work verification is after this month’s cutoff.', approval: clone(event) };
+  }
   return { eligible: true, exclusionReason: '', approval: clone(event) };
 }
 
@@ -98,7 +110,7 @@ const total = (rows, field) => rows.some((row) => row[field] === null) ? null : 
 
 export function countPendingClaimVOs(review) {
   return (review.voRows || []).filter((row) => !row.eligible && !row.included
-    && ['flagged', 'clarification', 'pendingApproval'].includes(row.status)).length;
+    && (['flagged', 'clarification', 'pendingApproval'].includes(row.status) || row.needsEligibilityReview === true)).length;
 }
 
 export function buildClaimReview(project, period, input = {}) {
@@ -167,6 +179,15 @@ export function buildClaimReview(project, period, input = {}) {
       approvedValue: entry.approvedValue, approvalReference: entry.approvalReference,
       approver: entry.approver, approvalDate: approval.approval?.date || null,
       approval: approval.approval, evidence: clone(entry.report),
+      ...(entry.reviewChecksVersion === 1 ? { eligibilityReview: clone({
+        scopeDisposition: entry.scopeDisposition, scopeAssessment: entry.scopeAssessment, relatedItemId: entry.relatedItemId,
+        instructionStatus: entry.instructionStatus,
+        instructionReference: entry.instructionReference, executionStatus: entry.executionStatus,
+        executionReference: entry.executionReference, executionVerifiedAt: entry.executionVerifiedAt,
+        claimEligibility: entry.claimEligibility, eligibilityNote: entry.eligibilityNote,
+        eligibilityReviewedAt: entry.eligibilityReviewedAt,
+      }) } : {}),
+      ...(approval.needsEligibilityReview ? { needsEligibilityReview: true } : {}),
       included, eligible: approval.eligible, exclusionReason: approval.exclusionReason,
       assessedValue, previousValue, cumulativeValue, currentValue, issues: rowIssues,
     };

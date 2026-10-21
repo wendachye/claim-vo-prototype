@@ -1,13 +1,51 @@
-.vo-review-stages { display:flex; align-items:center; flex-wrap:wrap; gap:8px 20px; padding:0; margin:0; list-style:none; }
-.vo-review-stages > li { display:flex; align-items:center; gap:6px; color:#64748b; font-size:12px; line-height:1.6; }
-.vo-review-stages > li > span { display:grid; place-items:center; width:19px; height:19px; border-radius:50%; background:#e9eef5; color:#64748b; font-size:11px; flex-shrink:0; }
-.vo-review-stages > li.current { color:#1d4ed8; font-weight:600; }
-.vo-review-stages > li.current > span { color:#fff; background:#2563eb; }
-.vo-review-stages > li.complete { color:#047857; }
-.vo-review-stages > li.complete > span { color:#047857; background:#d1fae5; }
 .vo-case-review h2[tabindex='-1']:focus { outline:none; }
-.vo-other-review-actions { margin-top:16px; padding-top:10px; border-top:1px solid #e2e8f0; color:#64748b; font-size:12px; line-height:1.7; }
-.vo-other-review-actions > summary { width:fit-content; padding:7px 0; color:#475569; cursor:pointer; font-weight:500; }
-.vo-other-review-actions > p { margin:8px 0; }
-.vo-other-review-actions > div { display:flex; flex-wrap:wrap; gap:8px; }
+.vo-evidence-details { border-bottom:1px solid var(--border); padding-bottom:16px; }
+.vo-evidence-details > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; list-style:none; color:#475569; }
+.vo-evidence-details > summary::-webkit-details-marker { display:none; }
+.vo-evidence-details > summary strong { display:block; font-size:13px; font-weight:550; }
+.vo-evidence-details > summary small { display:block; color:#64748b; font-size:12px; line-height:1.6; margin-top:4px; }
+.vo-evidence-details > div { padding-top:16px; }
+.vo-checks-form { margin:0; }
+.vo-check-section { padding:22px 0; border-bottom:1px solid var(--border); }
+.vo-check-section > header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+.vo-check-section h3 { display:flex; align-items:center; gap:8px; color:#1e293b; font-size:14px; font-weight:600; }
+.vo-check-section h3 > span { display:grid; place-items:center; width:22px; height:22px; border:1px solid #dce3ed; border-radius:50%; color:#64748b; font-size:11px; font-weight:400; }
+.vo-check-state { color:#64748b; font-size:12px; }
+.vo-check-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.vo-check-section > .form-field + .vo-check-fields, .vo-scope-comparison + .form-field, .vo-check-section > .form-field + .vo-scope-comparison { margin-top:16px; }
+.vo-check-section > .form-field { max-width:100%; }
+.vo-check-section > .form-field + .vo-check-fields { margin-top:16px; }
+.vo-scope-comparison { display:flex; align-items:flex-start; gap:12px; padding:12px 14px; border-radius:7px; background:#f8fafc; margin-bottom:16px; }
+.vo-scope-comparison > div { flex:1; min-width:0; }
+.vo-scope-comparison span { display:block; color:#64748b; font-size:11px; margin-bottom:5px; }
+.vo-scope-comparison strong { display:block; color:#334155; font-size:13px; font-weight:550; line-height:1.6; }
+.vo-scope-comparison p { color:#64748b; font-size:12px; line-height:1.7; margin-top:4px; }
+.vo-scope-comparison .button { flex-shrink:0; }
+.vo-check-hint { color:#64748b; font-size:12px; line-height:1.7; margin-top:10px; }
+.vo-price-summary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:0; }
+.vo-price-summary > div:first-child { grid-column:1/-1; }
+.vo-price-summary dt { color:#64748b; font-size:12px; }
+.vo-price-summary dd { margin:4px 0 0; color:#334155; font-size:13px; overflow-wrap:anywhere; }
+.vo-price-summary .vo-price-amount { font-size:21px; font-weight:600; color:#1e293b; }
+.vo-review-note { margin-top:20px; }
+.vo-unsaved { margin-top:16px; color:#64748b; font-size:12px; }
+.vo-secondary-actions { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.vo-secondary-actions > span { color:#64748b; font-size:12px; margin-left:auto; }
+.vo-eligibility-issues { margin-top:14px; color:#64748b; font-size:12px; line-height:1.8; }
+.vo-eligibility-issues summary { cursor:pointer; font-weight:500; }
+.vo-eligibility-issues ul { margin:8px 0 0; padding-left:20px; }
 .vo-case-review summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
+@media(max-width:760px) {
+  .vo-check-section { padding:20px 0; }
+  .vo-check-fields { grid-template-columns:minmax(0,1fr); }
+  .vo-scope-comparison { flex-direction:column; }
+  .vo-secondary-actions > span { flex-basis:100%; margin-left:0; }
+}
+
+.vo-work-details { margin:0 0 16px; color:#475569; font-size:12px; line-height:1.7; }
+.vo-work-details > summary { width:fit-content; cursor:pointer; padding:5px 0; }
+.vo-work-details > div { display:grid; gap:16px; padding-top:12px; }
+.vo-saved-check { color:#475569; font-size:13px; line-height:1.8; margin:6px 0; overflow-wrap:anywhere; }
+.vo-evidence-details[open] > summary > svg { transform:rotate(180deg); }
+
+.vo-checks-form > .vo-action-row { border-top:0; margin-top:0; }

@@ -10,7 +10,7 @@ import { refreshSITDemoPhotos } from './sit-demo-photos.js';
 
 const clone = (value) => structuredClone(value);
 const photoAlt = 'Generated construction illustration used as a demo site photo; not project evidence.';
-const workflowFields = ['sourceItems', 'items', 'reports', 'history', 'baselines', 'voReviews', 'claimDrafts', 'locked', 'version', 'whatsappMessages'];
+const workflowFields = ['sourceItems', 'items', 'reports', 'history', 'baselines', 'voReviews', 'claimDrafts', 'locked', 'version', 'whatsappMessages', 'messageClarifications'];
 
 // Read the bundled fictional campus fixture, never browser-edited project data.
 export function getProvidedContractSample() {
@@ -230,7 +230,8 @@ function createContractScenario(values, now, sample, profile) {
       ...result.project,
       voReviews: result.project.voReviews.map((review) => review.id !== caseId ? review : {
         ...review, updatedAt: date,
-        history: review.history.map((event, index) => index === review.history.length - 1 ? { ...event, id: eventId, date } : event),
+        ...(action === 'assessEligibility' ? { eligibilityReviewedAt: date, executionVerifiedAt: date } : {}),
+        history: review.history.map((event, index) => index === review.history.length - 1 ? { ...event, id: eventId, date, ...(action === 'assessEligibility' ? { values: { ...event.values, eligibilityReviewedAt: date, executionVerifiedAt: date } } : {}) } : event),
       }),
       history: result.project.history.map((event) => priorIds.has(event.id) ? event : { ...event, id: eventId, date }),
     };
@@ -248,6 +249,13 @@ function createContractScenario(values, now, sample, profile) {
     approvedValue: 1800, approvalReference: `${project.code}-DEMO-APPROVAL-007`, approver: 'Fictional demo approver',
     reviewNote: 'Locally recorded fictional approval. No external instruction, certification, payment or claim submission.',
   }, 20);
+  reviewVO(approvedId, 'assessEligibility', {
+    scopeDisposition: 'variation', instructionStatus: 'documented',
+    executionStatus: 'verified', executionReference: `${project.code}-DEMO-WORK-CHECK-007`,
+    claimEligibility: 'eligible',
+    reviewNote: 'Explicit fictional post-approval scope, instruction and executed-work check for the showcase.',
+    eligibilityNote: 'Fictional QS check: the instructed additional access work is verified and eligible for this mock claim. No actual project work or entitlement is certified.',
+  }, 19);
   reviewVO(rejectedId, 'reject', {
     title: 'Routine scaffold safety adjustment (demo)', relatedItemId: 'WI-002',
     scopeAssessment: profile.rejectionAssessment,

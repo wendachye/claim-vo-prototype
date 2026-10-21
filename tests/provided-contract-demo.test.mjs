@@ -5,7 +5,7 @@ import { getDrawingAsset, getDrawingMapping } from '../src/data/drawing-mapping.
 import { getDrawingProgress } from '../src/data/drawing-progress.js';
 import { getAreaEvidence } from '../src/data/drawing-evidence.js';
 import { getAreaVOFlags } from '../src/data/drawing-vo.js';
-import { getVOCases } from '../src/data/vo.js';
+import { getVOCases, getVOClaimEligibility } from '../src/data/vo.js';
 import { processWhatsAppMessage } from '../src/data/whatsapp.js';
 import { loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.js';
 
@@ -94,6 +94,9 @@ test('open, approved and rejected VOs retain distinct flags and reject foreign a
   assert.equal(cases['Area W3-A'].approvedValue, null);
   assert.equal(cases['Area W5-B'].status, 'approved');
   assert.equal(cases['Area W5-B'].approvedValue, 1800);
+  assert.equal(getVOClaimEligibility(cases['Area W5-B']).eligible, true);
+  assert.equal(cases['Area W5-B'].instructionStatus, 'documented');
+  assert.equal(cases['Area W5-B'].executionStatus, 'verified');
   assert.match(cases['Area W5-B'].approver, /Fictional/);
   assert.equal(cases['Area W3-B'].status, 'rejected');
   const flags = Object.fromEntries(getDrawingMapping(project).areas.map(area => [area.code, getAreaVOFlags(project, area.id)]));

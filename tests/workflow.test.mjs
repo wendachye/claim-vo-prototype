@@ -61,12 +61,15 @@ test('extra work review remains optional and does not alter completion or claim 
   value.reports = [{ id: 'VO', projectId: 'TEST', vo: true, status: 'needsReview', message: 'Additional work' }];
   const open = workflow(value);
   assert.equal(open.next.caseId, 'VO');
-  assert.match(open.next.description, /still claim verified work separately/);
+  assert.match(open.next.description, /Verified contract work can still be assessed separately/);
   assert.equal(open.counts.pendingReports, 0);
   assert.equal(open.counts.verifiedItems, 1);
   assert.equal(open.steps[3].status, 'Not started');
   value.voReviews = [{ id: 'VO', reportId: 'VO', projectId: 'TEST', status: 'approved', approvedValue: 100, history: [] }];
   assert.equal(workflow(value).counts.approvedVOs, 1);
+  assert.equal(workflow(value).next.route, 'vo');
+  assert.equal(workflow(value).counts.openVOs, 1);
+  value.voReviews[0].claimEligibility = 'excluded';
   assert.equal(workflow(value).next.route, 'claims');
   value.voReviews[0].status = 'rejected';
   assert.equal(workflow(value).counts.openVOs, 0);

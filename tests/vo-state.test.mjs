@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getVOCases, updateVOReview, VO_STATUS_LABELS } from '../src/data/vo.js';
+import { getVOCases, getVOClaimEligibility, updateVOReview, VO_STATUS_LABELS } from '../src/data/vo.js';
 import { processWhatsAppMessage } from '../src/data/whatsapp.js';
 import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.js';
 
@@ -212,4 +212,134 @@ test('old/new reset seeds clear only the selected review state; v1 migration kee
   assert.deepEqual(loaded.projects[0].reports, before.reports);
   assert.deepEqual(loaded.projects[0].voReviews, []);
   assert.equal(getVOCases(loaded.projects[0])[0].status, 'flagged');
+});
+
+
+const eligibility = {
+  scopeDisposition: 'variation', scopeAssessment: draft.scopeAssessment,
+  instructionStatus: 'documented', instructionReference: draft.instructionReference,
+  executionStatus: 'verified', executionReference: 'DEMO-INSPECTION-03',
+  claimEligibility: 'eligible', eligibilityNote: 'QS checked the documented changed scope, inspected work and approved price.',
+  reviewNote: 'Completed the separate scope and instruction evidence checks after the recorded demo price approval.',
+};
+const approve = (project = sit(), approvedValue = approval.approvedValue) => updateVOReview(submit(project), id, 'approve', { ...approval, approvedValue }).project;
+
+test('legacy approvals never imply documented instructions, verified work or claim eligibility', () => {
+  const project = approve();
+  const review = project.voReviews[0];
+  for (const field of ['scopeDisposition', 'instructionStatus', 'executionStatus', 'executionReference', 'claimEligibility', 'eligibilityNote', 'eligibilityReviewedAt', 'executionVerifiedAt', 'reviewChecksVersion']) delete review[field];
+  const before = structuredClone(project);
+  const entry = getVOCases(project)[0];
+  assert.equal(entry.status, 'approved');
+  assert.equal(entry.instructionReference, draft.instructionReference);
+  assert.equal(entry.scopeDisposition, 'unassessed');
+  assert.equal(entry.instructionStatus, 'notRecorded');
+  assert.equal(entry.executionStatus, 'notVerified');
+  assert.equal(entry.claimEligibility, 'needsReview');
+  assert.deepEqual(getVOClaimEligibility(entry), {
+    status: 'needsReview', eligible: false, ready: false, structured: false, decisionAt: null, executionVerifiedAt: null,
+    issues: ['Confirm the changed scope and why it is extra work.', 'Record the supporting documented instruction.',
+      'Record the verified work and its evidence reference.', 'The QS has not confirmed claim eligibility.'],
+  });
+  assert.deepEqual(project, before);
+});
+
+test('eligibility is a separate explicit decision with complete checks; zero approved price is valid', () => {
+  assert.equal(updateVOReview(sit(), id, 'assessEligibility', eligibility).outcome, 'invalid');
+  const project = approve();
+  for (const changes of [
+    { scopeDisposition: 'unassessed' }, { scopeDisposition: 'existingScope' }, { scopeAssessment: '' },
+    { instructionStatus: 'reported' }, { instructionStatus: 'disputed' }, { instructionReference: '' },
+    { executionStatus: 'notVerified' }, { executionReference: '' }, { eligibilityNote: '' },
+    { scopeDisposition: 'invalid' }, { instructionStatus: 'invalid' }, { executionStatus: 'invalid' }, { claimEligibility: 'invalid' },
+    { reviewNote: '' },
+  ]) {
+    const result = updateVOReview(project, id, 'assessEligibility', { ...eligibility, ...changes });
+    assert.equal(result.outcome, 'invalid', JSON.stringify(changes));
+    assert.equal(result.project, project);
+  }
+  const zero = updateVOReview(approve(sit(), '0'), id, 'assessEligibility', eligibility);
+  assert.equal(zero.outcome, 'updated');
+  const entry = getVOCases(zero.project)[0];
+  assert.equal(entry.status, 'approved');
+  assert.equal(entry.approvedValue, 0);
+  assert.equal(entry.reviewChecksVersion, 1);
+  const ready = getVOClaimEligibility(entry);
+  assert.equal(ready.eligible, true);
+  assert.equal(ready.ready, true);
+  assert.equal(ready.structured, true);
+  assert.equal(ready.status, 'eligible');
+  assert.equal(ready.decisionAt, entry.eligibilityReviewedAt);
+  assert.equal(ready.executionVerifiedAt, entry.executionVerifiedAt);
+  assert.ok(Number.isFinite(Date.parse(ready.decisionAt)));
+  assert.deepEqual(ready.issues, []);
+  assert.equal(entry.history.at(-1).action, 'assessEligibility');
+  assert.equal(entry.history.at(-1).from, 'approved');
+  assert.equal(entry.history.at(-1).to, 'approved');
+});
+
+test('eligibility review is idempotent and cannot change price approval, original evidence or saved claim snapshots', () => {
+  const project = { ...approve(), claimDrafts: [{ id: 'KEEP-SAVED', snapshot: { totals: { currentValue: 2200 }, evidence: ['original'] } }] };
+  const original = structuredClone(project);
+  const result = updateVOReview(project, id, 'assessEligibility', {
+    ...eligibility, title: 'Must not overwrite title', relatedItemId: 'FOREIGN', approvedValue: 9999,
+    proposedValue: 1, approvalReference: 'MUST-NOT-OVERWRITE', approver: 'Must not overwrite',
+  });
+  assert.equal(result.outcome, 'updated');
+  const entry = getVOCases(result.project)[0];
+  assert.equal(entry.title, draft.title);
+  assert.equal(entry.relatedItemId, draft.relatedItemId);
+  assert.equal(entry.approvedValue, Number(approval.approvedValue));
+  assert.equal(entry.proposedValue, Number(draft.proposedValue));
+  assert.equal(entry.approvalReference, approval.approvalReference);
+  assert.equal(entry.approver, approval.approver);
+  for (const field of ['items', 'sourceItems', 'reports', 'whatsappMessages', 'contract', 'claimDrafts']) assert.deepEqual(result.project[field], original[field], field);
+  assert.deepEqual(project, original);
+  const replay = updateVOReview(result.project, id, 'assessEligibility', eligibility);
+  assert.equal(replay.outcome, 'unchanged');
+  assert.equal(replay.project, result.project);
+});
+
+test('incomplete and excluded assessments stay visible while reopening clears current eligibility and retains history', () => {
+  const project = approve();
+  const partial = updateVOReview(project, id, 'assessEligibility', {
+    claimEligibility: 'needsReview', eligibilityNote: 'Waiting for the site inspection.',
+  });
+  assert.equal(partial.outcome, 'updated');
+  assert.equal(getVOClaimEligibility(getVOCases(partial.project)[0]).status, 'needsReview');
+  assert.equal(getVOCases(partial.project)[0].status, 'approved');
+  assert.equal(updateVOReview(partial.project, id, 'assessEligibility', { claimEligibility: 'excluded', eligibilityNote: '' }).outcome, 'invalid');
+  const excluded = updateVOReview(partial.project, id, 'assessEligibility', { claimEligibility: 'excluded', eligibilityNote: 'Not claimable in this mock assessment.' });
+  assert.equal(excluded.outcome, 'updated');
+  assert.equal(getVOClaimEligibility(getVOCases(excluded.project)[0]).status, 'excluded');
+  assert.equal(getVOCases(excluded.project)[0].approvedValue, Number(approval.approvedValue));
+  const ready = updateVOReview(excluded.project, id, 'assessEligibility', eligibility).project;
+  const reopened = updateVOReview(ready, id, 'reopen', { reviewNote: 'Recheck the changed scope before issuing a new price decision.' });
+  const entry = getVOCases(reopened.project)[0];
+  assert.equal(entry.status, 'flagged');
+  assert.equal(entry.claimEligibility, 'needsReview');
+  assert.equal(entry.eligibilityReviewedAt, null);
+  assert.equal(entry.approvedValue, null);
+  assert.equal(entry.history.at(-1).previousValues.claimEligibility, 'eligible');
+  assert.ok(entry.history.at(-1).previousValues.eligibilityReviewedAt);
+  assert.equal(getVOClaimEligibility(entry).eligible, false);
+  const rejected = updateVOReview(reopened.project, id, 'reject', { reviewNote: 'This work is already included in the original contract.' });
+  assert.equal(getVOCases(rejected.project)[0].claimEligibility, 'excluded');
+  assert.equal(getVOClaimEligibility(getVOCases(rejected.project)[0]).eligible, false);
+});
+
+test('changed instruction or work evidence cannot leave an invalid eligible decision in place', () => {
+  const project = updateVOReview(approve(), id, 'assessEligibility', eligibility).project;
+  for (const changes of [{ instructionStatus: 'reported' }, { scopeDisposition: 'rectification' }, { executionStatus: 'notVerified' }]) {
+    const result = updateVOReview(project, id, 'assessEligibility', { ...eligibility, ...changes });
+    assert.equal(result.outcome, 'invalid');
+    assert.equal(result.project, project);
+  }
+  const saved = updateVOReview(project, id, 'assessEligibility', { ...eligibility, instructionStatus: 'disputed', claimEligibility: 'needsReview', eligibilityNote: 'Instruction disputed; wait for confirmation.' });
+  assert.equal(saved.outcome, 'updated');
+  assert.equal(getVOClaimEligibility(getVOCases(saved.project)[0]).eligible, false);
+  const corrupted = { ...getVOCases(project)[0], approvedValue: null };
+  assert.equal(getVOClaimEligibility(corrupted).eligible, false);
+  assert.equal(getVOClaimEligibility({ ...getVOCases(project)[0], eligibilityReviewedAt: null }).eligible, false);
+  assert.equal(getVOClaimEligibility({ ...getVOCases(project)[0], executionVerifiedAt: null }).eligible, false);
 });

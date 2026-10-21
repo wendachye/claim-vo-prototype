@@ -23,6 +23,10 @@ function project() {
     ],
     voReviews: [{ id: 'R-VO', reportId: 'R-VO', projectId: 'T01', status: 'approved', title: 'Extra platform',
       approvedValue: 200, approvalReference: 'APP-001', approver: 'Example approver',
+      reviewChecksVersion: 1, scopeDisposition: 'variation', scopeAssessment: 'Fictional additional access outside the original scope.',
+      instructionStatus: 'documented', instructionReference: 'DEMO-INSTRUCTION',
+      executionStatus: 'verified', executionReference: 'DEMO-WORK-CHECK', executionVerifiedAt: '2026-10-18T12:00:00+08:00',
+      claimEligibility: 'eligible', eligibilityNote: 'Explicit fictional QS claim eligibility check.', eligibilityReviewedAt: '2026-10-18T12:00:00+08:00',
       history: [{ id: 'APP-EVENT', action: 'approve', to: 'approved', date: '2026-10-17T12:00:00+08:00', actor: 'Example QS' }] }],
   };
 }

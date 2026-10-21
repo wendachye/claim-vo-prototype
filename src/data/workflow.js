@@ -1,5 +1,5 @@
 import { getWhatsAppMessages } from './whatsapp.js';
-import { getVOCases } from './vo.js';
+import { getVOCases, getVOClaimEligibility } from './vo.js';
 import { isReviewableProgressReport, needsProgressClarification } from './report-status.js';
 import { getClaimTracking } from './claim-tracking.js';
 import { getClaimRevisionContext } from './claim-revisions.js';
@@ -44,7 +44,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
     && message.projectId === project.id && !reports.some((report) => report.sourceMessageId === message.id))
     .sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const cases = getVOCases({ ...project, items, reports });
-  const openVOs = cases.filter((entry) => !['approved', 'rejected'].includes(entry.status));
+  const openVOs = cases.filter((entry) => !['approved', 'rejected'].includes(entry.status) || entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible);
   const currentDrafts = list(project.claimDrafts).filter((draft) => draft.projectId === project.id
     && draft.snapshot?.projectId === project.id && draft.period === period && draft.snapshot.period === period
     && ['draft', 'prepared'].includes(draft.status) && Number.isInteger(draft.revision))
@@ -71,6 +71,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
     verifiedItems: items.filter((item) => typeof item.verified === 'number' && item.verified > 0).length,
     openVOs: openVOs.length,
     approvedVOs: cases.filter((entry) => entry.status === 'approved').length,
+    eligibleVOs: cases.filter((entry) => getVOClaimEligibility(entry).eligible).length,
     savedClaims: currentDrafts.length,
   };
   const confirmed = items.length > 0 && project.locked === true && counts.contractReview === 0;
@@ -87,9 +88,9 @@ export function getProjectWorkflow(project, period = currentMonth()) {
           : counts.clarifications ? `${numberOf(counts.clarifications, 'site update')} waiting for clearer information.`
           : counts.verifiedItems ? `${numberOf(counts.verifiedItems, 'item')} with verified progress.` : 'Receive a site update, then verify its progress.' },
     { id: 'vo', label: 'Extra work', route: 'vo',
-      status: counts.openVOs ? 'Needs review' : counts.approvedVOs ? 'Approvals recorded' : 'Optional',
+      status: counts.openVOs ? 'Needs review' : counts.approvedVOs ? 'Price approved' : 'Optional',
       detail: counts.openVOs ? `${numberOf(counts.openVOs, 'extra work case')} to review. Verified work can still be assessed separately.`
-        : counts.approvedVOs ? `${numberOf(counts.approvedVOs, 'approval')} recorded; assess values in the claim.` : 'Review extra scope when it is flagged.' },
+        : counts.approvedVOs ? counts.eligibleVOs ? `${numberOf(counts.eligibleVOs, 'variation')} eligible for QS claim assessment.` : 'Price approval recorded; no extra work is currently eligible for a new claim.' : 'Review extra scope when it is flagged.' },
     { id: 'claims', label: 'Claims', route: 'claims',
       status: latestDraft ? latestDraft.status === 'prepared' ? claimStatusLabels[claimStatus] : isRevision ? 'Revision saved' : 'Draft saved' : 'Not started',
       detail: latestDraft ? `${period} · saved revision ${latestDraft.revision}. ${latestDraft.status === 'prepared' ? claimStatus === 'prepared' ? 'Ready for mock submission tracking.' : `${claimStatusLabels[claimStatus]}. Open Claims to review its tracking.` : isRevision ? `Revises version ${revisionContext.source.revision}. Continue the query response before preparing.` : 'Continue the saved assessment before preparing.'}`
@@ -105,12 +106,12 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   else if (counts.pendingReports) next = { route: 'completion', label: 'Verify site progress',
     description: 'Review the latest report for each work item and confirm the observed completion.' };
   else if (counts.openVOs) next = { route: 'vo', label: 'Review extra work',
-    description: 'Check the flagged scope and instruction. You can still claim verified work separately in Claims.', caseId: openVOs[0].id };
+    description: 'Review the scope, instruction, price approval and claim checks. Verified contract work can still be assessed separately.', caseId: openVOs[0].id };
   else if (latestDraft) next = latestDraft.status === 'prepared'
     ? { route: 'claim-status', label: claimStatus === 'queried' ? 'Review claim query' : 'Track claim status', description: claimGuidance[claimStatus], draftId: latestDraft.id }
     : isRevision ? { route: 'claims', revisionSourceId: revisionContext.source.id, label: 'Continue claim revision', description: `Review the response to ${revisionContext.query.reference} and the revised assessment before preparing version ${latestDraft.revision}.` }
       : { route: 'claims', label: 'Continue monthly claim', description: 'Review the saved assessment and its outstanding checks before preparing it.' };
-  else if (items.some((item) => item.pricingType === 'measured' && typeof item.verified === 'number' && item.verified > 0) || counts.approvedVOs) next = {
+  else if (items.some((item) => item.pricingType === 'measured' && typeof item.verified === 'number' && item.verified > 0) || counts.eligibleVOs) next = {
     route: 'claims', label: 'Prepare monthly claim', description: 'Assess verified work and recorded approvals. Enter claim quantities and values separately from physical progress.',
   };
   else next = { route: 'completion', label: 'Add a site update', description: 'Add a site report for a contract item, then review its progress.' };

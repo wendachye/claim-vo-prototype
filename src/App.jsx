@@ -32,7 +32,7 @@ import { recordClaimStage } from './data/claim-tracking.js';
 import { saveClaimRevision, getClaimRevisionContext } from './data/claim-revisions.js';
 import { getWhatsAppMessages, processWhatsAppMessage } from './data/whatsapp.js';
 import { saveMessageClarificationRequest, saveMockClarificationReply } from './data/whatsapp-clarification.js';
-import { getVOCases, updateVOReview, VO_STATUS_LABELS } from './data/vo.js';
+import { getVOCases, getVOClaimEligibility, updateVOReview, VO_STATUS_LABELS } from './data/vo.js';
 import { getProjectWorkflow } from './data/workflow.js';
 import { getProjectAttention } from './data/project-attention.js';
 import { getWorkItemSiteMessage } from './data/contract-work-links.js';
@@ -321,14 +321,14 @@ export function App(){
   const sourceProvided=contract.sourceKind==='provided';
   const needs=s.items.filter(i=>i.needsReview);
   const voCases=getVOCases(project);
-  const openVOCs=voCases.filter(entry=>!['approved','rejected'].includes(entry.status));
+  const openVOCs=voCases.filter(entry=>!['approved','rejected'].includes(entry.status)||entry.status==='approved'&&entry.claimEligibility!=='excluded'&&!getVOClaimEligibility(entry).eligible);
   const pending=s.reports.filter(r=>!r.vo&&waiting(r));const vos=openVOCs.map(entry=>entry.report);
   function reviewVO(caseId,action,values){
     const result=updateVOReview(project,caseId,action,values);
     if(result.outcome==='invalid')return result;
     if(result.outcome==='unchanged'){notify('This review is already up to date.');return result;}
     set(old=>updateVOReview(old,caseId,action,values).project);
-    const messages={save:'QS assessment saved.',clarify:'Marked as needing information. No message was sent.',submit:'Marked awaiting approval. Nothing was sent externally.',approve:'Demo approval recorded. Contract and completion values are unchanged.',reject:'VO rejected. Evidence and decision history are retained.',reopen:'VO review reopened. The previous decision is retained in history.'};
+    const messages={assessEligibility:'VO claim checks saved. Existing claim versions are unchanged.',save:'QS assessment saved.',clarify:'Marked as needing information. No message was sent.',submit:'Marked awaiting approval. Nothing was sent externally.',approve:'Demo approval recorded. Contract and completion values are unchanged.',reject:'VO rejected. Evidence and decision history are retained.',reopen:'VO review reopened. The previous decision is retained in history.'};
     notify(messages[action]);return result;
   }
   function saveClaim(period,assessment){

@@ -12,8 +12,10 @@ Project overview shows a compact attention count. Use **View tasks** or the **no
 
 - **Contract:** check the work list, then confirm it. A confirmed contract offers **Continue to site updates**.
 - **Site updates:** review messages and photos, then use **Progress** to verify completion. New messages appear first. Small screens show reported and verified totals together in cards.
-- **Extra work:** review the evidence and instruction, then track approval. The approved record links to monthly claims; approval never inserts a claim value automatically.
+- **Extra work:** check contract scope, instruction evidence, price approval and claim eligibility separately. Price approval does not verify the work or select it in a claim.
 - **Claims:** saved claims appear first. **Start claim** guides **Choose work → Enter totals → Review**. Use **Other work claimed before?** to reconcile prior amounts for work that is no longer eligible. Positive prior amounts cannot be omitted. Unfinished edits remain while browsing; save explicitly before refreshing. Saved revisions retain their snapshots.
+
+VO reviews marked **Price approved** still need an explicit claim check. Existing browser approvals are not automatically made eligible: document the instruction, record the extra-work verification reference and explain the QS decision. **Save claim checks** preserves the original evidence and price approval. Pending checks remain in Needs attention; an explicit exclusion closes that follow-up. Eligible work is offered for QS assessment only when its approval, verification and review dates meet the claim cutoff. Existing saved claims keep their original values and evidence; changed supporting checks require a new unissued revision. Fresh contract demos include clearly fictional completed checks for their example VO.
 
 History, message details and older claim versions are expandable. This remains a browser-local demo with no live AI, WhatsApp or external submission.
 
@@ -57,7 +59,7 @@ For a submitted claim, choose **Record a query** to flag the whole claim or a sa
 
 1. Select **Campus Scaffold (Demo)**. Review WI-001's simulated extraction mismatch: 2,800 m² was read; the fictional reference is 2,000 m². Confirm the item and baseline.
 2. In **WhatsApp processing**, process the WI-001 photo update. Reported completion changes to 65%; verified completion stays at 25% until reviewed. Cumulative percentages replace the total. Replaying an event creates no duplicate report.
-3. Process an extra-work message. In **VO review**, inspect the evidence, record a scope assessment and instruction reference, then track approval. Decisions retain their history.
+3. Process an extra-work message. In **VO review**, inspect the original evidence and compare contract scope. Record the scope decision and instruction evidence, then record price approval. Check verified extra-work evidence and save an explicit claim eligibility decision before opening Monthly claims. Decisions retain their history.
 4. In **Monthly claims**, choose a month and enter QS-assessed cumulative quantities and VO values. Review prior claimed values, confirm any undated evidence as of the cutoff, save a revision and mark a valid draft prepared. Prepared drafts do not become prior claimed values. Open **Preview & export** from Saved drafts to read the frozen revision, download its CSV or use Print / Save PDF.
 
 5. Switch to **Warehouse Extension (Demo)**. Its schedule, activity, VO reviews and claim drafts remain separate. New projects offer a fictional warehouse sample or an empty register for mock contract upload.

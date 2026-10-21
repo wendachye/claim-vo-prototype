@@ -182,7 +182,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(readWorkspace().projects.find((entry) => entry.id === other.id)).toEqual(other);
   });
 
-  it('opens the exact pending VO approval and removes it after the approval is recorded', async () => {
+  it('opens the exact pending price approval and retains its separate claim check afterward', async () => {
     const { project, caseId } = fixture({ approval: true });
     const task = getProjectAttention(project).find((entry) => entry.target.caseId === caseId);
     const before = readWorkspace().projects;
@@ -199,7 +199,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     await user.click(screen.getByRole('button', { name: 'Record approval', exact: true }));
     await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
     await screen.findByRole('heading', { name: 'Project overview' });
-    expect(getProjectAttention(selectedProject()).some((entry) => entry.id === task.id)).toBe(false);
+    expect(getProjectAttention(selectedProject()).find((entry) => entry.id === task.id)?.kind).toBe('vo-eligibility');
     expect(getVOCases(selectedProject()).find((entry) => entry.id === caseId).status).toBe('approved');
     expect(selectedProject().claimDrafts).toEqual(project.claimDrafts);
     expect(selectedProject().items).toEqual(project.items);
