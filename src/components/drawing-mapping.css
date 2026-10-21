@@ -56,10 +56,10 @@
 .drawing-preview-missing h3 { margin:0; color:#334155; font-size:15px; }
 .drawing-preview-missing p { max-width:390px; margin:0; font-size:12px; line-height:1.8; }
 .drawing-area-list { display:flex; flex-direction:column; max-height:310px; overflow:auto; padding:8px; border-bottom:1px solid var(--border); }
-.drawing-area-picker { padding:16px 18px 12px; }
+.drawing-area-picker { min-width:0; flex:1; }
 .drawing-area-picker .form-field { margin:0; }
-.drawing-area-browser { border-bottom:1px solid var(--border); color:#64748b; font-size:12px; }
-.drawing-area-browser > summary { display:flex; align-items:center; flex-wrap:wrap; gap:5px 12px; padding:0 18px 14px; cursor:pointer; }
+.drawing-area-browser { border-top:1px solid var(--border); color:#64748b; font-size:12px; }
+.drawing-area-browser > summary { display:flex; align-items:center; flex-wrap:wrap; gap:5px 12px; padding:12px 18px; cursor:pointer; }
 .drawing-area-browser > summary::before { content:'+'; color:#64748b; font-size:14px; }
 .drawing-area-browser[open] > summary::before { content:'−'; }
 .drawing-area-browser > summary > span { margin-left:auto; color:#94a3b8; }
@@ -105,7 +105,7 @@
 .drawing-local-note { margin:20px 0 0; color:#64748b; font-size:12px; line-height:1.8; }
 .drawing-progress-controls { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 18px 10px; color:#475569; font-size:12px; }
 .drawing-progress-controls > div { display:flex; gap:5px; }
-.drawing-progress-controls p { flex-basis:100%; margin:0; color:#64748b; font-size:12px; line-height:1.7; }
+.drawing-progress-controls p { margin:0; color:#64748b; font-size:12px; line-height:1.7; }
 .drawing-progress-legend { display:flex; flex-wrap:wrap; gap:8px 14px; padding:0 18px 14px; border-bottom:1px solid var(--border); color:#64748b; font-size:12px; line-height:1.6; }
 .drawing-progress-legend span { display:inline-flex; align-items:center; gap:5px; }
 .drawing-progress-legend i { width:9px; height:9px; border:1px solid #a8b6c8; border-radius:50%; background:#cbd5e1; }
@@ -119,19 +119,24 @@
 .drawing-progress-heading p { margin:4px 0 0; color:#64748b; font-size:12px; }
 .drawing-progress-heading .badge { flex-shrink:0; margin-top:3px; }
 .drawing-progress-summary { margin:20px 0 12px; color:#334155; font-size:13px; font-weight:550; }
-.drawing-progress-items { margin:0; padding:0; list-style:none; }
+.drawing-progress-items { margin:16px 0 0; padding:0; list-style:none; }
 .drawing-progress-items li { display:flex; align-items:flex-start; gap:12px; padding:13px 0; border-top:1px solid #eef1f5; }
 .drawing-progress-items li > div { min-width:0; flex:1; }
 .drawing-progress-items li strong { display:block; overflow-wrap:anywhere; font-size:12px; font-weight:500; line-height:1.7; }
 .drawing-progress-items li small { display:block; margin-top:3px; color:#64748b; font-size:12px; line-height:1.6; }
-.drawing-contract-item-link { margin-top:8px; }
+.app-shell .drawing-progress-items .drawing-contract-item-link.button { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; width:100%; height:auto; min-height:0; margin:0 0 4px; padding:0; border:0; white-space:normal; text-align:left; }
+.drawing-contract-item-link > span { flex:1; min-width:0; }
+.drawing-contract-item-link > svg { flex-shrink:0; margin-top:4px; color:#4265df; }
+.drawing-contract-item-link span > small { margin:0 0 4px; color:#4265df; }
+.drawing-contract-item-link:hover { background:transparent; }
+.drawing-contract-item-link:hover strong { color:#3156c8; text-decoration:underline; }
 .drawing-item-completion { flex-shrink:0; min-width:72px; text-align:right; }
 .drawing-item-completion strong { color:#475569; }
 .drawing-item-completion.status-completed strong { color:#24765e; }
 .drawing-item-completion.status-in-progress strong { color:#3156c8; }
 .drawing-item-completion.status-unknown strong { color:#9a6928; }
 .drawing-progress-help { margin:12px 0 0; color:#64748b; font-size:12px; line-height:1.8; }
-.drawing-progress-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border); }
+.drawing-progress-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:18px; padding-top:16px; border-top:1px solid var(--border); }
 .drawing-area-code { position:relative; }
 .drawing-vo-marker { position:absolute; top:-8px; right:-9px; display:inline-flex; align-items:center; justify-content:center; gap:2px; min-width:23px; height:18px; padding:1px 4px; border:1px solid #e5c180; border-radius:9px; color:#855817; background:#fff2d6; font-size:9px; font-weight:600; line-height:1; box-shadow:0 1px 3px #33415514; }
 .drawing-vo-marker.green { color:#24765e; border-color:#9dcdb8; background:#eaf8f0; }
@@ -207,12 +212,12 @@
 .area-mapping-reference { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px; border:1px solid var(--border); border-radius:8px; color:#64748b; font-size:12px; line-height:1.7; background:#fbfcfe; }
 .area-mapping-reference p { flex:1; min-width:180px; margin:0; }
 .area-mapping-reference.conflict { border-color:#f2d7a8; background:#fffbf2; color:#9a6928; }
-@media screen and (max-width:1100px) { .drawing-workspace { grid-template-columns:minmax(0,1fr); } .drawing-plan-scroll { max-height:600px; } }
+@media screen and (max-width:1100px) { .drawing-workspace { grid-template-columns:minmax(0,1fr); } .drawing-area-panel { grid-row:1; } .drawing-plan-scroll { max-height:600px; } }
 @media screen and (max-width:600px) { .drawing-empty-state { padding:36px 20px; } .drawing-file-bar { align-items:flex-start; flex-wrap:wrap; } .drawing-file-bar .badge { margin-left:30px; } .drawing-panel-heading { padding:16px; } .drawing-area-editor { padding:18px 16px; } .drawing-area-row { flex-wrap:wrap; } .drawing-area-row .badge { margin-left:46px; } .drawing-form-grid { grid-template-columns:minmax(0,1fr); } .drawing-pin-editor .drawing-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .drawing-plan-scroll { min-height:190px; padding:10px; } .drawing-pin { min-width:42px; height:28px; padding:4px 5px; font-size:11px; } .drawing-pin svg { width:13px; height:13px; } .drawing-pdf-preview { height:440px; } }
 @media (prefers-reduced-motion:reduce) { .drawing-plan-panel, .drawing-area-panel { scroll-behavior:auto; } }
 
 /* Keep the plan and selected area ahead of secondary setup details. */
-.drawing-setup { margin:0 0 18px; overflow:hidden; border:1px solid var(--border); border-radius:9px; background:#fff; }
+.drawing-setup { margin:20px 0 0; overflow:hidden; border:1px solid var(--border); border-radius:9px; background:#fff; }
 .drawing-setup > summary { display:flex; align-items:center; gap:9px; min-height:50px; padding:12px 16px; cursor:pointer; list-style:none; color:#475569; font-size:13px; font-weight:550; }
 .drawing-setup > summary > svg { flex-shrink:0; color:#64748b; }
 .drawing-setup > summary > small { flex:1; overflow:hidden; margin-left:auto; color:#64748b; font-size:12px; font-weight:450; text-align:right; text-overflow:ellipsis; white-space:nowrap; }
@@ -246,4 +251,32 @@
   .drawing-position-note { padding-inline:16px; }
   .drawing-area-editor .form-actions-main { width:100%; }
   .drawing-area-editor .form-actions-main > .button { flex:1; }
+}
+
+/* Area choice stays above the plan and its linked contract scope. */
+.drawing-area-navigation { margin:0 0 20px; border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden; scroll-margin-top:76px; }
+.drawing-area-navigation-top { display:flex; align-items:flex-end; gap:16px; padding:16px 18px; }
+.drawing-area-navigation-top > .button { flex-shrink:0; }
+.drawing-area-navigation .drawing-area-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+.drawing-related-section { border-top:1px solid var(--border); }
+.drawing-related-section > summary { display:flex; align-items:center; flex-wrap:wrap; gap:7px 9px; padding:16px 18px; color:#475569; font-size:13px; cursor:pointer; list-style:none; }
+.drawing-related-section > summary > svg { flex-shrink:0; color:#64748b; }
+.drawing-related-section > summary > small { margin-left:auto; color:#64748b; font-size:12px; }
+.drawing-related-section > summary::after { content:'+'; color:#64748b; font-size:16px; }
+.drawing-related-section[open] > summary::after { content:'−'; }
+.drawing-related-section > :is(.drawing-area-vo,.drawing-area-evidence) { border-top:1px solid #eef1f5; }
+.drawing-related-empty { margin:0; padding:0 18px 18px; color:#64748b; font-size:12px; line-height:1.7; }
+.drawing-legend-details { border-top:1px solid var(--border); color:#64748b; font-size:12px; line-height:1.7; }
+.drawing-legend-details > summary { padding:12px 18px; cursor:pointer; }
+.drawing-legend-details > p { margin:0; padding:0 18px 16px; }
+.drawing-area-unavailable { display:flex; flex-direction:column; align-items:flex-start; gap:12px; padding:22px 18px; color:#64748b; font-size:13px; line-height:1.7; }
+.drawing-area-unavailable p { margin:0; }
+@media screen and (max-width:600px) {
+  .drawing-area-navigation-top { align-items:flex-start; flex-wrap:wrap; gap:12px; padding:16px; }
+  .drawing-area-navigation-top .drawing-area-picker { flex-basis:100%; }
+  .drawing-area-navigation .drawing-area-list { grid-template-columns:minmax(0,1fr); }
+  .drawing-related-section > summary { padding:16px; }
+  .drawing-related-section > summary > small { flex-basis:100%; margin-left:24px; order:1; }
+  .drawing-related-section > summary::after { margin-left:auto; }
+  .drawing-progress-actions > .button { width:100%; }
 }
