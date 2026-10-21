@@ -3,8 +3,9 @@
 .wa-clarification-heading h3{margin:0;color:#1e293b;font-size:14px;line-height:1.4}
 .wa-clarification-heading p{margin:4px 0 0;color:#64748b;font-size:11px;line-height:1.5}
 .wa-clarification>.back-button{margin:0 0 12px;padding-left:0}
-.wa-clarification-steps{display:flex;gap:15px;list-style:none;margin:0 0 18px;padding:0}
+.wa-clarification-steps{display:flex;gap:10px;list-style:none;margin:0 0 18px;padding:0}
 .wa-clarification-steps li{display:flex;align-items:center;gap:5px;color:#94a3b8;font-size:11px}
+.wa-clarification-steps li+li::before{content:'→';margin-right:5px;color:#cbd5e1;font-weight:400}
 .wa-clarification-steps i{display:flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid #e2e8f0;border-radius:50%;font-size:10px;font-style:normal}
 .wa-clarification-steps .current{color:#2563eb;font-weight:600}
 .wa-clarification-steps .current i{border-color:#93c5fd;background:#eff6ff}
@@ -13,15 +14,19 @@
 .wa-clarification .form-actions{margin-top:14px;padding-top:0;border-top:0}
 .wa-clarification-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .wa-clarification-wide{grid-column:1/-1}
-.wa-clarification-question,.wa-clarification-saved-reply{margin:0 0 17px;padding:0 0 15px;border-bottom:1px solid #edf1f5}
-.wa-clarification-question>div,.wa-clarification-saved-reply>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.wa-clarification-question,.wa-clarification-saved-reply{margin:0 0 17px;padding:0 0 13px;border-bottom:1px solid #edf1f5}
+.wa-clarification-record>summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;cursor:pointer;list-style:none}
+.wa-clarification-record>summary::after{content:'+';margin-left:auto;color:#64748b;font-size:15px}
+.wa-clarification-record[open]>summary::after{content:'−'}
+.wa-clarification-record>summary:focus-visible{outline:2px solid #2563eb;outline-offset:4px;border-radius:3px}
+.wa-clarification-record>summary>span{color:#64748b;font-size:11px;line-height:1.6}
+.wa-clarification-record .wa-clarification-reply-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 10px;margin-top:12px;color:#64748b;font-size:11px;line-height:1.6}
 .wa-clarification-question strong,.wa-clarification-saved-reply strong{font-size:12px;color:#334155}
 .wa-clarification time{font-size:10px;color:#94a3b8;white-space:nowrap}
 .wa-clarification-question p,.wa-clarification-saved-reply p{margin:7px 0 0;font-size:12px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
-.wa-clarification-saved-reply>span{display:block;margin:5px 0 0;font-size:11px;color:#64748b;line-height:1.5}
 .wa-clarification-saved-reply>small{display:block;margin-top:8px;font-size:10px;line-height:1.5;color:#64748b}
 .wa-clarification-reply-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.wa-clarification-reply-heading h4{font-size:13px;margin:0;color:#334155}
+.wa-clarification-reply-heading>span{font-size:12px;color:#64748b;line-height:1.6}
 .wa-clarification-next{display:flex;align-items:flex-start;gap:9px}
 .wa-clarification-next strong{font-size:12px;color:#334155}
 .wa-clarification-next p,.wa-clarification-help{margin:5px 0 0;font-size:11px;line-height:1.6;color:#64748b}
@@ -29,4 +34,4 @@
 .wa-clarification-next.complete strong{color:#15803d}
 .wa-clarification-feedback{padding:10px 12px;margin-bottom:15px;background:#eff6ff;border:1px solid #dbeafe;border-radius:6px;font-size:12px;line-height:1.5;color:#1d4ed8;outline-offset:3px}
 .wa-clarification-feedback.error{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
-@media(max-width:640px){.wa-clarification-fields{grid-template-columns:minmax(0,1fr)}.wa-clarification-steps{gap:11px}.wa-clarification-question>div,.wa-clarification-saved-reply>div{align-items:flex-start;flex-wrap:wrap}}
+@media(max-width:640px){.wa-clarification-fields{grid-template-columns:minmax(0,1fr)}.wa-clarification-steps{gap:8px}.wa-clarification-steps li+li::before{margin-right:2px}.wa-clarification-reply-heading{align-items:flex-start;flex-wrap:wrap}.wa-clarification-record>summary>span{order:1;flex-basis:100%}}
