@@ -56,6 +56,14 @@
 .drawing-preview-missing h3 { margin:0; color:#334155; font-size:15px; }
 .drawing-preview-missing p { max-width:390px; margin:0; font-size:12px; line-height:1.8; }
 .drawing-area-list { display:flex; flex-direction:column; max-height:310px; overflow:auto; padding:8px; border-bottom:1px solid var(--border); }
+.drawing-area-picker { padding:16px 18px 12px; }
+.drawing-area-picker .form-field { margin:0; }
+.drawing-area-browser { border-bottom:1px solid var(--border); color:#64748b; font-size:12px; }
+.drawing-area-browser > summary { display:flex; align-items:center; flex-wrap:wrap; gap:5px 12px; padding:0 18px 14px; cursor:pointer; }
+.drawing-area-browser > summary::before { content:'+'; color:#64748b; font-size:14px; }
+.drawing-area-browser[open] > summary::before { content:'−'; }
+.drawing-area-browser > summary > span { margin-left:auto; color:#94a3b8; }
+.drawing-area-browser .drawing-area-list { border-bottom:0; border-top:1px solid var(--border); }
 .drawing-area-row { display:flex; align-items:center; gap:10px; width:100%; padding:12px 10px; border:1px solid transparent; border-radius:7px; background:#fff; text-align:left; cursor:pointer; }
 .drawing-area-row:hover { background:#f8fafc; }
 .drawing-area-row.selected { border-color:#c8d5fb; background:#f4f7ff; }

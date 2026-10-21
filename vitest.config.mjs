@@ -6,7 +6,7 @@ export default defineConfig({
   oxc: { jsx: { runtime: 'automatic' } },
   test: {
     environment: 'jsdom',
-    include: ['tests/ui-controls.test.jsx'],
+    include: ['tests/*.test.jsx'],
     setupFiles: ['tests/ui-setup.mjs'],
   },
 });

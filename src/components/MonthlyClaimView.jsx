@@ -23,7 +23,7 @@ const friendlyIssue = (issue) => issue
   .replace('Assessed work exceeds the baseline quantity or amount; review a variation.', 'This exceeds the contract quantity or value. Review it as extra work.')
   .replace('Assessed VO value exceeds the recorded approval.', 'This extra-work value exceeds its approval.');
 
-export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpenCompletion, onOpenVO, onOpenContract, onPreview }) {
+export function MonthlyClaimView({ project, initialTab, initialVOId, onBackToVO, onSave, onPrepare, onOpenCompletion, onOpenVO, onOpenContract, onPreview }) {
   const [period, setPeriod] = useBufferedState(project.id, 'claims:period', currentPeriod);
   const [forms, setForms] = useBufferedState(project.id, 'claims:forms', () => ({}));
   const [dirtyPeriods, setDirtyPeriods] = useBufferedState(project.id, 'claims:dirty', () => ({}));
@@ -31,6 +31,8 @@ export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpe
   const [mode, setMode] = useState(() => dirtyPeriods[period] ? 'edit' : 'history');
   const [feedback, setFeedback] = useState(null);
   const [savedRecord, setSavedRecord] = useState(null);
+  const contextChoiceRef = useRef(null);
+  const contextNoticeRef = useRef(null);
   const drafts = [...(project.claimDrafts || [])].sort((a, b) => b.period.localeCompare(a.period) || b.revision - a.revision);
   const groups = [...new Set(drafts.map((draft) => draft.period))].map((month) => ({ period: month, drafts: drafts.filter((draft) => draft.period === month) }));
   const assessment = forms[period] || latestFor(project, period)?.assessment || emptyAssessment();
@@ -48,8 +50,18 @@ export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpe
   const saved = savedRecord ? project.claimDrafts?.find((draft) => draft.id === savedRecord.id) || savedRecord : null;
   const contractNeedsReview = !project.locked || project.items.some((row) => row.needsReview);
   const negativeAdjustment = [...selectedWork, ...selectedVOs].some((row) => row.currentValue < 0);
+  const contextVO = initialVOId ? review.voRows.find((row) => row.id === initialVOId) : null;
+  const contextApproved = contextVO?.status === 'approved';
 
-  useEffect(() => { if (initialTab === 'drafts') { setMode('history'); setFeedback(null); } }, [initialTab]);
+  useEffect(() => { if (initialTab === 'drafts' && !initialVOId) { setMode('history'); setFeedback(null); } }, [initialTab, initialVOId]);
+  useEffect(() => {
+    if (!initialVOId) return;
+    if (contextApproved) { setMode('edit'); setStep(1); setFeedback(null); setSavedRecord(null); }
+    contextNoticeRef.current?.focus({ preventScroll: true });
+  }, [project.id, initialVOId, contextApproved]);
+  useEffect(() => {
+    if (initialVOId && mode === 'edit' && step === 1) contextNoticeRef.current?.focus({ preventScroll: true });
+  }, [project.id, initialVOId, mode, step]);
   useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [mode, step]);
   useEffect(() => { if (mode === 'history' && feedback) window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); }, [mode, feedback]);
 
@@ -71,6 +83,10 @@ export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpe
     setMode('edit'); setStep(draft && selectedRows(draft.snapshot).length ? 2 : 1); setFeedback(null); setSavedRecord(null);
   }
   function goStep(next) { setStep(next); setFeedback(null); }
+  function findContextVO() {
+    contextChoiceRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    contextChoiceRef.current?.querySelector('[role="checkbox"]')?.focus({ preventScroll: true });
+  }
   function save(finishLater = false) {
     const result = onSave?.(period, assessment);
     if (result?.outcome === 'invalid') return setFeedback({ error: true, message: friendlyIssue(result.error || 'Check the values before saving.') });
@@ -88,13 +104,16 @@ export function MonthlyClaimView({ project, initialTab, onSave, onPrepare, onOpe
     setFeedback({ message: 'Claim marked prepared. You can preview or export it now.' });
   }
   const numberInput = (group, row, name, label, suffix) => <FormField className="claim-value-field" label={label} suffix={suffix}><Input className="form-input" type="number" min="0" step="0.01" inputMode="decimal" aria-label={`${row.id} ${name === 'previousValue' ? 'previously claimed value' : name === 'assessedQuantity' ? 'QS cumulative quantity' : 'QS cumulative value'}`} placeholder={name === 'previousValue' && assessment.priorConfirmed ? '0.00' : name === 'assessedQuantity' ? 'Enter quantity' : 'Enter amount'} value={assessment[group]?.[row.id]?.[name] ?? ''} onChange={(event) => updateRow(group, row.id, name, event.target.value)} /></FormField>;
-  const renderChoice = (row, group) => <label className={`claim-choice${row.included ? ' selected' : ''}${!row.eligible ? ' needs-review' : ''}`} key={row.id}><Checkbox aria-label={`Include ${group === 'work' ? row.id : row.reference} in claim`} checked={row.included} disabled={!row.eligible && !row.included} onChange={(event) => updateRow(group, row.id, 'include', event.target.checked)} /><div className="claim-choice-copy"><strong>{row.description || row.title}</strong><span>{row.ref || row.reference} · {group === 'work' ? row.id : row.approvalReference || 'Approval reference missing'}</span>{!row.eligible && <p>{row.exclusionReason}{row.previousValue > 0 ? ' The amount claimed before must be reviewed.' : ''}</p>}</div><div className="claim-choice-status">{group === 'work' ? <><strong>{formatNumber(row.verified)}%</strong><span>verified</span></> : <><strong>{currency} {amount(row.approvedValue)}</strong><span>approved limit</span></>}</div></label>;
+  const renderChoice = (row, group) => <label ref={group === 'vos' && row.id === initialVOId ? contextChoiceRef : undefined} className={`claim-choice${row.included ? ' selected' : ''}${!row.eligible ? ' needs-review' : ''}${group === 'vos' && row.id === initialVOId ? ' from-vo-review' : ''}`} key={row.id}><Checkbox aria-label={`Include ${group === 'work' ? row.id : row.reference} in claim`} checked={row.included} disabled={!row.eligible && !row.included} onChange={(event) => updateRow(group, row.id, 'include', event.target.checked)} /><div className="claim-choice-copy"><strong>{row.description || row.title}</strong><span>{row.ref || row.reference} · {group === 'work' ? row.id : row.approvalReference || 'Approval reference missing'}</span>{group === 'vos' && row.id === initialVOId && <Badge tone="blue">From VO review</Badge>}{!row.eligible && <p>{row.exclusionReason}{row.previousValue > 0 ? ' The amount claimed before must be reviewed.' : ''}</p>}</div><div className="claim-choice-status">{group === 'work' ? <><strong>{formatNumber(row.verified)}%</strong><span>verified</span></> : <><strong>{currency} {amount(row.approvedValue)}</strong><span>approved limit</span></>}</div></label>;
   const renderValueCard = (row, group) => <article className="claim-value-card" key={row.id}><header><div><span>{row.ref || row.reference} · {group === 'work' ? row.id : 'Extra work'}</span><h3>{row.description || row.title}</h3></div>{!row.eligible && <Badge tone="amber">Needs review</Badge>}</header>{group === 'work' ? <p className="claim-value-basis">{formatNumber(row.verified)}% verified · Rate {currency} {amount(row.rate)} / {row.unit} · Contract quantity {formatNumber(row.contractQuantity)} {row.unit}</p> : <p className="claim-value-basis">Approved limit {currency} {amount(row.approvedValue)} · {row.approvalReference || 'Approval reference missing'}</p>}<div className="claim-value-grid">{numberInput(group, row, group === 'work' ? 'assessedQuantity' : 'assessedValue', group === 'work' ? 'Total quantity to date' : 'Total value to date', group === 'work' ? row.unit : currency)}{numberInput(group, row, 'previousValue', 'Claimed before', currency)}</div>{group === 'work' && row.requiresDateConfirmation && <label className="claim-check-label"><Checkbox aria-label={`Confirm ${row.id} evidence as of cutoff`} checked={!!assessment.work?.[row.id]?.evidenceDateConfirmed} onChange={(event) => updateRow('work', row.id, 'evidenceDateConfirmed', event.target.checked)} /><span>This verified progress applies as of {dayLabel(review.cutoff)}.<small>The original verification date is missing.</small></span></label>}<div className="claim-value-result"><span>Value to date <strong>{currency} {amount(row.cumulativeValue)}</strong></span><span>This month <strong>{currency} {amount(row.currentValue)}</strong></span></div>{!row.eligible && <p className="claim-inline-warning"><CircleAlert size={14} />{row.exclusionReason}</p>}</article>;
   const renderPriorRow = (row, group) => <article className="claim-prior-card" key={`${group}-${row.id}`}><div><strong>{row.description || row.title}</strong><span>{row.ref || row.reference} · {group === 'work' ? row.id : 'Extra work'}</span><p>{row.exclusionReason}</p>{row.included && <Badge tone="amber">Included for review</Badge>}{row.included && !(row.previousValue > 0) && <button type="button" className="claim-remove-prior" onClick={() => updateRow(group, row.id, 'include', false)}>Remove from claim</button>}</div>{numberInput(group, row, 'previousValue', 'Claimed before', currency)}</article>;
 
 
   return <div className="claim-view">
     <PageHeader className="claim-page-header" title={mode === 'history' ? 'Monthly claims' : mode === 'saved' ? saved?.status === 'prepared' ? 'Claim prepared' : 'Claim draft saved' : 'Prepare a monthly claim'} description={mode === 'history' ? 'Start a claim or continue one you saved.' : mode === 'saved' ? periodLabel(saved?.period || period) : `${periodLabel(period)} · Step ${step} of 3`} onBack={mode === 'history' ? undefined : () => { setMode('history'); setFeedback(null); }} backLabel="Back to claims" actions={mode === 'history' ? <Button className="primary" icon={Plus} onClick={() => start()}>Start claim</Button> : null} />
+    {initialVOId && (!contextApproved || mode === 'edit' && step === 1) && <section ref={contextNoticeRef} tabIndex={-1} className={`claim-vo-handoff${!contextApproved || !contextVO.eligible ? ' needs-review' : ''}`} aria-label="Extra work from VO review">
+      <Flag size={18} /><div>{contextApproved ? <><strong>{contextVO.reference} · {contextVO.title}</strong><p>Approved limit {currency} {amount(contextVO.approvedValue)} · {contextVO.approvalReference}</p><p>{contextVO.eligible ? contextVO.included ? 'This VO is selected. Check its assessed value in Enter totals.' : 'Select this VO below, then enter the QS-assessed value.' : /after this month/.test(contextVO.exclusionReason) ? `The approval on ${dayLabel(contextVO.approvalDate)} is after this month’s cutoff. Choose a later claim month to assess it.` : friendlyIssue(contextVO.exclusionReason)}</p></> : <><strong>Extra work unavailable</strong><p>{contextVO ? 'This extra work is not approved. Review its status before adding it to a claim.' : 'This extra-work record is no longer available in the selected project.'}</p></>}</div><div className="claim-vo-handoff-actions">{contextApproved && contextVO.eligible && <Button onClick={findContextVO}>Find this VO<ArrowRight size={14} /></Button>}{onBackToVO && <BackButton onClick={onBackToVO}>Back to VO review</BackButton>}</div>
+    </section>}
     {mode === 'history' && <>
       {feedback && <Feedback feedback={feedback} />}
       {Object.keys(dirtyPeriods).some((month) => dirtyPeriods[month] && !latestFor(project, month)) && <div className="claim-resume"><div><strong>You have an unfinished claim</strong><span>{periodLabel(Object.keys(dirtyPeriods).find((month) => dirtyPeriods[month] && !latestFor(project, month)))}</span></div><Button onClick={() => { const month = Object.keys(dirtyPeriods).find((entry) => dirtyPeriods[entry] && !latestFor(project, entry)); setPeriod(month); setMode('edit'); setStep(1); }}>Continue</Button></div>}

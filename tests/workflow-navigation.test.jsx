@@ -1,0 +1,176 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { App } from '../src/App.jsx';
+import { WORKSPACE_STORE } from '../src/data/projects.js';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
+import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.js';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
+import { getProjectWorkflow } from '../src/data/workflow.js';
+import { getDrawingMapping } from '../src/data/drawing-mapping.js';
+import { getVOCases, updateVOReview } from '../src/data/vo.js';
+
+const now = new Date('2026-10-21T10:00:00+08:00');
+const elementScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTo');
+const readWorkspace = () => JSON.parse(localStorage.getItem(WORKSPACE_STORE));
+const params = () => new URLSearchParams(location.hash.split('?')[1]);
+
+function fixture() {
+  let project = createSITContractDemo({ name: 'S.I.T. navigation demo', code: 'NAV-SIT' }, now);
+  const other = createSITContractDemo({ name: 'Other project', code: 'NAV-OTHER' }, now);
+  const flagged = getVOCases(project).find((entry) => entry.status === 'flagged');
+  project = updateVOReview(project, flagged.id, 'submit', {
+    title: 'Separate escalator access (navigation demo)', relatedItemId: 'WI-007',
+    scopeAssessment: 'Fictional additional work face for the navigation test.',
+    instructionReference: 'NAV-INSTRUCTION', proposedValue: 777,
+  }).project;
+  project = updateVOReview(project, flagged.id, 'approve', {
+    approvedValue: 777, approvalReference: 'NAV-APPROVAL', approver: 'Demo approver',
+  }).project;
+  localStorage.setItem(WORKSPACE_STORE, JSON.stringify({
+    schemaVersion: 2, activeProjectId: project.id, projects: [project, other],
+    sitShowcase: { version: SIT_SHOWCASE_VERSION, projectId: project.id },
+  }));
+  // Compare with the normal app-load migrations already applied, so assertions
+  // below measure navigation rather than expected storage normalization.
+  const workspace = loadShowcaseWorkspace(localStorage, now);
+  return { project: workspace.projects.find((entry) => entry.id === project.id), other, caseId: flagged.id };
+}
+
+function mount(hash) {
+  window.history.replaceState(null, '', hash);
+  return render(<App />);
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  clearProjectFormBuffers('NAV-SIT');
+  clearProjectFormBuffers('NAV-OTHER');
+  window.history.replaceState(null, '', '#projects');
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(now);
+  vi.stubGlobal('scrollTo', vi.fn());
+  Object.defineProperty(Element.prototype, 'scrollTo', { configurable: true, value: vi.fn() });
+  vi.stubGlobal('matchMedia', vi.fn((query) => ({
+    matches: false, media: query, onchange: null,
+    addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+  })));
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  if (elementScrollTo) Object.defineProperty(Element.prototype, 'scrollTo', elementScrollTo);
+  else delete Element.prototype.scrollTo;
+  window.history.replaceState(null, '', '#projects');
+});
+
+describe('S.I.T. workflow navigation retains source context without changing records', () => {
+  it('overview opens its recommended message rather than only the general inbox', async () => {
+    const { project } = fixture();
+    const next = getProjectWorkflow(project, '2026-10').next;
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    mount('#projects');
+    await user.click(screen.getByRole('button', { name: next.label }));
+    await screen.findByRole('heading', { name: 'WhatsApp messages' });
+    expect(params().get('message')).toBe(next.messageId);
+    expect(document.querySelector('.wa-review').textContent).toContain(next.messageId);
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('an exact progress link survives remount and returns to its original message and area', async () => {
+    const { project } = fixture();
+    const message = project.whatsappMessages.find((entry) => entry.itemId === 'WI-002');
+    const area = getDrawingMapping(project).areas.find((entry) => entry.workItemIds.includes('WI-002'));
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    const view = mount(`#completion?${new URLSearchParams({ item: 'WI-002', area: area.id, message: message.id })}`);
+    const table = screen.getByRole('table');
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    expect(table.textContent).toContain('WI-002');
+    expect(table.textContent).not.toContain('WI-001');
+    view.unmount();
+    render(<App />);
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2);
+    await user.click(screen.getByRole('button', { name: 'Back to message' }));
+    await screen.findByRole('heading', { name: 'WhatsApp messages' });
+    expect(params().get('message')).toBe(message.id);
+    expect(params().get('area')).toBe(area.id);
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('VO review opens the related contract item, returns to the same case, and offers explicit claim selection', async () => {
+    const { project, caseId } = fixture();
+    const entry = getVOCases(project).find((record) => record.id === caseId);
+    const areaId = entry.report.areaMapping.areaId;
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    const view = mount(`#vo?${new URLSearchParams({ case: caseId, area: areaId })}`);
+    await user.click(screen.getByRole('button', { name: 'Check contract' }));
+    await screen.findByRole('heading', { name: 'Contract review' });
+    expect(params().get('item')).toBe('WI-007');
+    expect(params().get('vo')).toBe(caseId);
+    const description = project.items.find((item) => item.id === 'WI-007').description;
+    expect(screen.getByRole('heading', { name: description })).toBeTruthy();
+    await user.click(within(document.querySelector('.contract-item-editor')).getByRole('button', { name: 'Next item' }));
+    await waitFor(() => expect(params().get('item')).toBe('WI-008'));
+    const nextDescription = project.items.find((item) => item.id === 'WI-008').description;
+    expect(screen.getByRole('heading', { name: nextDescription })).toBeTruthy();
+    view.unmount();
+    render(<App />);
+    expect(screen.getByRole('heading', { name: nextDescription })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Back to extra work' }));
+    await screen.findByRole('heading', { name: 'Separate escalator access (navigation demo)' });
+    expect(params().get('area')).toBe(areaId);
+    expect(screen.getByRole('button', { name: 'Back to drawing' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Review in monthly claim' }));
+    await screen.findByRole('heading', { name: 'Prepare a monthly claim' });
+    expect(params().get('vo')).toBe(caseId);
+    expect(screen.getByRole('region', { name: 'Extra work from VO review' }).textContent).toContain('NAV-APPROVAL');
+    expect(screen.getByRole('checkbox', { name: `Include ${entry.reference} in claim` }).getAttribute('aria-checked')).toBe('false');
+    await user.click(screen.getByRole('button', { name: 'Back to VO review' }));
+    await screen.findByRole('heading', { name: 'Separate escalator access (navigation demo)' });
+    expect(params().get('case')).toBe(caseId);
+    expect(params().get('area')).toBe(areaId);
+    expect(screen.getByRole('button', { name: 'Back to drawing' })).toBeTruthy();
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('switching projects clears a VO handoff and never shows another project’s case', async () => {
+    const { project, other, caseId } = fixture();
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    mount(`#claims?vo=${encodeURIComponent(caseId)}`);
+    await screen.findByRole('heading', { name: 'Prepare a monthly claim' });
+    await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
+    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await screen.findByRole('heading', { name: 'Monthly claims' });
+    expect(location.hash).toBe('#claims');
+    expect(screen.queryByRole('region', { name: 'Extra work from VO review' })).toBeNull();
+    expect(readWorkspace().activeProjectId).toBe(other.id);
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('foreign item, message and VO links show an unavailable state without falling back to unrelated evidence', async () => {
+    const { other } = fixture();
+    const before = readWorkspace().projects;
+    const foreignMessage = other.whatsappMessages[0];
+    const foreignArea = getDrawingMapping(other).areas[0];
+    const user = userEvent.setup();
+    const view = mount(`#completion?${new URLSearchParams({ item: 'FOREIGN-ITEM', area: foreignArea.id, message: foreignMessage.id })}`);
+    expect(screen.getByText('This work item is not available in the selected project.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Back to message' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /View evidence for/ })).toBeNull();
+    view.unmount();
+    mount(`#contract?${new URLSearchParams({ item: 'FOREIGN-ITEM', vo: getVOCases(other)[0].id })}`);
+    expect(screen.getByText('This contract item is not available in the selected project.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Back to extra work' })).toBeNull();
+    expect(screen.queryByRole('textbox', { name: 'Work description' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Show work items' }));
+    await waitFor(() => expect(location.hash).toBe('#contract'));
+    expect(readWorkspace().projects).toEqual(before);
+  });
+});

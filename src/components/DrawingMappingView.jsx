@@ -10,7 +10,7 @@ import { clearFormBuffer } from '../data/form-buffer.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { AreaEvidencePanel } from './AreaEvidencePanel.jsx';
 import { AreaVOPanel } from './AreaVOPanel.jsx';
-import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, Checkbox, Input } from './ui.jsx';
+import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, Checkbox, Input, NativeSelect } from './ui.jsx';
 import './drawing-mapping.css';
 
 const mimeFor = (file) => file.type || ({ pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }[file.name.split('.').at(-1)?.toLowerCase()] || '');
@@ -37,6 +37,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   const [editing, setEditing] = useBufferedState(project.id, `drawing:editing:${drawing?.id || 'none'}`, false);
   const [basis, setBasis] = useBufferedState(project.id, 'drawing:progress-basis', 'verified');
   const [modal, setModal] = useState(null);
+  const [browseAreas, setBrowseAreas] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [placing, setPlacing] = useState(false);
   const [draftPosition, setDraftPosition] = useState(null);
@@ -48,6 +49,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   const pinSetter = useRef(null);
   const editorRef = useRef(null);
   const areaPanelRef = useRef(null);
+  const areaPickerRef = useRef(null);
   const progressRef = useRef(null);
   const viewerRef = useRef(null);
   const [scrollTarget, setScrollTarget] = useState(null);
@@ -77,6 +79,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   useEffect(() => {
     if (!scrollTarget) return;
     (scrollTarget === 'editor' ? editorRef : scrollTarget === 'status' ? progressRef : areaPanelRef).current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    if (scrollTarget === 'areas') areaPickerRef.current?.focus({ preventScroll: true });
     setScrollTarget(null);
   }, [scrollTarget, selectedId, showEditor]);
 
@@ -85,7 +88,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   }
   function chooseArea(areaId) {
     rememberAreaRoute(areaId);
-    setSelectedId(areaId); setEditing(areaId === 'new'); setFeedback(null); setPlacing(false); setDraftPosition(null);
+    setSelectedId(areaId); setEditing(areaId === 'new'); setFeedback(null); setPlacing(false); setDraftPosition(null); setBrowseAreas(false);
     if (window.matchMedia('(max-width: 1100px)').matches) setScrollTarget(areaId === 'new' ? 'editor' : 'status');
   }
   function addContractAreas() {
@@ -187,12 +190,18 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
         </section>
         <section className="drawing-area-panel" ref={areaPanelRef} aria-labelledby="drawing-areas-heading">
           <header className="drawing-panel-heading"><div><h2 id="drawing-areas-heading">Site areas</h2><p>{basisLabel} completion · Select an area for details.</p></div><Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button></header>
-          <div className="drawing-area-list" aria-label="Mapped site areas">{areas.length ? areas.map((area) => {
+          {areas.length > 0 && <><div className="drawing-area-picker"><FormField label="Site area"><NativeSelect ref={areaPickerRef} aria-label="Choose site area" value={selectedId === 'new' ? '' : selected?.id || ''} onChange={(event) => chooseArea(event.target.value)}><option value="" disabled>Choose a site area</option>{areas.map((area) => {
+            const progress = areaProgress.get(area.id);
+            const flags = areaVOFlags.get(area.id);
+            return <option key={area.id} value={area.id}>{area.code} · {area.name} · {progress?.label || 'Not linked'}{flags?.markerLabel ? ` · ${flags.markerLabel}` : ''}</option>;
+          })}</NativeSelect></FormField></div><details className="drawing-area-browser" open={browseAreas} onToggle={(event) => setBrowseAreas(event.currentTarget.open)}><summary>Browse all {areas.length} {areas.length === 1 ? 'area' : 'areas'}<span>{basisLabel} completion</span></summary>
+          <div className="drawing-area-list" aria-label="Mapped site areas">{areas.map((area) => {
             const progress = areaProgress.get(area.id);
             const flags = areaVOFlags.get(area.id);
             const references = area.workItemIds.map((id) => project.items?.find((item) => item.id === id)).filter(Boolean).map((item) => item.ref || item.id).join(' · ');
             return <button type="button" key={area.id} className={`drawing-area-row${selected?.id === area.id && selectedId !== 'new' ? ' selected' : ''}`} aria-label={`Area ${area.code}: ${area.name}.${references ? ` Contract: ${references}.` : ''} ${basisLabel}: ${progress?.label || 'Not linked'}, ${pinDetail(progress)}. ${voDescription(flags)}`} aria-pressed={selected?.id === area.id && selectedId !== 'new'} onClick={() => chooseArea(area.id)}><span className="drawing-area-code">{area.code}<AreaVOMarker flags={flags} /></span><span className="drawing-area-copy"><strong>{area.name}</strong>{references && <small>Contract: {references}</small>}<small>{area.workItemIds.length ? `${area.workItemIds.length} linked work item${area.workItemIds.length === 1 ? '' : 's'} · ${pinDetail(progress)}` : 'Choose contract work items'}{drawing.kind === 'pdf' ? ` · Page ${area.page}` : !area.position ? ' · Pin not placed' : ''}</small></span><Badge tone={progress?.tone}>{progress?.label || 'Not linked'}</Badge></button>;
-          }) : <p className="drawing-no-areas">No areas yet. Add the first area and choose its contract work.</p>}</div>
+          })}</div></details></>}
+          {!areas.length && <p className="drawing-no-areas">No areas yet. Add the first area and choose its contract work.</p>}
           {showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} editorRef={editorRef} onCancel={() => { if (selectedId === 'new') setSelectedId(areas[0]?.id || 'new'); setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); }} /> : <><AreaProgressSummary project={project} area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setScrollTarget('editor'); }} onOpenProgress={onOpenProgress} onOpenContractItem={onOpenContractItem} /><AreaVOPanel key={`vo:${project.id}:${selected.id}`} area={selected} flags={selectedVOFlags} onOpenVO={onOpenVO} onOpenEvidence={onOpenEvidence} /><AreaEvidencePanel key={`${project.id}:${selected.id}`} project={project} area={selected} onOpenEvidence={onOpenEvidence} /></>}
         </section>
       </div>

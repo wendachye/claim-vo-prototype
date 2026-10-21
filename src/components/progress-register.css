@@ -29,7 +29,7 @@
 .progress-latest time { margin-top:3px; color:#64748b; font-size:11px; }
 .site-progress-table .badge { white-space:normal; }
 .site-progress-table .progress-action { text-align:right; }
-.site-progress-table .progress-action .button { white-space:normal; text-align:left; padding-inline:9px; }
+.site-progress-table .progress-action .button { white-space:normal; overflow-wrap:normal; text-align:left; padding-inline:9px; }
 .site-progress-table .progress-action .button > svg { flex-shrink:0; }
 .progress-review-button { border-color:#bfdbfe; background:#eff6ff; color:#1d4ed8; }
 .progress-review-button:hover:not(:disabled) { border-color:#93b4f3; background:#dbeafe; }
