@@ -40,7 +40,7 @@
 .claim-pack-table { width:100%; min-width:850px; border-collapse:collapse; font-size:10px; line-height:1.8; }
 .claim-pack-table th { padding:10px 11px; background:#f8fafc; color:#64748b; border-bottom:1px solid var(--border); text-align:left; font-size:9px; font-weight:550; white-space:nowrap; }
 .claim-pack-table td { padding:11px; vertical-align:top; border-bottom:1px solid #edf1f5; color:#475569; }
-.claim-pack-table tr:last-child td { border-bottom:0; }
+.claim-pack-table tbody:last-child tr:last-child td { border-bottom:0; }
 .claim-pack-table .numeric { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
 .claim-pack-table th:last-child,.claim-pack-table td:last-child { background:#f8fbff; }
 .claim-pack-table td:last-child { color:#1d4ed8; font-weight:550; }
@@ -48,7 +48,7 @@
 .claim-pack-table .pack-description > strong { font-weight:550; color:#475569; }
 .claim-pack-table small { display:block; margin-top:3px; color:#94a3b8; font-size:8px; line-height:1.8; }
 .claim-pack-table .pack-reference { color:#64748b; font-weight:500; font-size:9px; margin-bottom:3px; }
-.claim-pack-table tfoot td { border-top:1px solid var(--border); background:#f8fafc; font-weight:550; }
+.claim-pack-table .claim-pack-subtotal td { border-top:1px solid var(--border); background:#f8fafc; font-weight:550; }
 .claim-pack-empty-schedule { padding:18px; color:#94a3b8; background:#fafcfe; border:1px dashed #dce3ed; border-radius:6px; font-size:10px; line-height:1.8; }
 .claim-pack-basis { margin-top:9px; color:#94a3b8; font-size:9px; line-height:1.8; }
 .claim-pack-notes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
@@ -156,18 +156,18 @@
   .claim-pack-table { min-width:0; width:100%; font-size:7pt; line-height:1.5; table-layout:auto; }
   .claim-pack-table th { padding:1.25mm 2mm; font-size:6.5pt; }
   .claim-pack-table td { padding:1.25mm 2mm; }
-  .claim-pack-table thead { display:table-header-group; }
-  .claim-pack-table tfoot { display:table-row-group; }
+  .claim-pack-table thead { display:table-header-group; break-after:avoid; }
+  .claim-pack-table-tail { break-inside:avoid; }
   .claim-pack-table tr { break-inside:avoid; }
   .claim-pack-table .pack-description { min-width:35mm; max-width:80mm; }
   .claim-pack-table small,.claim-pack-table .pack-reference { font-size:6.5pt; line-height:1.5; }
   .claim-pack-table small { margin-top:.5mm; }
   .claim-pack-empty-schedule,.claim-pack-basis { font-size:7pt; line-height:1.5; }
   .claim-pack-basis { margin-top:1.5mm; }
-  .claim-pack-notes { gap:3mm; }
-  .claim-pack-notes > div { padding:2mm; break-inside:avoid; }
-  .claim-pack-notes span { font-size:7pt; margin-bottom:1mm; }
-  .claim-pack-notes p { font-size:7.5pt; line-height:1.4; }
+  .claim-pack-notes { gap:3mm; align-items:start; }
+  .claim-pack-notes > div { padding:2mm; break-inside:auto; }
+  .claim-pack-notes span { font-size:7pt; margin-bottom:1mm; break-after:avoid; }
+  .claim-pack-notes p { font-size:7.5pt; line-height:1.4; orphans:3; widows:3; }
   /* Normal block flow lets complete evidence cards use the available page space. */
   .claim-pack-evidence-list { display:block; }
   .claim-pack-evidence { grid-template-columns:minmax(0,1fr) 33mm; padding:2mm; gap:2.5mm; break-inside:avoid; }
