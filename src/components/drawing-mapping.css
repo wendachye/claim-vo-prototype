@@ -82,7 +82,7 @@
 .drawing-work-choices legend { padding:0; color:#334155; font-size:13px; font-weight:550; }
 .drawing-work-choices > p { margin:6px 0 12px; color:#64748b; font-size:12px; line-height:1.7; }
 .drawing-work-choice { display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-top:1px solid #eef1f5; cursor:pointer; }
-.drawing-work-choice input { width:16px; height:16px; margin:3px 0 0; flex-shrink:0; accent-color:#4265df; }
+.drawing-work-choice :is(input[type="checkbox"],.control-checkbox) { width:16px; height:16px; margin:3px 0 0; flex-shrink:0; accent-color:#4265df; }
 .drawing-work-choice > span { flex:1; min-width:0; }
 .drawing-work-choice strong { display:block; color:#334155; font-size:12px; font-weight:500; line-height:1.7; }
 .drawing-work-choice small { display:block; margin-top:3px; color:#64748b; font-size:12px; line-height:1.6; }
@@ -223,7 +223,7 @@
 .drawing-work-options { max-height:360px; overflow-y:auto; scrollbar-width:thin; border:1px solid var(--border); border-radius:8px; }
 .drawing-work-choice { padding:12px; }
 .drawing-work-choice:first-child { border-top:0; }
-.drawing-work-choice:has(input:checked) { background:#f7fbff; }
+.drawing-work-choice:has(:is(input[type="checkbox"]:checked,.control-checkbox[data-state="checked"])) { background:#f7fbff; }
 .drawing-search-empty { margin-top:12px; color:#64748b; font-size:12px; line-height:1.8; }
 .drawing-demo-tools { margin-top:18px; padding:15px 18px; border:1px solid var(--border); border-radius:9px; background:#fff; color:#64748b; font-size:12px; }
 .drawing-demo-tools > summary { cursor:pointer; }

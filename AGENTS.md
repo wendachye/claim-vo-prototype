@@ -1,6 +1,6 @@
 # Prototype instructions
 
-Follow the existing React and UI conventions. Use Next.js App Router for the shell and standard production builds for Vercel. App UI belongs in `src/`. The workspace mounts in a client-only dynamic boundary to preserve browser-storage initialization and hash links. Keep assets local and verify the preview after visual changes. Vite is retired.
+Follow the existing React and UI conventions. Use Next.js App Router for the shell and standard production builds for Vercel. App UI belongs in `src/`. The workspace mounts in a client-only dynamic boundary to preserve browser-storage initialization and hash links. Keep assets local and verify the preview after visual changes. Shared controls use shadcn/ui through `src/components/ui.jsx`; add primitives under `src/components/ui/` and preserve the established CSS theme, native field props and explicit save callbacks. Dialog, Sheet and Popover portals stay inside their app or photo wrapper so existing styles and focus behavior remain intact. Vite is retired.
 
 Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs` and `tests/sites-worker.test.mjs` intact. The optional Sites handoff requires `npm run build:sites` and `npm run test:sites`, producing `dist/client/index.html`, `dist/server/index.js` and `dist/.openai/hosting.json`.
 

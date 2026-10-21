@@ -3,7 +3,7 @@ import { ChevronRight, CircleAlert, Flag, MapPin, MessageSquare, Search, X } fro
 import { VO_STATUS_LABELS } from '../data/vo.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { VOCaseReview, voTone as tone, voDateLabel as dateLabel, voAmountLabel as amountLabel } from './VOCaseReview.jsx';
-import { Badge, Button, FormField, Modal, PageHeader } from './ui.jsx';
+import { Badge, Button, FormField, Modal, PageHeader, Input, NativeSelect } from './ui.jsx';
 import './vo-review.css';
 
 export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onOpenClaims, onBackToDrawing, onClearCaseSelection }) {
@@ -77,8 +77,8 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
     {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>Flag extra work from Site updates. Its message and photo will appear here for review.</p><Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button></div> : <>
       <div className="vo-list-controls">
         <div className="vo-filter-fields">
-          <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find extra work</label><div className="search-box"><Search size={16} aria-hidden="true"/><input id={searchId} aria-label="Search VO records" placeholder="Search work, references or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear VO search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>
-          <FormField label="Review status"><select aria-label="Filter VO approval status" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All statuses ({cases.length})</option>{Object.entries(VO_STATUS_LABELS).map(([value,label]) => <option key={value} value={value}>{label} ({filterCount(value)})</option>)}</select></FormField>
+          <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find extra work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search VO records" placeholder="Search work, references or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear VO search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>
+          <FormField label="Review status"><NativeSelect aria-label="Filter VO approval status" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All statuses ({cases.length})</option>{Object.entries(VO_STATUS_LABELS).map(([value,label]) => <option key={value} value={value}>{label} ({filterCount(value)})</option>)}</NativeSelect></FormField>
         </div>
         <div className="vo-list-tools"><span>{shown.length} of {cases.length} cases · {openCount} open</span><div>{(search || filter !== 'all') && <Button className="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}<Button className="ghost" icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Site messages</Button></div></div>
       </div>

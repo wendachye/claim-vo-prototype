@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   AlertTriangle,
   Check,
@@ -12,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { Badge, Button, FormActions, FormField, formatTime } from './ui.jsx';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet.jsx';
 import { isReviewableProgressReport, needsProgressClarification } from '../data/report-status.js';
 import './report-drawer.css';
 
@@ -43,8 +45,10 @@ export function ReportDrawer({
 }) {
   const drawerRef = useRef(null);
   const noteRef = useRef(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  const openerRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
+  const restoreOpenerOnClose = useRef(true);
+  const [sheetOpen, setSheetOpen] = useState(true);
+  const [portalContainer, setPortalContainer] = useState(null);
   const id = useId();
   const [completion, setCompletion] = useState(() => defaultCompletion(report, item));
   const [reason, setReason] = useState('');
@@ -82,53 +86,6 @@ export function ReportDrawer({
 
   useEffect(() => setPhotoFailed(false), [photoUrl]);
 
-  useEffect(() => {
-    const previousFocus = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const controls = () => [...(drawerRef.current?.querySelectorAll(
-      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], summary, [tabindex="0"]',
-    ) || [])].filter((element) => !element.hidden && element.getClientRects().length > 0);
-    const focusFirst = () => (controls()[0] || drawerRef.current)?.focus();
-    focusFirst();
-
-    const handleKey = (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        closeRef.current?.();
-        return;
-      }
-      if (event.key !== 'Tab') return;
-      const all = controls();
-      if (!all.length) {
-        event.preventDefault();
-        drawerRef.current?.focus();
-        return;
-      }
-      const first = all[0];
-      const last = all[all.length - 1];
-      const active = document.activeElement;
-      if (event.shiftKey && (active === first || active === drawerRef.current)) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && (active === last || !drawerRef.current?.contains(active))) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    const handleFocus = (event) => {
-      if (drawerRef.current && !drawerRef.current.contains(event.target)) focusFirst();
-    };
-    document.addEventListener('keydown', handleKey);
-    document.addEventListener('focusin', handleFocus);
-    return () => {
-      document.removeEventListener('keydown', handleKey);
-      document.removeEventListener('focusin', handleFocus);
-      document.body.style.overflow = previousOverflow;
-      if (previousFocus?.isConnected) previousFocus.focus?.();
-    };
-  }, []);
 
   function needReason(message) {
     if (reason.trim()) return false;
@@ -144,6 +101,15 @@ export function ReportDrawer({
     onChange(report, action, reason.trim());
   }
 
+  function addUpdate() {
+    if (!onAdd) return;
+    restoreOpenerOnClose.current = false;
+    // Release the Sheet's focus trap before the next dialog captures its opener.
+    flushSync(() => setSheetOpen(false));
+    if (openerRef.current?.isConnected) openerRef.current.focus?.();
+    onAdd(item?.id);
+  }
+
   function approve() {
     if (!canVerify) return;
     const original = report?.completion;
@@ -154,27 +120,28 @@ export function ReportDrawer({
   }
 
   return (
-    <div
-      className="drawer-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
-      }}
-    >
-      <section
+    <div className="site-report-layer" ref={setPortalContainer}>
+      <Sheet open={sheetOpen} onOpenChange={(open) => { if (!open) onClose?.(); }}>
+      {portalContainer && <SheetContent
         ref={drawerRef}
+        portalContainer={portalContainer}
+        overlayClassName="drawer-backdrop"
         className="drawer"
+        side="right"
+        showCloseButton={false}
         style={{ width: 560, maxWidth: '100vw' }}
-        role="dialog"
-        aria-modal="true"
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-description`}
-        tabIndex={-1}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (restoreOpenerOnClose.current && openerRef.current?.isConnected) openerRef.current.focus?.();
+        }}
       >
         <header className="drawer-header">
           <div>
             <div className="eyebrow">{projectCode && `${projectCode} · `}{report ? 'Site evidence' : 'Progress details'}</div>
-            <h2 id={`${id}-title`}>{item?.id || report?.itemId || 'Unmatched update'} · {report ? report.area || item?.demoArea || 'Area unassigned' : 'Work item progress'}</h2>
-            <p id={`${id}-description`}>{item?.description || 'Review the report and match its scope before updating progress.'}</p>
+            <SheetTitle asChild><h2 id={`${id}-title`}>{item?.id || report?.itemId || 'Unmatched update'} · {report ? report.area || item?.demoArea || 'Area unassigned' : 'Work item progress'}</h2></SheetTitle>
+            <SheetDescription asChild><p id={`${id}-description`}>{item?.description || 'Review the report and match its scope before updating progress.'}</p></SheetDescription>
           </div>
           <Button className="ghost icon" aria-label="Close site report" onClick={onClose}>
             <X size={18} aria-hidden="true" />
@@ -341,16 +308,17 @@ export function ReportDrawer({
 
         <footer className="drawer-footer">
           <FormActions secondary={isPending && <Button onClick={onClose}>Cancel review</Button>}>
-          {!report && <Button icon={Plus} disabled={!onAdd} onClick={() => onAdd?.(item?.id)}>Add site update</Button>}
+          {!report && <Button icon={Plus} disabled={!onAdd} onClick={addUpdate}>Add site update</Button>}
           {isPending && !isVo && report && (
             <Button icon={Check} className="primary" disabled={!canVerify} onClick={approve}>Verify progress</Button>
           )}
           {(isVerified || !isPending || isVo) && <Button onClick={onClose}>Done</Button>}
-          {isClarification && <Button className="primary" icon={Plus} disabled={!onAdd} onClick={() => onAdd?.(item?.id)}>Add clarified demo update</Button>}
+          {isClarification && <Button className="primary" icon={Plus} disabled={!onAdd} onClick={addUpdate}>Add clarified demo update</Button>}
           {isVo && <Button className="primary" icon={Flag} disabled={!onReviewVO} onClick={() => onReviewVO?.(report)}>Open VO review</Button>}
           </FormActions>
         </footer>
-      </section>
+      </SheetContent>}
+      </Sheet>
     </div>
   );
 }

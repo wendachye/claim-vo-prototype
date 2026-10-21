@@ -1,11 +1,32 @@
-import { Children, cloneElement, useEffect, useId, useRef } from 'react';
+import { Children, cloneElement, createElement, useId, useRef, useState } from 'react';
 import { ArrowLeft, X } from 'lucide-react';
+import { Button as ShadcnButton } from './ui/button.jsx';
+import { Badge as ShadcnBadge } from './ui/badge.jsx';
+import { Input } from './ui/input.jsx';
+import { Textarea } from './ui/textarea.jsx';
+import { NativeSelect } from './ui/native-select.jsx';
+import { Checkbox as ShadcnCheckbox } from './ui/checkbox.jsx';
+import { Label } from './ui/label.jsx';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from './ui/dialog.jsx';
+import './shadcn-compat.css';
 
-export function Badge({ tone = 'slate', children }) {
-  return <span className={`badge ${tone}`}>{children}</span>;
+export { Input, Textarea, NativeSelect };
+
+// Keep existing screen callbacks while Radix owns the checkbox interaction.
+export function Checkbox({ onChange, onCheckedChange, className = '', type: _type, ...props }) {
+  return <ShadcnCheckbox className={`control-checkbox ${className}`} {...props} onCheckedChange={(checked) => {
+    onCheckedChange?.(checked);
+    const target = { checked: checked === true, name: props.name, value: props.value };
+    onChange?.({ target, currentTarget: target });
+  }} />;
 }
-export function Button({ icon: Icon, children, className = '', ...props }) {
-  return <button type="button" className={`button ${className}`} {...props}>{Icon && <Icon size={15} />}{children}</button>;
+export function Badge({ tone = 'slate', children, className = '', ...props }) {
+  return <ShadcnBadge variant="outline" className={`badge ${tone} ${className}`} {...props}>{children}</ShadcnBadge>;
+}
+export function Button({ icon: Icon, children, className = '', variant, type = 'button', ...props }) {
+  const names = className.split(/\s+/);
+  const appearance = variant || (names.includes('primary') ? 'default' : names.includes('danger') ? 'destructive' : names.includes('ghost') || names.includes('back-button') ? 'ghost' : 'outline');
+  return <ShadcnButton type={type} variant={appearance} className={`button ${className}`} {...props}>{Icon && <Icon size={15} />}{children}</ShadcnButton>;
 }
 export function BackButton({ children = 'Back', className = '', ...props }) {
   return <Button icon={ArrowLeft} className={`back-button ${className}`} {...props}>{children}</Button>;
@@ -23,10 +44,14 @@ export function FormField({ label, children, hint, error, optional, required, su
   const hintId = hint ? `${controlId}-hint` : undefined;
   const errorId = error ? `${controlId}-error` : undefined;
   const describedBy = [...new Set([control.props['aria-describedby'], hintId, errorId].filter(Boolean).join(' ').split(/\s+/))].filter(Boolean).join(' ') || undefined;
-  const controlClass = control.type === 'select' ? 'form-select' : control.type === 'textarea' ? 'form-textarea' : 'form-input';
+  const isSelect = control.type === 'select' || control.type === NativeSelect;
+  const isTextarea = control.type === 'textarea' || control.type === Textarea;
+  const controlClass = isSelect ? 'form-select' : isTextarea ? 'form-textarea' : 'form-input';
+  const fieldProps = { id: controlId, className: [...new Set([controlClass, ...(control.props.className || '').split(' ')])].filter(Boolean).join(' '), 'aria-describedby': describedBy, 'aria-invalid': error ? true : control.props['aria-invalid'], 'aria-required': required || control.props['aria-required'] || undefined };
+  const primitive = control.type === 'select' ? NativeSelect : control.type === 'textarea' ? Textarea : control.type === 'input' && control.props.type !== 'file' ? Input : null;
   return <div className={`form-field ${className}`}>
-    <label className="form-field-label" htmlFor={controlId}><span>{label}{required && <span className="form-required" aria-hidden="true"> *</span>}</span>{(optional || suffix) && <span className="form-field-meta">{suffix}{suffix && optional && ' · '}{optional && 'Optional'}</span>}</label>
-    {cloneElement(control, { id: controlId, className: [...new Set([controlClass, ...(control.props.className || '').split(' ')])].filter(Boolean).join(' '), 'aria-describedby': describedBy, 'aria-invalid': error ? true : control.props['aria-invalid'], 'aria-required': required || control.props['aria-required'] || undefined })}
+    <Label className="form-field-label" htmlFor={controlId}><span>{label}{required && <span className="form-required" aria-hidden="true"> *</span>}</span>{(optional || suffix) && <span className="form-field-meta">{suffix}{suffix && optional && ' · '}{optional && 'Optional'}</span>}</Label>
+    {primitive ? createElement(primitive, { ...control.props, ...fieldProps, key: control.key }) : cloneElement(control, fieldProps)}
     {hint && <p className="form-field-hint" id={hintId}>{hint}</p>}
     {error && <p className="form-field-error" id={errorId} role="alert">{error}</p>}
   </div>;
@@ -35,30 +60,16 @@ export function FormActions({ secondary, children, className = '' }) {
   return <div className={`form-actions ${className}`}>{secondary && <div className="form-actions-secondary">{secondary}</div>}<div className="form-actions-main">{children}</div></div>;
 }
 export function Modal({ title, description, onClose, children, footer }) {
-  const node = useRef(null);
-  const close = useRef(onClose);
-  close.current = onClose;
-  useEffect(() => {
-    const prior = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const controls = () => [...node.current.querySelectorAll('button:not([disabled]),input:not([disabled]),select,textarea,a[href]')];
-    controls()[0]?.focus();
-    const key = (e) => {
-      if (e.key === 'Escape') close.current();
-      if (e.key === 'Tab') {
-        const all = controls();
-        if (e.shiftKey && document.activeElement === all[0]) { e.preventDefault(); all.at(-1)?.focus(); }
-        else if (!e.shiftKey && document.activeElement === all.at(-1)) { e.preventDefault(); all[0]?.focus(); }
-      }
-    };
-    document.addEventListener('keydown', key);
-    return () => { document.removeEventListener('keydown', key); document.body.style.overflow = previousOverflow; prior?.focus?.(); };
-  }, []);
-  return <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><section className="modal" ref={node} role="dialog" aria-modal="true" aria-label={title}>
-    <div className="modal-header"><div><h2>{title}</h2>{description && <p>{description}</p>}</div><Button className="ghost icon" aria-label="Close dialog" onClick={onClose}><X size={18}/></Button></div>
-    <div className="modal-body">{children}</div>{footer && <div className="modal-footer">{footer}</div>}
-  </section></div>;
+  const [portalContainer, setPortalContainer] = useState(null);
+  const opener = useRef(typeof document === 'undefined' ? null : document.activeElement);
+  return <div className="ui-overlay-host" ref={setPortalContainer}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose?.(); }}>
+      {portalContainer && <DialogContent portalContainer={portalContainer} className="modal" overlayClassName="modal-backdrop" showCloseButton={false} {...(!description ? { 'aria-describedby': undefined } : {})} onCloseAutoFocus={(event) => { event.preventDefault(); if (opener.current?.isConnected) opener.current.focus?.(); }}>
+        <div className="modal-header"><div><DialogTitle>{title}</DialogTitle>{description && <DialogDescription>{description}</DialogDescription>}</div><DialogClose asChild><Button className="ghost icon" aria-label="Close dialog"><X size={18} /></Button></DialogClose></div>
+        <div className="modal-body">{children}</div>{footer && <div className="modal-footer">{footer}</div>}
+      </DialogContent>}
+    </Dialog>
+  </div>;
 }
 
 export const formatNumber = (n) => n == null ? '—' : Number(n).toLocaleString('en-SG', { maximumFractionDigits: 2 });

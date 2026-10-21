@@ -5,3 +5,7 @@
 .site-report-details dt { color:#64748b; }
 .site-report-details dd { margin:2px 0 0; color:#334155; overflow-wrap:anywhere; }
 .site-report-details p { margin:0 0 12px; }
+
+/* The Sheet supplies focus trapping and dismissal; preserve the existing drawer skin. */
+.site-report-layer { display:contents; }
+.drawer[data-slot='sheet-content'] { gap:0; border:0; border-radius:0; padding:0; }

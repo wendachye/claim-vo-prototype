@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Check, ChevronRight, Clock3, Flag, History, Search, X } from 'lucide-react';
 import { getAreasForItem, getDrawingMapping } from '../data/drawing-mapping.js';
 import { getItemProgressReview } from '../data/progress-review.js';
-import { Badge, Button, FormField, formatNumber, formatTime } from './ui.jsx';
+import { Badge, Button, FormField, formatNumber, formatTime, Input, NativeSelect } from './ui.jsx';
 import './progress-register.css';
 
 const hasTotal = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
@@ -25,9 +25,9 @@ export function ProgressFilters({ project, items, search, block, filter, blocks,
   ];
   return <div className="progress-controls">
     <div className="progress-filter-fields">
-      <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find work</label><div className="search-box"><Search size={16} aria-hidden="true"/><input id={searchId} aria-label="Search completion list" placeholder="Search work items or areas…" value={search} onChange={(event) => onSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear search" onClick={() => onSearch('')}><X size={14}/></button>}</div></div>
-      <FormField label="Block / location"><select value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</select></FormField>
-      <FormField label="Review status"><select value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}{filter === 'vo' && <option value="vo">Extra work</option>}</select></FormField>
+      <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search completion list" placeholder="Search work items or areas…" value={search} onChange={(event) => onSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear search" onClick={() => onSearch('')}><X size={14}/></button>}</div></div>
+      <FormField label="Block / location"><NativeSelect value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</NativeSelect></FormField>
+      <FormField label="Review status"><NativeSelect value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}{filter === 'vo' && <option value="vo">Extra work</option>}</NativeSelect></FormField>
     </div>
     <div className="progress-list-tools">
       <span>Totals are for the whole work item.</span>

@@ -1,0 +1,23 @@
+/* Official shadcn primitives retain the prototype's established control sizes and theme. */
+.button[data-slot='button'] { height:auto; box-shadow:none; }
+.button[data-slot='button']:focus-visible { outline:2px solid #2563eb; outline-offset:3px; box-shadow:none; }
+[data-slot='input'], [data-slot='textarea'], [data-slot='native-select'] { box-shadow:none; }
+.native-select-shell { width:100%; min-width:0; }
+.native-select-shell:has(select:disabled) { opacity:1; }
+.native-select-shell [data-slot='native-select'] { padding-right:34px; }
+.native-select-shell [data-slot='native-select-icon'] { width:14px; height:14px; }
+.control-checkbox { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:16px; height:16px; min-height:0; padding:0; border:1px solid #94a3b8; border-radius:3px; color:#fff; background:#fff; box-shadow:none; vertical-align:middle; }
+.control-checkbox[data-state='checked'], .control-checkbox[data-state='indeterminate'] { color:#fff; background:#2563eb; border-color:#2563eb; }
+.control-checkbox [data-slot='checkbox-indicator'] { display:flex; align-items:center; justify-content:center; }
+.control-checkbox svg { width:13px; height:13px; }
+.control-checkbox:focus-visible { outline:2px solid #2563eb; outline-offset:3px; box-shadow:none; }
+.control-checkbox:disabled { opacity:.45; }
+.ui-overlay-host { display:contents; }
+.modal[data-slot='dialog-content'] { position:fixed; z-index:81; top:50%; left:50%; translate:-50% -50%; transform:none; max-width:calc(100vw - 50px); gap:0; padding:0; animation:none; outline:none; }
+.modal[data-slot='dialog-content'] .modal-header { text-align:left; }
+@media screen and (max-width:760px) {
+  .modal[data-slot='dialog-content'] { max-width:calc(100vw - 32px); }
+}
+@media print {
+  [data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='sheet-overlay'], [data-slot='sheet-content'], [data-slot='popover-content'] { display:none !important; }
+}
