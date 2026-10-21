@@ -1,0 +1,14 @@
+.attention-notifications { position:relative; flex-shrink:0; }
+.attention-notifications .attention-bell { position:relative; color:#64748b; }
+.attention-notifications .attention-bell:hover,.attention-notifications .attention-bell.is-open { color:#2563eb; background:#eff6ff; }
+.attention-bell-count { position:absolute; top:0; right:-2px; display:grid; place-items:center; min-width:17px; height:17px; padding:0 4px; border:2px solid #fff; border-radius:10px; color:#fff; background:#2563eb; font-size:9px; font-weight:600; line-height:1; }
+.attention-notifications-portal { display:contents; }
+.attention-notifications-popover { z-index:90; display:flex; flex-direction:column; width:360px; max-width:calc(100vw - 24px); max-height:min(480px,var(--radix-popover-content-available-height),calc(100dvh - 80px)); padding:0; overflow:hidden; animation:none; border:1px solid #dce3ec; border-radius:10px; background:#fff; box-shadow:0 12px 32px #0f172a1a,0 3px 8px #0f172a08; }
+.attention-notifications-header { display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; gap:12px; padding:14px 14px 12px; border-bottom:1px solid #edf1f5; }
+.attention-notifications-header > div { min-width:0; padding-top:3px; }
+.attention-notifications-header h2 { color:#1e293b; font-size:14px; font-weight:600; line-height:1.6; }
+.attention-notifications-header p { margin-top:3px; overflow:hidden; color:#64748b; font-size:11px; line-height:1.8; text-overflow:ellipsis; white-space:nowrap; }
+.attention-notifications-header > .button { flex-shrink:0; }
+.attention-notifications-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+.attention-notifications-footer { flex-shrink:0; padding:5px 10px; border-top:1px solid #edf1f5; }
+.attention-notifications-footer .button { width:100%; color:#2563eb; }

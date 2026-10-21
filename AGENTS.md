@@ -44,6 +44,8 @@ Use the shared PageHeader, BackButton, FormField and FormActions patterns. Retur
 
 ## Current stage: validate the prototype
 
+Project overview shows a compact Needs attention summary; the top-right notification bell and View tasks open the same bounded task panel. Keep that popup simple: three whole-clickable task rows, a short action and area or claim month/version, and View all for the remaining tasks. Avoid filters, status badges, visible record IDs and nested action buttons in the popup. The list is derived from selected-project records, never a separate persisted queue or manual completion flag. Link to the exact message, latest progress report, VO case or claim version/period and retain Back to overview. Paired messages/reports and original-query/child-revision tasks must not duplicate each other. Completed or superseded actions leave the queue; part payments and unresolved clarifications stay pending. Viewing tasks must preserve original evidence, other-project state, unfinished form buffers and saved claim assessments. Opening or closing notifications never marks work complete. Close the panel on task navigation or project/module changes, keep Escape/close keyboard focus accessible, and avoid stealing focus from destination dialogs.
+
 The user wants to confirm the UI and end-to-end workflow before real development. Continue with frontend screens, mock data and simulated interactions. Prioritize understandable navigation, linked steps, realistic review/status states and a complete showcase journey. Database, production authentication, backend services, live AI and WhatsApp integrations stay deferred until the user explicitly moves into real development. Vercel deployment alone does not change this scope.
 
 ## Complete mock walkthrough

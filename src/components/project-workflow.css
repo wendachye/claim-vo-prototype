@@ -73,3 +73,16 @@
 .project-list-row .button { font-size:12px; }
 .project-empty p { color:#64748b; font-size:13px; }
 @media screen and (max-width:760px) { .project-list-row { flex-wrap:wrap; padding:17px; } .project-list-copy { min-width:calc(100% - 70px); } .project-list-row > .button { margin-left:61px; } }
+.attention-summary { display:flex; align-items:center; gap:12px; padding:14px 18px; margin-bottom:22px; border:1px solid var(--border); border-radius:9px; background:#fff; }
+.attention-summary > svg { flex-shrink:0; color:#64748b; }
+.attention-summary > div { flex:1; min-width:0; }
+.attention-summary h2 { color:#334155; font-size:13px; font-weight:600; line-height:1.6; }
+.attention-summary p { margin-top:2px; color:#64748b; font-size:12px; line-height:1.6; }
+.attention-summary .button { flex-shrink:0; }
+.attention-summary.is-clear > svg { color:#15803d; }
+@media screen and (max-width:500px) {
+  .attention-summary { gap:10px; padding:12px; }
+  .attention-summary > svg { display:none; }
+  .attention-summary p { font-size:11px; }
+  .attention-summary .button { padding-inline:10px; }
+}

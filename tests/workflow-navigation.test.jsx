@@ -7,6 +7,7 @@ import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
 import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.js';
 import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
 import { getProjectWorkflow } from '../src/data/workflow.js';
+import { getProjectAttention } from '../src/data/project-attention.js';
 import { getDrawingMapping } from '../src/data/drawing-mapping.js';
 import { getVOCases, updateVOReview } from '../src/data/vo.js';
 
@@ -68,13 +69,22 @@ afterEach(() => {
 });
 
 describe('S.I.T. workflow navigation retains source context without changing records', () => {
-  it('overview opens its recommended message rather than only the general inbox', async () => {
+  it('overview opens an exact pending message rather than only the general inbox', async () => {
     const { project } = fixture();
     const next = getProjectWorkflow(project, '2026-10').next;
+    const task = getProjectAttention(project).find((entry) => entry.target.messageId === next.messageId);
     const before = readWorkspace().projects;
     const user = userEvent.setup();
     mount('#projects');
-    await user.click(screen.getByRole('button', { name: next.label }));
+    await user.click(screen.getByRole('button', { name: /^Needs attention, \d+ pending tasks$/ }));
+    const notifications = screen.getByRole('dialog', { name: 'Project notifications' });
+    const queue = within(notifications).getByRole('region', { name: 'Needs attention' });
+    const action = `${task.actionLabel}: ${task.reference || task.title}`;
+    if (!within(queue).queryByRole('button', { name: action, exact: true })) {
+      await user.click(within(notifications).getByRole('button', { name: /^View all/ }));
+    }
+    await user.click(within(queue).getByRole('button', { name: action, exact: true }));
+    expect(screen.queryByRole('dialog', { name: 'Project notifications' })).toBeNull();
     await screen.findByRole('heading', { name: 'WhatsApp messages' });
     expect(params().get('message')).toBe(next.messageId);
     expect(document.querySelector('.wa-review').textContent).toContain(next.messageId);

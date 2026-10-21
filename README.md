@@ -8,6 +8,8 @@ The default campus and warehouse projects are fictional. A separate, explicitly 
 
 Start on **Project overview** for the selected project's next action. The visible sequence is **Contract → Site updates → Extra work → Claims**. The top project dropdown stays available from every module.
 
+Project overview shows a compact attention count. Use **View tasks** or the **notification bell** at the top right of any module to see the selected project's outstanding site messages, latest progress reviews, open VOs and saved claim actions across months. The popup previews three tasks as simple clickable rows; View all reveals the remaining tasks. Rows show a short action and area or claim month/version, and open the exact message, report, VO case or claim version. Links opened here provide **Back to overview**. The list derives from current saved statuses: viewing a record leaves it pending; verification, VO decisions and claim tracking update or remove its task automatically. Submitted revisions replace their original query task, and part-paid claims remain pending until fully paid. This is a browser-local mock workflow; opening tasks never changes saved claim values.
+
 - **Contract:** check the work list, then confirm it. A confirmed contract offers **Continue to site updates**.
 - **Site updates:** review messages and photos, then use **Progress** to verify completion. New messages appear first. Small screens show reported and verified totals together in cards.
 - **Extra work:** review the evidence and instruction, then track approval. The approved record links to monthly claims; approval never inserts a claim value automatically.

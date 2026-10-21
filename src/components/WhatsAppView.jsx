@@ -25,7 +25,7 @@ function DemoPhoto({ src, alt, className = '', onOpen }) {
   return onOpen ? <button type="button" className={`wa-photo ${className}`} aria-label="Enlarge demo site photo" onClick={onOpen}>{photo}<span className="wa-photo-zoom"><ZoomIn size={13} />View photo</span><span className="wa-photo-demo">Generated demo photo</span></button> : <span className={`wa-photo ${className}`}>{photo}</span>;
 }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing }) {
+export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview }) {
   const voCases = getVOCases(project);
   const caseFor = (report) => voCases.find((entry) => entry.id === report?.id);
   const orderedMessages = [...messages].sort((a, b) => Number(isNewInboxMessage(b, messageReport(project, b))) - Number(isNewInboxMessage(a, messageReport(project, a))) || Date.parse(b.date) - Date.parse(a.date));
@@ -104,7 +104,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const filterCount = (key) => messages.filter((message) => matchesInboxFilter(key, message, messageReport(project, message))).length;
 
   return <div className={`whatsapp-view${reviewOpen ? ' wa-review-open' : ''}`}>
-    <PageHeader title="WhatsApp messages" description="Review worker messages and photos before adding progress or flagging extra work." onBack={onBackToDrawing} backLabel="Back to drawing" />
+    <PageHeader title="WhatsApp messages" description="Review worker messages and photos before adding progress or flagging extra work." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} />
     {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This update is not available in the selected project.</span><Button onClick={onClearMessageSelection}>Show all messages</Button></div>}
     {areaMessageUpdate.available && areaMessageUpdate.skipped.length > 0 && <details className="wa-sample-help"><summary>Some area samples need review</summary><ul>{areaMessageUpdate.skipped.map((entry, index) => <li key={`${entry.areaCode}-${index}`}><strong>{entry.areaCode}</strong> · {entry.reason}</li>)}</ul>{onOpenDrawing && <Button className="ghost" onClick={() => onOpenDrawing()}>Review area mapping</Button>}</details>}
 

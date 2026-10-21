@@ -1,0 +1,13 @@
+.needs-attention { margin:0; background:#fff; }
+.attention-list { margin:0; padding:0; list-style:none; }
+.attention-list > li + li { border-top:1px solid #f1f5f9; }
+.attention-task { display:flex; align-items:center; justify-content:space-between; gap:16px; width:100%; padding:15px 18px; border:0; background:#fff; color:#334155; text-align:left; }
+.attention-task:hover,.attention-task:focus-visible { background:#f8fafc; }
+.attention-task:focus-visible { outline:2px solid #2563eb; outline-offset:-3px; }
+.attention-task:disabled { cursor:default; opacity:.5; }
+.attention-task > span { flex:1; min-width:0; }
+.attention-task strong { display:block; font-size:13px; font-weight:550; line-height:1.6; }
+.attention-task small { display:block; margin-top:4px; color:#64748b; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
+.attention-task > svg { flex-shrink:0; color:#94a3b8; }
+.attention-empty { display:flex; align-items:center; justify-content:center; gap:9px; padding:30px 18px; color:#64748b; font-size:13px; }
+.attention-empty svg { color:#15803d; }
