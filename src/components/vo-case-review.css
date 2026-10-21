@@ -1,0 +1,13 @@
+.vo-review-stages { display:flex; align-items:center; flex-wrap:wrap; gap:8px 20px; padding:0; margin:0; list-style:none; }
+.vo-review-stages > li { display:flex; align-items:center; gap:6px; color:#64748b; font-size:12px; line-height:1.6; }
+.vo-review-stages > li > span { display:grid; place-items:center; width:19px; height:19px; border-radius:50%; background:#e9eef5; color:#64748b; font-size:11px; flex-shrink:0; }
+.vo-review-stages > li.current { color:#1d4ed8; font-weight:600; }
+.vo-review-stages > li.current > span { color:#fff; background:#2563eb; }
+.vo-review-stages > li.complete { color:#047857; }
+.vo-review-stages > li.complete > span { color:#047857; background:#d1fae5; }
+.vo-case-review h2[tabindex='-1']:focus { outline:none; }
+.vo-other-review-actions { margin-top:16px; padding-top:10px; border-top:1px solid #e2e8f0; color:#64748b; font-size:12px; line-height:1.7; }
+.vo-other-review-actions > summary { width:fit-content; padding:7px 0; color:#475569; cursor:pointer; font-weight:500; }
+.vo-other-review-actions > p { margin:8px 0; }
+.vo-other-review-actions > div { display:flex; flex-wrap:wrap; gap:8px; }
+.vo-case-review summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
