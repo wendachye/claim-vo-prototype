@@ -17,7 +17,7 @@ function Attachment({ evidence }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
   if (!src) return null;
-  const generated = /\/assets\/demo-(scaffold|platform)\.jpg(?:[?#]|$)/.test(src);
+  const generated = /^\/assets\/demo-[a-z0-9-]+\.jpg(?:[?#]|$)/.test(src);
   return <figure className="claim-pack-photo">{failed ? <div className="claim-pack-photo-unavailable">Photo unavailable</div> : <img src={src} alt={evidence.photoAlt || 'Photo attached to the saved site evidence'} onError={() => setFailed(true)} />}<figcaption>{generated ? 'Generated demo photo' : 'Saved evidence attachment'}</figcaption></figure>;
 }
 

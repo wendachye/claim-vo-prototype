@@ -6,6 +6,8 @@ Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs
 
 Never create or amend Git commits or deploy without the user's explicit request.
 
+Validate routine changes on localhost before an authorized commit and push. Check the deployed Vercel app only when the user explicitly asks or reports a deployment issue.
+
 ## Public demonstration data
 
 The original S.I.T. contract scenario is the automatic default showcase, as explicitly requested by the user on 21 October 2026. The separate campus and warehouse fixtures remain fictional. This is a scoped exception for the 18 reviewed schedule rows, contract metadata, schedule-page image and site-plan image in the S.I.T. source profile. Keep the original 115-page PDF, other uploaded documents, personal data, credentials, machine-specific paths and browser-edited project state out of the repository. Generated site photos must be labelled as demonstration images.

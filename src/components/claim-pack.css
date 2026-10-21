@@ -79,59 +79,65 @@
 @media screen and (max-width:760px) { .claim-pack-document { padding:19px 16px; border-radius:8px; } .claim-pack-document-header { flex-direction:column; gap:13px; } .claim-pack-document-id { text-align:left; } .claim-pack-document-id > strong { margin-top:0; font-size:12px; } .claim-pack-document-header h2 { font-size:19px; } .claim-pack-eyebrow { margin-top:16px; } .claim-pack-parties { gap:16px; } .claim-pack-meta { grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; } .claim-pack-totals { gap:7px; } .claim-pack-total { padding:11px 9px; } .claim-pack-total > span { font-size:8px; } .claim-pack-total > strong { font-size:17px; } .claim-pack-total > strong small { display:block; font-size:8px; margin-bottom:2px; } .claim-pack-notes { grid-template-columns:1fr; gap:9px; } .claim-pack-evidence { grid-template-columns:minmax(0,1fr); gap:12px; padding:12px; } .claim-pack-photo { display:flex; align-items:flex-end; gap:10px; } .claim-pack-photo figcaption { max-width:140px; } .claim-pack-document-footer { flex-direction:column; } }
 @page claim-pack { size:A4 landscape; margin:12mm; }
 @media print {
-  html:has(.claim-pack-view), body:has(.claim-pack-view) { page:claim-pack; height:auto !important; min-height:0 !important; }
+  html:has(.claim-pack-view), body:has(.claim-pack-view) { page:claim-pack; background:#fff !important; height:auto !important; min-height:0 !important; }
   body:has(.claim-pack-view) { background:#fff !important; color:#172033; font-size:9pt; }
   body:has(.claim-pack-view) .sidebar, body:has(.claim-pack-view) .topbar, body:has(.claim-pack-view) .mobile-sidebar-overlay, body:has(.claim-pack-view) .toast, body:has(.claim-pack-view) .modal-backdrop, body:has(.claim-pack-view) .claim-pack-toolbar, body:has(.claim-pack-view) .claim-pack-screen-note, body:has(.claim-pack-view) .page-content > .notice, body:has(.claim-pack-view) nextjs-portal { display:none !important; }
   body:has(.claim-pack-view) .app-shell, body:has(.claim-pack-view) .main-shell { display:block !important; margin:0 !important; padding:0 !important; min-height:0 !important; height:auto !important; }
   body:has(.claim-pack-view) .page-content { width:100% !important; max-width:none !important; margin:0 !important; padding:0 !important; }
   .claim-pack-view { width:100%; min-height:0; height:auto; }
   .claim-pack-document { page:claim-pack; max-width:none; width:100%; padding:0; border:0; border-radius:0; box-shadow:none; print-color-adjust:exact; -webkit-print-color-adjust:exact; }
-  .claim-pack-document-header { flex-direction:row; gap:14mm; padding-bottom:5mm; break-inside:avoid; }
+  .claim-pack-document-header { flex-direction:row; gap:14mm; padding-bottom:3mm; break-inside:avoid; }
   .claim-pack-document-id { text-align:right; }
   .claim-pack-document-header h2 { font-size:17pt; }
   .claim-pack-brand { font-size:10pt; }
   .claim-pack-brand > i { width:7mm; height:7mm; }
-  .claim-pack-eyebrow { margin-top:4mm; font-size:7pt; }
+  .claim-pack-eyebrow { margin-top:2mm; margin-bottom:1mm; font-size:7pt; }
   .claim-pack-document-header p,.claim-pack-field > strong { font-size:8pt; }
   .claim-pack-document-id > strong { font-size:10pt; }
   .claim-pack-document-id > span:not(.badge),.claim-pack-field > span,.claim-pack-field > p { font-size:7pt; }
-  .claim-pack-parties { padding:4mm 0; gap:12mm; break-inside:avoid; }
-  .claim-pack-meta { grid-template-columns:repeat(4,minmax(0,1fr)); padding:4mm 0; gap:5mm; break-inside:avoid; }
-  .claim-pack-status { margin-top:4mm; padding:2mm 3mm; font-size:7pt; break-inside:avoid; }
+  .claim-pack-field > span { margin-bottom:1mm; line-height:1.4; }
+  .claim-pack-field > strong,.claim-pack-field > p { line-height:1.5; }
+  .claim-pack-parties { padding:2.5mm 0; gap:12mm; break-inside:avoid; }
+  .claim-pack-meta { grid-template-columns:repeat(4,minmax(0,1fr)); padding:2.5mm 0; gap:5mm; break-inside:avoid; }
+  .claim-pack-status { margin-top:2.5mm; padding:1.5mm 3mm; font-size:7pt; line-height:1.5; break-inside:avoid; }
   .claim-pack-checks { margin-top:3mm; padding:2mm 3mm; font-size:7pt; }
   .claim-pack-checks > summary { list-style:none; }
   .claim-pack-checks:not([open]) ul { display:block; }
-  .claim-pack-totals { margin-top:4mm; gap:3mm; break-inside:avoid; }
-  .claim-pack-total { padding:3mm 4mm; }
+  .claim-pack-totals { margin-top:3mm; gap:3mm; break-inside:avoid; }
+  .claim-pack-total { padding:2mm 4mm; }
   .claim-pack-total > span { font-size:7pt; }
-  .claim-pack-total > strong { margin-top:2mm; font-size:16pt; }
+  .claim-pack-total > strong { margin-top:1mm; font-size:16pt; }
   .claim-pack-total > strong small { display:inline; font-size:8pt; margin-bottom:0; }
-  .claim-pack-section { margin-top:6mm; }
+  .claim-pack-section { margin-top:4mm; }
   .claim-pack-section-heading { margin-bottom:2mm; break-after:avoid; }
   .claim-pack-section-heading h3 { font-size:9pt; }
   .claim-pack-section-heading h3 > span,.claim-pack-section-heading > p { font-size:7pt; }
   .claim-pack-table-wrap { width:100%; overflow:visible; border-radius:0; }
-  .claim-pack-table { min-width:0; width:100%; font-size:7pt; table-layout:auto; }
-  .claim-pack-table th { padding:2mm; font-size:6.5pt; }
-  .claim-pack-table td { padding:2mm; }
+  .claim-pack-table { min-width:0; width:100%; font-size:7pt; line-height:1.5; table-layout:auto; }
+  .claim-pack-table th { padding:1.5mm 2mm; font-size:6.5pt; }
+  .claim-pack-table td { padding:1.5mm 2mm; }
   .claim-pack-table thead { display:table-header-group; }
   .claim-pack-table tfoot { display:table-row-group; }
   .claim-pack-table tr { break-inside:avoid; }
   .claim-pack-table .pack-description { min-width:35mm; max-width:80mm; }
-  .claim-pack-table small,.claim-pack-table .pack-reference { font-size:6pt; }
-  .claim-pack-empty-schedule,.claim-pack-basis { font-size:7pt; }
+  .claim-pack-table small,.claim-pack-table .pack-reference { font-size:6.5pt; line-height:1.5; }
+  .claim-pack-empty-schedule,.claim-pack-basis { font-size:7pt; line-height:1.5; }
+  .claim-pack-basis { margin-top:2mm; }
   .claim-pack-notes { gap:4mm; }
-  .claim-pack-notes > div { padding:3mm; break-inside:avoid; }
-  .claim-pack-notes span { font-size:7pt; }
-  .claim-pack-notes p { font-size:7.5pt; }
-  .claim-pack-evidence-list { gap:3mm; }
-  .claim-pack-evidence { grid-template-columns:minmax(0,1fr) 33mm; padding:3mm; gap:4mm; break-inside:avoid; }
+  .claim-pack-notes > div { padding:2.5mm; break-inside:avoid; }
+  .claim-pack-notes span { font-size:7pt; margin-bottom:1mm; }
+  .claim-pack-notes p { font-size:7.5pt; line-height:1.5; }
+  /* Normal block flow lets complete evidence cards use the available page space. */
+  .claim-pack-evidence-list { display:block; }
+  .claim-pack-evidence { grid-template-columns:minmax(0,1fr) 33mm; padding:2.5mm; gap:3mm; break-inside:avoid; }
+  .claim-pack-evidence + .claim-pack-evidence { margin-top:2.5mm; }
   .claim-pack-evidence.no-photo { grid-template-columns:minmax(0,1fr); }
-  .claim-pack-evidence-header strong { font-size:8pt; }
-  .claim-pack-evidence-header > span,.claim-pack-evidence-meta,.claim-pack-evidence-note { font-size:6.5pt; }
-  .claim-pack-evidence blockquote { font-size:7pt; padding:2mm 3mm; margin-top:2mm; }
+  .claim-pack-evidence-header strong { font-size:8pt; line-height:1.5; }
+  .claim-pack-evidence-header > span,.claim-pack-evidence-meta,.claim-pack-evidence-note { font-size:7pt; line-height:1.5; }
+  .claim-pack-evidence-meta { margin-top:1.5mm; gap:1mm 3mm; }
+  .claim-pack-evidence blockquote { font-size:7.5pt; line-height:1.5; padding:1.5mm 2mm; margin-top:1.5mm; orphans:3; widows:3; }
   .claim-pack-photo { display:block; width:33mm; }
   .claim-pack-photo img,.claim-pack-photo-unavailable { width:33mm; height:23mm; }
   .claim-pack-photo figcaption { display:block; width:auto; max-width:none; font-size:6pt; white-space:normal; word-break:normal; overflow-wrap:normal; }
-  .claim-pack-document-footer { flex-direction:row; font-size:6.5pt; margin-top:5mm; padding-top:3mm; }
+  .claim-pack-document-footer { flex-direction:row; font-size:6.5pt; margin-top:3mm; padding-top:2mm; line-height:1.5; break-inside:avoid; }
 }
