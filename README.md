@@ -37,6 +37,13 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 - `#vo` — Extra work: assess flags and track local approval decisions
 - `#claims` — saved claims and guided preparation from verified work and approved VOs
 - `#claim-preview?draft=…` — preview a saved revision, download CSV or print/save PDF
+- `#claim-status?draft=…` — track mock submission, certification and payment for one prepared revision
+
+## Mock claim status
+
+After marking a saved claim **Prepared**, choose **Track claim status**. Record a mock submission, a certificate and the total paid to date. **Use demo details** fills an example for review; each stage still requires an explicit save. A partial payment stays at **Certified** until the recorded total matches the certified amount. Different certified and claimed amounts require an explanation.
+
+The tracker keeps the saved version and claim amount intact. Its dates, references, amounts and history stay with that project and revision in browser storage. They do not change earlier claimed amounts or the saved assessment/export, and no real submission, certification or payment takes place.
 
 ## Demo walkthrough
 

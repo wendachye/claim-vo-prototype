@@ -1,6 +1,7 @@
 import { getWhatsAppMessages } from './whatsapp.js';
 import { getVOCases } from './vo.js';
 import { isReviewableProgressReport, needsProgressClarification } from './report-status.js';
+import { getClaimTracking } from './claim-tracking.js';
 
 const list = (value) => Array.isArray(value) ? value : [];
 const timestamp = (value) => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
@@ -43,6 +44,15 @@ export function getProjectWorkflow(project, period = currentMonth()) {
     && ['draft', 'prepared'].includes(draft.status) && Number.isInteger(draft.revision))
     .sort((a, b) => b.revision - a.revision || timestamp(b.createdAt) - timestamp(a.createdAt));
   const latestDraft = currentDrafts[0];
+  const claimTracking = latestDraft?.status === 'prepared' ? getClaimTracking(project, latestDraft.id) : null;
+  const claimStatus = claimTracking?.status || 'prepared';
+  const claimStatusLabels = { prepared: 'Prepared locally', submitted: 'Submitted · demo', certified: 'Certified · demo', paid: 'Paid · demo' };
+  const claimGuidance = {
+    prepared: `Record a mock submission for saved revision ${latestDraft?.revision}, then track certification and payment. Nothing is sent externally.`,
+    submitted: `Record the mock certification for saved revision ${latestDraft?.revision}, including the certified amount.`,
+    certified: `Record payment against the certified amount for saved revision ${latestDraft?.revision}. Partial payments stay in progress.`,
+    paid: `Review the completed mock payment history for saved revision ${latestDraft?.revision}.`,
+  };
   const counts = {
     items: items.length,
     contractReview: items.filter((item) => item.needsReview).length,
@@ -72,8 +82,8 @@ export function getProjectWorkflow(project, period = currentMonth()) {
       detail: counts.openVOs ? `${numberOf(counts.openVOs, 'extra work case')} to review. Verified work can still be assessed separately.`
         : counts.approvedVOs ? `${numberOf(counts.approvedVOs, 'approval')} recorded; assess values in the claim.` : 'Review extra scope when it is flagged.' },
     { id: 'claims', label: 'Claims', route: 'claims',
-      status: latestDraft ? latestDraft.status === 'prepared' ? 'Prepared locally' : 'Draft saved' : 'Not started',
-      detail: latestDraft ? `${period} · saved revision ${latestDraft.revision}. Nothing has been submitted.`
+      status: latestDraft ? latestDraft.status === 'prepared' ? claimStatusLabels[claimStatus] : 'Draft saved' : 'Not started',
+      detail: latestDraft ? `${period} · saved revision ${latestDraft.revision}. ${latestDraft.status === 'prepared' ? claimStatus === 'prepared' ? 'Ready for mock submission tracking.' : `${claimStatusLabels[claimStatus]}. Open Claims to review its tracking.` : 'Continue the saved assessment before preparing.'}`
         : 'Enter QS quantities and previous claim values for the month.' },
   ];
 
@@ -88,7 +98,7 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   else if (counts.openVOs) next = { route: 'vo', label: 'Review extra work',
     description: 'Check the flagged scope and instruction. You can still claim verified work separately in Claims.', caseId: openVOs[0].id };
   else if (latestDraft) next = latestDraft.status === 'prepared'
-    ? { route: 'claim-preview', label: 'Preview saved claim', description: 'Review or export the prepared local revision. It has not been submitted.', draftId: latestDraft.id }
+    ? { route: 'claim-status', label: 'Track claim status', description: claimGuidance[claimStatus], draftId: latestDraft.id }
     : { route: 'claims', label: 'Continue monthly claim', description: 'Review the saved assessment and its outstanding checks before preparing it.' };
   else if (items.some((item) => item.pricingType === 'measured' && typeof item.verified === 'number' && item.verified > 0) || counts.approvedVOs) next = {
     route: 'claims', label: 'Prepare monthly claim', description: 'Assess verified work and recorded approvals. Enter claim quantities and values separately from physical progress.',

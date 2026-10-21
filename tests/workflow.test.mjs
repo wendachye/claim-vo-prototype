@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getProjectWorkflow } from '../src/data/workflow.js';
+import { recordClaimStage } from '../src/data/claim-tracking.js';
 
 function project() {
   return { id: 'TEST', code: 'TEST', contract: { sourceKind: 'illustrative' }, version: 1,
@@ -10,7 +11,8 @@ function project() {
 const workflow = (value) => getProjectWorkflow(value, '2026-10');
 const report = (id, date, status = 'pending') => ({ id, projectId: 'TEST', itemId: 'A', date, status, completion: 50 });
 const draft = (id, period, revision, status = 'draft') => ({ id, projectId: 'TEST', period, revision, status,
-  snapshot: { projectId: 'TEST', period, canPrepare: true } });
+  createdAt: '2026-10-02T10:00:00+08:00', preparedAt: '2026-10-02T11:00:00+08:00', assessment: {},
+  snapshot: { projectId: 'TEST', period, canPrepare: true, currency: 'SGD', totals: { currentValue: 1000 } } });
 
 test('contract setup guides empty, flagged and unconfirmed projects before site work', () => {
   const value = project();
@@ -82,8 +84,9 @@ test('only the latest saved revision for the selected month determines claim gui
   value.claimDrafts[2].status = 'prepared';
   assert.equal(workflow(value).steps[3].status, 'Prepared locally');
   assert.equal(workflow(value).next.draftId, 'OCT-2');
-  assert.equal(workflow(value).next.route, 'claim-preview');
-  assert.match(workflow(value).next.description, /not been submitted/);
+  assert.equal(workflow(value).next.route, 'claim-status');
+  assert.match(workflow(value).next.description, /mock submission/);
+  assert.match(workflow(value).next.description, /Nothing is sent externally/);
 });
 
 test('project-scoped guidance ignores foreign records and does not mutate inputs', () => {
@@ -119,7 +122,7 @@ test('waiting message clarification stays visible while verified work and saved 
   value.claimDrafts = [{ ...draft('PREPARED', '2026-10', 1, 'prepared'), snapshot: { projectId: 'TEST', period: '2026-10', totals: { currentValue: 1400 } } }];
   const before = structuredClone(value);
   const exported = workflow(value);
-  assert.equal(exported.next.route, 'claim-preview');
+  assert.equal(exported.next.route, 'claim-status');
   assert.equal(exported.next.draftId, 'PREPARED');
   assert.equal(exported.steps[1].status, 'Needs clarification');
   assert.deepEqual(value, before); // Status guidance never changes physical or financial records.
@@ -178,4 +181,51 @@ test('existing needsReview reports remain pending verification even when a linke
   assert.equal(result.steps[1].route, 'completion');
   assert.equal(result.steps[1].status, 'Needs verification');
   assert.equal(result.next.label, 'Verify site progress');
+});
+
+test('the latest prepared claim guides each mock tracking stage without changing saved assessment', () => {
+  let value = project();
+  value.claimDrafts = [draft('OCT-1', '2026-10', 1, 'prepared')];
+  const originalDrafts = structuredClone(value.claimDrafts);
+  const update = (action, fields) => {
+    const result = recordClaimStage(value, 'OCT-1', action, fields);
+    assert.equal(result.outcome, 'updated', result.error);
+    value = result.project;
+    return workflow(value);
+  };
+  let result = workflow(value);
+  assert.equal(result.steps[3].status, 'Prepared locally');
+  assert.equal(result.next.route, 'claim-status');
+  assert.equal(result.next.draftId, 'OCT-1');
+  result = update('submitted', { date: '2026-10-03', reference: 'DEMO-SUB-1', note: '' });
+  assert.equal(result.steps[3].status, 'Submitted · demo');
+  assert.match(result.steps[3].detail, /saved revision 1/);
+  assert.match(result.next.description, /mock certification/);
+  result = update('certified', { date: '2026-10-04', reference: 'DEMO-CERT-1', value: '900', note: 'Mock adjustment of 100.' });
+  assert.equal(result.steps[3].status, 'Certified · demo');
+  assert.match(result.next.description, /Partial payments/);
+  result = update('payment', { date: '2026-10-05', reference: 'DEMO-PAY-1', value: '400', note: '' });
+  assert.equal(result.steps[3].status, 'Certified · demo');
+  result = update('payment', { date: '2026-10-06', reference: 'DEMO-PAY-2', value: '900', note: '' });
+  assert.equal(result.steps[3].status, 'Paid · demo');
+  assert.match(result.next.description, /completed mock payment history/);
+  assert.equal(result.next.draftId, 'OCT-1');
+  assert.deepEqual(value.claimDrafts, originalDrafts);
+});
+
+test('tracking guidance stays bound to the selected project and exact prepared revision', () => {
+  const value = project();
+  value.claimDrafts = [draft('OCT-1', '2026-10', 1, 'prepared')];
+  const submitted = recordClaimStage(value, 'OCT-1', 'submitted', { date: '2026-10-03', reference: 'DEMO-SUB-1' });
+  assert.equal(submitted.outcome, 'updated', submitted.error);
+  const foreign = { ...submitted.project, claimTracking: submitted.project.claimTracking.map((entry) => ({ ...entry, projectId: 'OTHER' })) };
+  assert.equal(workflow(foreign).steps[3].status, 'Prepared locally');
+  const malformed = { ...value, claimTracking: [{ projectId: value.id, draftId: 'OCT-1', status: 'paid' }] };
+  assert.equal(workflow(malformed).steps[3].status, 'Prepared locally');
+  const newRevision = { ...submitted.project, claimDrafts: [...submitted.project.claimDrafts, draft('OCT-2', '2026-10', 2, 'prepared')] };
+  assert.equal(workflow(newRevision).steps[3].status, 'Prepared locally');
+  assert.equal(workflow(newRevision).next.draftId, 'OCT-2');
+  newRevision.claimDrafts[1] = { ...newRevision.claimDrafts[1], status: 'draft' };
+  assert.equal(workflow(newRevision).steps[3].status, 'Draft saved');
+  assert.equal(workflow(newRevision).next.route, 'claims');
 });

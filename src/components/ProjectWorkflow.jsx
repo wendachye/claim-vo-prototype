@@ -4,8 +4,8 @@ import { Badge, Button, PageHeader } from './ui.jsx';
 import './project-workflow.css';
 
 const icons = { contract: FileText, site: MessageSquare, vo: Flag, claims: ClipboardList };
-const stageFor = (view) => ['contract', 'drawing'].includes(view) ? 'contract' : ['whatsapp', 'completion'].includes(view) ? 'site' : view === 'vo' ? 'vo' : ['claims', 'claim-preview'].includes(view) ? 'claims' : null;
-const tone = (status) => /review|pending|unread|not checked|clarification/i.test(status) ? 'amber' : /checked|confirmed|prepared|up to date/i.test(status) ? 'green' : 'slate';
+const stageFor = (view) => ['contract', 'drawing'].includes(view) ? 'contract' : ['whatsapp', 'completion'].includes(view) ? 'site' : view === 'vo' ? 'vo' : ['claims', 'claim-preview', 'claim-status'].includes(view) ? 'claims' : null;
+const tone = (status) => /review|pending|unread|not checked|clarification/i.test(status) ? 'amber' : /submitted|certified/i.test(status) ? 'blue' : /checked|confirmed|prepared|paid|up to date/i.test(status) ? 'green' : 'slate';
 
 export function WorkflowNav({ project, view, onNavigate }) {
   const workflow = getProjectWorkflow(project);
@@ -28,7 +28,7 @@ export function ProjectOverview({ project, onNavigate, onNext, onManage, onRevie
         <li><strong>Drawing:</strong> select an area to see its work, messages, photos and VO flags. Pins are illustrative manual links.</li>
         <li><strong>Site updates:</strong> review the newer 65% cumulative update against the earlier 50% verification. An unclear “another 10%” message needs clarification.</li>
         <li><strong>Extra work:</strong> review an additional-platform scope query, a mock approval and an included-scope rejection.</li>
-        <li><strong>Claims:</strong> open the saved example draft. QS quantities and VO values are explicit mock assessments; physical percentages do not price a claim.</li>
+        <li><strong>Claims:</strong> open the saved example draft. QS quantities and VO values are explicit mock assessments; physical percentages do not price a claim. After preparation, use Claim status to simulate submission, certification and payment.</li>
       </ol></details>
     </section>}
     <section className="next-task" aria-labelledby="next-task-heading"><div className="next-task-heading"><span className="next-task-dot" /><h2 id="next-task-heading">Your next step</h2></div><p>{workflow.next.description}</p><Button className="primary" onClick={() => onNext(workflow.next)}>{workflow.next.label}<ArrowRight size={16} /></Button></section>

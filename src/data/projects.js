@@ -2,6 +2,7 @@ import { contract, initialItems, initialReports } from './contract.js';
 import { getWhatsAppMessages, seedWhatsAppMessages } from './whatsapp.js';
 import { normalizeVOReviews } from './vo.js';
 import { normalizeClaimDrafts } from './claims.js';
+import { normalizeClaimTracking } from './claim-tracking.js';
 
 export const WORKSPACE_STORE = 'claim-vo-frontend-v2';
 export const LEGACY_STORE = 'claim-vo-frontend-v1';
@@ -36,6 +37,7 @@ function initialWorkflow(sourceItems, reports = []) {
     baselines: [],
     voReviews: [],
     claimDrafts: [],
+    claimTracking: [],
   };
 }
 
@@ -281,6 +283,7 @@ function normalizeProject(project) {
     whatsappMessages: clone(getWhatsAppMessages(project)),
     voReviews: normalizeVOReviews(project),
     claimDrafts: normalizeClaimDrafts(project),
+    claimTracking: normalizeClaimTracking(project),
     seed,
   };
 }
@@ -335,6 +338,7 @@ export function loadWorkspace(storage = globalThis.localStorage) {
     workspace.projects[0].whatsappMessages = seedWhatsAppMessages(workspace.projects[0]);
     workspace.projects[0].voReviews = normalizeVOReviews({ ...workspace.projects[0], voReviews: legacy.voReviews });
     workspace.projects[0].claimDrafts = normalizeClaimDrafts({ ...workspace.projects[0], claimDrafts: legacy.claimDrafts });
+    workspace.projects[0].claimTracking = normalizeClaimTracking({ ...workspace.projects[0], claimTracking: legacy.claimTracking });
   }
   // The v1 key is deliberately never changed or removed.
   return persisted(storage, workspace);
@@ -349,7 +353,7 @@ export function resetProject(project) {
   const resetSeed = { ...clone(seed), whatsappMessages: clone(getWhatsAppMessages({
     ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   })), voReviews: normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews }),
-  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }) };
+  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }), claimTracking: [] };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   delete next.lockedAt;
   delete next.drawingMapping;
