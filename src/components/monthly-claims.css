@@ -7,6 +7,7 @@
 .claim-history-main > div { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
 .claim-history-main h3 { font-size:15px; line-height:1.5; color:#1e293b; font-weight:600; }
 .claim-history-main p { margin-top:8px; color:#64748b; font-size:12px; line-height:1.8; }
+.claim-history-main .claim-history-help { color:#a16207; font-size:11px; }
 .claim-history-main .badge { font-size:10px; min-height:22px; }
 .claim-history-amount { display:block; padding-top:1px; color:#1e293b; font-size:22px; font-weight:600; line-height:1.4; letter-spacing:-.4px; font-variant-numeric:tabular-nums; text-align:right; }
 .claim-history-amount small { display:block; margin-bottom:4px; color:#64748b; font-size:10px; font-weight:450; letter-spacing:0; }
