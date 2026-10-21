@@ -1,0 +1,7 @@
+.site-report-details { margin-top:24px; padding-top:16px; border-top:1px solid #e2e8f0; color:#64748b; font-size:12px; line-height:1.7; }
+.site-report-details summary { width:fit-content; color:#475569; cursor:pointer; }
+.site-report-details summary:focus-visible { outline:2px solid #2563eb; outline-offset:4px; border-radius:3px; }
+.site-report-details dl { display:grid; gap:10px; margin:16px 0 12px; }
+.site-report-details dt { color:#64748b; }
+.site-report-details dd { margin:2px 0 0; color:#334155; overflow-wrap:anywhere; }
+.site-report-details p { margin:0 0 12px; }

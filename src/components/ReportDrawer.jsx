@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Badge, Button, FormActions, FormField, formatTime } from './ui.jsx';
 import { isReviewableProgressReport, needsProgressClarification } from '../data/report-status.js';
+import './report-drawer.css';
 
 const percent = (value) => {
   if (value == null || value === '' || !Number.isFinite(Number(value))) return 'Not recorded';
@@ -70,7 +71,7 @@ export function ReportDrawer({
         : report?.status === 'pending' ? 'Pending review'
         : report?.status === 'needsReview' ? 'Needs review'
           : report?.status === 'rejected' ? 'Rejected'
-            : report?.status || 'No report selected';
+            : report?.status || 'No attached update';
 
   // Reset the editable review when navigating to a different report or item.
   useEffect(() => {
@@ -86,7 +87,7 @@ export function ReportDrawer({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const controls = () => [...(drawerRef.current?.querySelectorAll(
-      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], [tabindex="0"]',
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href], summary, [tabindex="0"]',
     ) || [])].filter((element) => !element.hidden && element.getClientRects().length > 0);
     const focusFirst = () => (controls()[0] || drawerRef.current)?.focus();
     focusFirst();
@@ -171,8 +172,8 @@ export function ReportDrawer({
       >
         <header className="drawer-header">
           <div>
-            <div className="eyebrow">{projectCode ? `${projectCode} · Site evidence` : 'Site evidence'}</div>
-            <h2 id={`${id}-title`}>{item?.id || report?.itemId || 'Unmatched update'} · {report?.area || item?.demoArea || 'Area unassigned'}</h2>
+            <div className="eyebrow">{projectCode && `${projectCode} · `}{report ? 'Site evidence' : 'Progress details'}</div>
+            <h2 id={`${id}-title`}>{item?.id || report?.itemId || 'Unmatched update'} · {report ? report.area || item?.demoArea || 'Area unassigned' : 'Work item progress'}</h2>
             <p id={`${id}-description`}>{item?.description || 'Review the report and match its scope before updating progress.'}</p>
           </div>
           <Button className="ghost icon" aria-label="Close site report" onClick={onClose}>
@@ -200,10 +201,9 @@ export function ReportDrawer({
               <blockquote className="message-text" style={{ margin: 0 }}>
                 {report.message || 'No message text attached.'}
               </blockquote>
-              <p className="field-note">Event {report.id || 'ID unavailable'} · original message retained</p>
             </div>
           ) : (
-            <div className="notice info"><MessageSquare aria-hidden="true" /><span>No site update is selected. Add a report to start the review.</span></div>
+            <div className="notice info"><MessageSquare aria-hidden="true" /><span>No site update is attached to this work item. Add an update to record new progress.</span></div>
           )}
 
           {photoUrl && !photoFailed ? (
@@ -219,14 +219,14 @@ export function ReportDrawer({
             <div className="evidence-placeholder">
               <ImageOff aria-hidden="true" />
               <strong>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</strong>
-              <span>{photoFailed ? 'The report is retained. Check the attachment before verifying.' : 'This update contains text only. No photo evidence is being implied.'}</span>
+              <span>{photoFailed ? 'The report is retained. Check the attachment before verifying.' : report ? 'This update contains text only. No photo evidence is being implied.' : 'A site photo will appear here when an update includes one.'}</span>
             </div>
           )}
 
           <h3>Cumulative physical progress</h3>
           <div className="detail-grid">
             <div className="detail-block">
-              <div className="detail-label">Reported in this update</div>
+              <div className="detail-label">{report ? 'Reported in this update' : 'Reported total'}</div>
               <div className="detail-value">{percent(report?.completion ?? (!report ? item?.reported : null))}</div>
             </div>
             <div className="detail-block">
@@ -326,11 +326,22 @@ export function ReportDrawer({
           )}
 
           {report?.note && <p className="field-note" style={{ marginTop: 18 }}>{report.note}</p>}
+          {report && (
+            <details className="site-report-details">
+              <summary>Update details &amp; demo tools</summary>
+              <dl>
+                <div><dt>Event ID</dt><dd>{report.id || 'ID unavailable'}</dd></div>
+                {report.sourceMessageId && <div><dt>Original message ID</dt><dd>{report.sourceMessageId}</dd></div>}
+              </dl>
+              <p>The original message and photo stay with this report. Replaying the same update checks that it cannot add progress twice.</p>
+              <Button icon={RotateCcw} disabled={!onReplay} onClick={() => onReplay?.(report)}>Replay demo update</Button>
+            </details>
+          )}
         </div>
 
         <footer className="drawer-footer">
-          <FormActions secondary={report && <Button icon={RotateCcw} disabled={!onReplay} onClick={() => onReplay?.(report)}>Replay same event</Button>}>
-          {!report && <Button icon={Plus} disabled={!onAdd} onClick={onAdd}>Add site update</Button>}
+          <FormActions secondary={isPending && <Button onClick={onClose}>Cancel review</Button>}>
+          {!report && <Button icon={Plus} disabled={!onAdd} onClick={() => onAdd?.(item?.id)}>Add site update</Button>}
           {isPending && !isVo && report && (
             <Button icon={Check} className="primary" disabled={!canVerify} onClick={approve}>Verify progress</Button>
           )}
