@@ -1,50 +1,61 @@
-import { ArrowRight, Bell, Check, CheckCheck, ClipboardList, FileText, Flag, MapPin, MessageSquare } from 'lucide-react';
+import { ArrowRight, Bell, CheckCheck, ChevronDown, FileText, MapPin } from 'lucide-react';
 import { getProjectWorkflow } from '../data/workflow.js';
 import { getProjectAttention } from '../data/project-attention.js';
-import { Badge, Button, PageHeader } from './ui.jsx';
+import { periodLabel } from './claim-view-utils.js';
+import { Button, PageHeader } from './ui.jsx';
 import './project-workflow.css';
 
-const icons = { contract: FileText, site: MessageSquare, vo: Flag, claims: ClipboardList };
-const stageFor = (view) => ['contract', 'drawing'].includes(view) ? 'contract' : ['whatsapp', 'completion'].includes(view) ? 'site' : view === 'vo' ? 'vo' : ['claims', 'claim-preview', 'claim-status'].includes(view) ? 'claims' : null;
-const tone = (status) => /review|pending|unread|not checked|clarification|needs revision/i.test(status) ? 'amber' : /submitted|certified/i.test(status) ? 'blue' : /checked|confirmed|prepared|paid|up to date/i.test(status) ? 'green' : 'slate';
-
-export function WorkflowNav({ project, view, onNavigate }) {
-  const workflow = getProjectWorkflow(project);
-  const active = stageFor(view);
-  return <nav className="workflow-nav" aria-label="Project workflow">{workflow.steps.map((step, index) => <button type="button" key={step.id} className={active === step.id ? 'current' : ''} aria-current={active === step.id ? 'step' : undefined} title={step.detail} onClick={() => onNavigate(step.route)}><span>{index + 1}</span><strong>{step.label}</strong>{index < 3 && <ArrowRight size={12} className="workflow-link-arrow" />}</button>)}</nav>;
+function nextTaskContext(project, task) {
+  if (task.category === 'claims') {
+    const draft = project.claimDrafts?.find(entry => entry.id === task.target.draftId);
+    return draft ? `${periodLabel(draft.period)} · Version ${draft.revision}` : task.detail;
+  }
+  const message = project.whatsappMessages?.find(entry => entry.id === task.target.messageId);
+  const report = project.reports?.find(entry => entry.id === task.target.reportId);
+  const item = project.items?.find(entry => entry.id === (task.target.itemId || message?.itemId));
+  const source = message || report;
+  return [...new Set([source?.area || source?.location, item?.description].filter(Boolean))].join(' · ') || task.detail;
 }
 
-export function ProjectOverview({ project, onNavigate, onNext, onManage, onReviewContract, onOpenAttention, attentionOpen }) {
+export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onReviewContract, onOpenAttention, attentionOpen }) {
   const workflow = getProjectWorkflow(project);
-  const attentionTasks = getProjectAttention(project);
-  const attentionSummary = [
-    ['site', 'site update', 'site updates'], ['vo', 'extra work', 'extra work'], ['claims', 'claim', 'claims'],
-  ].map(([category, singular, plural]) => { const count = attentionTasks.filter(task => task.category === category).length; return count ? `${count} ${count === 1 ? singular : plural}` : null; }).filter(Boolean).join(' · ');
+  const attentionTasks = getProjectAttention(project).filter(task => task.projectId === project.id);
+  const nextTask = workflow.next.route === 'contract' ? null : attentionTasks[0];
   const usesProvidedSource = project.contract?.sourceKind === 'provided';
+  const taskCount = attentionTasks.length;
+  const attentionHeading = taskCount ? `${taskCount} task${taskCount === 1 ? '' : 's'} need${taskCount === 1 ? 's' : ''} attention` : !project.items?.length ? 'Ready to get started' : workflow.next.route === 'contract' ? 'Contract setup' : 'All caught up';
+  const nextTitle = nextTask ? nextTask.title : workflow.next.label;
+  const nextDescription = nextTask ? nextTaskContext(project, nextTask) : workflow.next.description;
+  const openNext = () => nextTask ? onOpenTask ? onOpenTask(nextTask) : onOpenAttention?.() : onNext(workflow.next);
+
   return <section className="project-overview">
-    <PageHeader title="Project overview" description="Your contract, site updates and claims in one place." actions={<Button onClick={onManage}>All projects</Button>}/>
-    <section className={`attention-summary${!attentionTasks.length ? ' is-clear' : ''}`} aria-label="Attention summary">
-      {attentionTasks.length ? <Bell size={18} aria-hidden="true"/> : <CheckCheck size={18} aria-hidden="true"/>}
-      <div><h2>{attentionTasks.length ? `${attentionTasks.length} task${attentionTasks.length === 1 ? '' : 's'} need${attentionTasks.length === 1 ? 's' : ''} attention` : project.items?.length ? 'All caught up' : 'Ready to get started'}</h2><p>{attentionTasks.length ? attentionSummary : project.items?.length ? 'No pending reviews or claim actions.' : 'Add a contract to begin.'}</p></div>
-      {attentionTasks.length > 0 && <Button onClick={onOpenAttention} aria-haspopup="dialog" aria-expanded={!!attentionOpen}>View tasks<ArrowRight size={14}/></Button>}
+    <PageHeader title="Project overview" description="Your next task and the steps in this project." />
+    <section className="overview-next-task" aria-labelledby="overview-attention-heading">
+      <header className="overview-next-header">
+        <div>{taskCount ? <Bell size={16} aria-hidden="true" /> : <CheckCheck size={16} aria-hidden="true" />}<h2 id="overview-attention-heading">{attentionHeading}</h2></div>
+        {taskCount > 0 && <Button className="ghost" onClick={onOpenAttention} aria-haspopup="dialog" aria-expanded={!!attentionOpen}>View tasks<ArrowRight size={14} /></Button>}
+      </header>
+      <div className="overview-next-body">
+        <div><span className="overview-next-label">Your next step</span><h3>{nextTitle}</h3><p>{nextDescription}</p></div>
+        <Button className="primary" onClick={openNext}>{nextTask ? nextTask.actionLabel : workflow.next.label}<ArrowRight size={16} /></Button>
+      </div>
     </section>
-    {!attentionTasks.length && <section className="next-task" aria-labelledby="next-task-heading"><div className="next-task-heading"><span className="next-task-dot" /><h2 id="next-task-heading">Your next step</h2></div><p>{workflow.next.description}</p><Button className="primary" onClick={() => onNext(workflow.next)}>{workflow.next.label}<ArrowRight size={16} /></Button></section>}
-    {project.providedContractDemo && <section className="contract-scenario-guide" aria-labelledby="contract-scenario-heading">
-      <div className="contract-scenario-heading"><h2 id="contract-scenario-heading">{usesProvidedSource ? 'Your contract' : 'Sample contract'}, a realistic walkthrough</h2><Badge tone="blue">{usesProvidedSource ? 'Provided sample' : 'Fictional sample'}</Badge></div>
-      <p>{usesProvidedSource ? `${project.items.length} representative contract rows and the supplied site plan. Site activity, dates, photos, approvals and claim assessments are simulated.` : `${project.items.length} fictional contract rows and an illustrative campus plan. All values, parties, site activity and claim assessments are demo data.`}</p>
-      <p>The demo starts with a checked contract baseline and a saved example claim.</p>
-      <div className="contract-scenario-actions"><Button className="primary" icon={FileText} onClick={() => onReviewContract ? onReviewContract() : onNavigate('contract')}>Review contract</Button><Button icon={MapPin} onClick={() => onNavigate('drawing')}>Explore the drawing</Button><Button onClick={() => onNavigate('claims')}>View example claim<ArrowRight size={14}/></Button></div>
-      <details><summary>What to try in this project</summary><ol>
-        <li><strong>Contract:</strong> compare W3 and W5 items with the {usesProvidedSource ? 'supplied' : 'fictional'} schedule.{usesProvidedSource && ' The sample contains selected rows, not the full work list.'}</li>
-        <li><strong>Drawing:</strong> select an area to see its work, messages, photos and VO flags. Pins are illustrative manual links.</li>
-        <li><strong>Site updates:</strong> review the newer 65% cumulative update against the earlier 50% verification. An unclear “another 10%” message needs clarification.</li>
-        <li><strong>Extra work:</strong> review an additional-platform scope query, a mock approval and an included-scope rejection.</li>
-        <li><strong>Claims:</strong> open the saved example draft. QS quantities and VO values are explicit mock assessments; physical percentages do not price a claim. After preparation, use Claim status to simulate submission, queries, revisions, certification and payment.</li>
-      </ol></details>
-    </section>}
-    <div className="overview-workflow-heading"><h2>How this project works</h2><span>Open any step to review it</span></div>
-    <div className="overview-workflow">{workflow.steps.map((step, index) => { const Icon = icons[step.id]; return <button type="button" className="overview-step" key={step.id} onClick={() => onNavigate(step.route)}><div className="overview-step-top"><span className="overview-step-icon"><Icon size={20} /></span><span className="overview-step-number">Step {index + 1}</span><ArrowRight size={16} /></div><h3>{step.label}</h3><p>{step.detail}</p><Badge tone={tone(step.status)}>{tone(step.status) === 'green' && <Check size={11} />}{step.status}</Badge></button>; })}</div>
-    <p className="overview-caption">Review site updates as work progresses. Extra work is reviewed separately before it can be added to a claim.</p>
+    <nav className="overview-workflow" aria-label="Project steps">{workflow.steps.map((step, index) => <button type="button" className="overview-step" key={step.id} onClick={() => onNavigate(step.route)} title={step.detail}><span className="overview-step-number" aria-hidden="true">{index + 1}</span><span className="overview-step-copy"><strong>{step.label}</strong><small>{step.status}</small></span><ArrowRight size={15} aria-hidden="true" /></button>)}</nav>
+    {project.providedContractDemo && <details className="contract-scenario-guide">
+      <summary><span>About this demo<small>{usesProvidedSource ? 'Provided contract · simulated site activity' : 'Fictional contract · simulated site activity'}</small></span><ChevronDown size={16} aria-hidden="true" /></summary>
+      <div className="contract-scenario-content">
+        <p>{usesProvidedSource ? `${project.items.length} representative contract rows and the supplied site plan. The sample contains selected rows, not the full work list. Site activity, dates, photos, approvals and claim assessments are simulated.` : `${project.items.length} fictional contract rows and an illustrative campus plan. All values, parties, site activity and claim assessments are demo data.`}</p>
+        <p>The demo starts with a checked contract baseline and a saved example claim.</p>
+        <ol>
+          <li><strong>Contract:</strong> compare W3 and W5 items with the {usesProvidedSource ? 'supplied' : 'fictional'} schedule.</li>
+          <li><strong>Drawing:</strong> select an area for its work, messages, photos and VO flags. Pins are illustrative manual links.</li>
+          <li><strong>Site updates:</strong> compare reported and verified totals. An unclear “another 10%” message needs clarification.</li>
+          <li><strong>Extra work:</strong> check the scope query, recorded approval and included-scope rejection.</li>
+          <li><strong>Claims:</strong> review the saved example. QS quantities and VO values are mock assessments; physical percentages do not price a claim. Claim status separately simulates submission, queries, revisions, certification and payment.</li>
+        </ol>
+        <div className="contract-scenario-actions"><Button className="ghost" icon={FileText} onClick={() => onReviewContract ? onReviewContract() : onNavigate('contract')}>Review contract</Button><Button className="ghost" icon={MapPin} onClick={() => onNavigate('drawing')}>Explore the drawing</Button><Button className="ghost" onClick={() => onNavigate('claims')}>View example claim<ArrowRight size={14} /></Button></div>
+      </div>
+    </details>}
   </section>;
 }
 

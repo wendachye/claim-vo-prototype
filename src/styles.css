@@ -58,6 +58,7 @@ h1, h2, h3, h4, p { margin: 0; }
 .sidebar-collapsed .workspace-select > :not(.avatar):not(:first-child), .sidebar-collapsed .workspace-select > span:not(.avatar) { display: none; }
 .sidebar-collapsed .nav-item { justify-content: center; padding-inline: 12px; font-size: 0; gap: 0; }
 .sidebar-collapsed .nav-item > span { display: none; }
+@media (min-width:761px) { .sidebar-collapsed .nav-item > .nav-step { display:grid; font-size:11px; } }
 
 .main-shell { min-width: 0; min-height: 100dvh; margin-left: var(--sidebar-width); transition: margin-left .18s ease; }
 .topbar { height: 64px; position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 32px; border-bottom: 1px solid #e2e8f0; background: #fff; }
@@ -445,12 +446,9 @@ table tbody tr:last-child td { border-bottom: 0; }
 
 /* Project context stays visible beside the module navigation. */
 .topbar-left { flex:1; min-width:0; }
-.topbar-module { display:flex; align-items:center; gap:12px; min-width:0; color:#64748b; font-size:12px; white-space:nowrap; }
-.topbar-module > svg { color:#cbd5e1; }
 .project-modules-label { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:22px; margin-bottom:10px; font-size:9px; }
 .project-modules-label > span { max-width:70px; overflow:hidden; text-overflow:ellipsis; color:#94a3b8; letter-spacing:0; }
 .sidebar-collapsed .project-modules-label { display:none; }
-@media(max-width:1050px) { .topbar-module { display:none; } }
 @media(max-width:760px) { .topbar-left { gap:8px; } .topbar-divider { display:none; } .topbar-right { flex-shrink:0; } .sidebar-collapsed .project-modules-label { display:flex; } }
 
 .workspace-loading { min-height: 100vh; display: grid; place-items: center; color: #64748b; font-size: 14px; }

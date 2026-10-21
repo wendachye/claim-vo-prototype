@@ -56,24 +56,38 @@ describe('project Needs attention list', () => {
     expect(within(region()).queryByText('Task 3')).toBeNull();
   });
 
-  it('keeps overview compact and retains next-step guidance when no tasks are pending', async () => {
-    const value = { ...project(), attention: [task(1)], providedContractDemo: true };
+  it('offers one exact next task, keeps the guide collapsed and handles an empty project', async () => {
+    const value = { ...project(), locked: true, attention: [task(1)], providedContractDemo: true };
+    const before = structuredClone(value);
     const onOpenAttention = vi.fn();
-    const props = { onNavigate: vi.fn(), onNext: vi.fn(), onManage: vi.fn(), onReviewContract: vi.fn(), onOpenAttention };
+    const onOpenTask = vi.fn();
+    const onReviewContract = vi.fn();
+    const onNext = vi.fn();
+    const props = { onNavigate: vi.fn(), onNext, onOpenTask, onReviewContract, onOpenAttention };
+    const user = userEvent.setup();
     const view = render(<ProjectOverview project={value} {...props} />);
     expect(screen.queryByRole('region', { name: 'Needs attention' })).toBeNull();
     expect(screen.getByRole('heading', { name: '1 task needs attention' })).toBeTruthy();
-    await userEvent.setup().click(screen.getByRole('button', { name: 'View tasks' }));
+    expect(screen.getByRole('heading', { name: 'Task 1' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Review record' }));
+    expect(onOpenTask).toHaveBeenCalledWith(value.attention[0]);
+    expect(value).toEqual(before);
+    await user.click(screen.getByRole('button', { name: 'View tasks' }));
     expect(onOpenAttention).toHaveBeenCalledOnce();
-    expect(screen.queryByRole('heading', { name: 'Your next step' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Review contract' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Explore the drawing' })).toBeTruthy();
+    const guide = view.container.querySelector('.contract-scenario-guide');
+    expect(guide.hasAttribute('open')).toBe(false);
+    await user.click(guide.querySelector('summary'));
+    await user.click(screen.getByRole('button', { name: 'Review contract' }));
+    expect(onReviewContract).toHaveBeenCalledOnce();
     view.rerender(<ProjectOverview project={{ ...value, attention: [] }} {...props} />);
     expect(screen.getByRole('heading', { name: 'All caught up' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'View tasks' })).toBeNull();
-    expect(screen.getByRole('heading', { name: 'Your next step' })).toBeTruthy();
     view.rerender(<ProjectOverview project={{ ...value, attention: [], items: [] }} {...props} />);
     expect(screen.getByRole('heading', { name: 'Ready to get started' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Add a contract' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Add a contract' }));
+    expect(onNext).toHaveBeenCalledWith(expect.objectContaining({ route: 'contract' }));
+    view.rerender(<ProjectOverview project={{ ...value, locked: false }} {...props} />);
+    expect(screen.getByRole('button', { name: 'Confirm contract' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Review record' })).toBeNull();
   });
 });

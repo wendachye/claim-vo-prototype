@@ -69,6 +69,26 @@ afterEach(() => {
 });
 
 describe('S.I.T. workflow navigation retains source context without changing records', () => {
+  it('overview next task opens its exact record and returns without changing saved project data', async () => {
+    const { project } = fixture();
+    const task = getProjectAttention(project)[0];
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    mount('#projects');
+    await user.click(within(screen.getByRole('region', { name: /tasks need attention/ })).getByRole('button', { name: task.actionLabel, exact: true }));
+    const target = task.target;
+    expect(location.hash.split('?')[0]).toBe(`#${target.route}`);
+    for (const [field, query] of [['messageId', 'message'], ['reportId', 'report'], ['caseId', 'case'], ['draftId', 'draft']]) {
+      if (target[field]) expect(params().get(query)).toBe(target[field]);
+    }
+    expect(params().get('from')).toBe('overview');
+    expect(screen.queryByRole('navigation', { name: 'Project workflow' })).toBeNull();
+    if (target.route === 'completion') await user.click(screen.getByRole('button', { name: 'Close site report' }));
+    else await user.click(screen.getByRole('button', { name: 'Back to overview' }));
+    await screen.findByRole('heading', { name: 'Project overview' });
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
   it('overview opens an exact pending message rather than only the general inbox', async () => {
     const { project } = fixture();
     const next = getProjectWorkflow(project, '2026-10').next;

@@ -59,13 +59,12 @@
 .drawer-note-field { margin-top:20px; }
 .drawer-footer .form-actions { width:100%; margin:0; padding:0; border:0; }
 /* Contract comparison keeps the source and selected item in view. */
-.contract-review-page .workflow-nav { margin-bottom:16px; }
 .contract-review-page .page-heading { margin-bottom:16px; }
 .contract-review-page .page-back { margin-bottom:6px; }
 .contract-review-page .review-navigation { justify-content:space-between; gap:8px 16px; margin-bottom:12px; }
 .contract-review-page .review-navigation > div { flex-wrap:wrap; min-width:0; }
 .contract-review-page .review-item-navigation { margin-left:auto; }
-.contract-review-page .review-layout { height:calc(100dvh - 320px); min-height:400px; }
+.contract-review-page .review-layout { height:calc(100dvh - 256px); min-height:400px; }
 .contract-review-page .review-editor { min-height:0; }
 .contract-review-page .editor-header { flex:0 0 auto; padding:12px 16px; }
 .contract-review-page .editor-body { padding:16px; }
