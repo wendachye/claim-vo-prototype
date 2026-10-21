@@ -4,6 +4,7 @@ import { getVOCases } from './vo.js';
 import { normalizeClaimDrafts } from './claims.js';
 import { getClaimTracking } from './claim-tracking.js';
 import { getClaimRevisionContext } from './claim-revisions.js';
+import { getMessageClarification } from './whatsapp-clarification.js';
 
 const list = (value) => Array.isArray(value) ? value : [];
 const text = (value) => typeof value === 'string' ? value.trim() : '';
@@ -48,11 +49,14 @@ export function getProjectAttention(project) {
     // VO case, including when the inbox status was left stale by an old demo.
     if (getMessageReport(scoped, message) || !['new', 'clarification'].includes(message.status)) continue;
     const clarification = message.status === 'clarification';
+    const context = getMessageClarification(scoped, message.id);
+    if (context?.reply?.id === message.id && context.stage === 'superseded') continue;
+    const isReply = context?.reply?.id === message.id;
     add({ id: `message:${message.id}`, category: 'site', kind: clarification ? 'clarification' : 'message',
-      title: clarification ? 'Clarify a site message' : 'Review a site message',
+      title: clarification ? 'Clarify a site message' : isReply ? 'Review a clarification reply' : 'Review a site message',
       detail: [message.sender, message.area || message.location].filter(Boolean).join(' · ') || 'Mock site update',
-      reference: message.id, statusLabel: clarification ? 'Needs clarification' : 'New message',
-      actionLabel: clarification ? 'View message' : 'Review message', date: message.date,
+      reference: message.id, statusLabel: clarification ? 'Needs clarification' : isReply ? 'Reply received' : 'New message',
+      actionLabel: clarification ? 'View message' : isReply ? 'Review reply' : 'Review message', date: message.date,
       priority: clarification ? 55 : 60, target: { route: 'whatsapp', messageId: message.id } });
   }
 

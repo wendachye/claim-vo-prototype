@@ -3,6 +3,7 @@ import { getWhatsAppMessages, seedWhatsAppMessages } from './whatsapp.js';
 import { normalizeVOReviews } from './vo.js';
 import { normalizeClaimDrafts } from './claims.js';
 import { normalizeClaimTracking } from './claim-tracking.js';
+import { normalizeMessageClarifications } from './whatsapp-clarification.js';
 
 export const WORKSPACE_STORE = 'claim-vo-frontend-v2';
 export const LEGACY_STORE = 'claim-vo-frontend-v1';
@@ -38,6 +39,7 @@ function initialWorkflow(sourceItems, reports = []) {
     voReviews: [],
     claimDrafts: [],
     claimTracking: [],
+    messageClarifications: [],
   };
 }
 
@@ -271,6 +273,7 @@ function normalizeProject(project) {
   }));
   seed.voReviews = normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews });
   seed.claimDrafts = normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts });
+  seed.messageClarifications = normalizeMessageClarifications({ ...project, ...seed, messageClarifications: seed.messageClarifications });
   return {
     ...base,
     ...clone(project),
@@ -281,6 +284,7 @@ function normalizeProject(project) {
     locked: project.locked ?? false,
     version: project.version ?? 1,
     whatsappMessages: clone(getWhatsAppMessages(project)),
+    messageClarifications: normalizeMessageClarifications(project),
     voReviews: normalizeVOReviews(project),
     claimDrafts: normalizeClaimDrafts(project),
     claimTracking: normalizeClaimTracking(project),
@@ -353,7 +357,7 @@ export function resetProject(project) {
   const resetSeed = { ...clone(seed), whatsappMessages: clone(getWhatsAppMessages({
     ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   })), voReviews: normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews }),
-  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }), claimTracking: [] };
+  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }), claimTracking: [], messageClarifications: [] };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   delete next.lockedAt;
   delete next.drawingMapping;

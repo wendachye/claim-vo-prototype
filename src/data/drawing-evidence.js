@@ -2,6 +2,8 @@
 import { getDrawingMapping } from './drawing-mapping.js';
 import { getWhatsAppMessages } from './whatsapp.js';
 import { needsProgressClarification } from './report-status.js';
+import { getMessageClarification } from './whatsapp-clarification.js';
+import { getMessageReviewStatus } from './message-inbox.js';
 
 const record = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value) => typeof value === 'string' ? value.trim() : '';
@@ -72,6 +74,10 @@ const matchLabels = {
 };
 
 function stateFor(project, report, message, kind) {
+  const clarification = message && getMessageClarification(project, message.id);
+  if (!report && clarification?.reply && clarification.thread.sourceMessageId === message.id) {
+    return { status: `clarification-${clarification.stage}`, ...getMessageReviewStatus(message, null, null, clarification) };
+  }
   if (report) {
     if (kind === 'vo') {
       const review = (Array.isArray(project.voReviews) ? project.voReviews : []).find((entry) => inProject(project, entry)

@@ -3,6 +3,7 @@ import { getVOCases } from './vo.js';
 import { isReviewableProgressReport, needsProgressClarification } from './report-status.js';
 import { getClaimTracking } from './claim-tracking.js';
 import { getClaimRevisionContext } from './claim-revisions.js';
+import { getMessageClarification } from './whatsapp-clarification.js';
 
 const list = (value) => Array.isArray(value) ? value : [];
 const timestamp = (value) => Number.isFinite(Date.parse(value)) ? Date.parse(value) : 0;
@@ -29,13 +30,17 @@ export function getProjectWorkflow(project, period = currentMonth()) {
   const clarificationReports = [...latestReports.values()].filter(needsProgressClarification);
   const unresolvedReportSources = new Set([...pendingReports, ...clarificationReports].map((report) => report.sourceMessageId).filter(Boolean));
   const messages = getWhatsAppMessages(project).filter((message) => message.projectId === project.id);
-  const clarificationMessages = messages.filter((message) => message.status === 'clarification'
+  const actionableMessages = messages.filter(message => {
+    const context = getMessageClarification(project, message.id);
+    return !(context?.reply?.id === message.id && context.stage === 'superseded');
+  });
+  const clarificationMessages = actionableMessages.filter((message) => message.status === 'clarification'
     && (!reports.some((report) => report.sourceMessageId === message.id) || unresolvedReportSources.has(message.id)));
   const clarificationEvents = new Set([
     ...clarificationMessages.map((message) => `message:${message.id}`),
     ...clarificationReports.map((report) => report.sourceMessageId ? `message:${report.sourceMessageId}` : `report:${report.id}`),
   ]);
-  const newMessages = messages.filter((message) => message.status === 'new'
+  const newMessages = actionableMessages.filter((message) => message.status === 'new'
     && message.projectId === project.id && !reports.some((report) => report.sourceMessageId === message.id))
     .sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const cases = getVOCases({ ...project, items, reports });

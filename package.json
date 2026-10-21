@@ -10,6 +10,7 @@
     "test:sites": "node --test tests/sites-worker.test.mjs",
     "test:projects": "node --test tests/project-state.test.mjs",
     "test:whatsapp": "node --test tests/whatsapp-state.test.mjs",
+    "test:clarification": "node --test tests/whatsapp-clarification.test.mjs tests/clarification-workspace.test.mjs",
     "test:vo": "node --test tests/vo-state.test.mjs",
     "test:claims": "node --test tests/claim-state.test.mjs",
     "test:claim-tracking": "node --test tests/claim-tracking.test.mjs",

@@ -102,7 +102,21 @@ export function processWhatsAppMessage(project, messageId) {
     || typeof pct !== 'number' || !Number.isFinite(pct) || pct < 0 || pct > 100)) {
     return needsClarification('Match one valid contract item and confirm 0–100% total completion before updating the register.');
   }
-  const areaLink = getAreaLinkStatus(project, message);
+  let areaLink = getAreaLinkStatus(project, message);
+  if (message.replyToMessageId) {
+    const threads = (Array.isArray(project.messageClarifications) ? project.messageClarifications : []).filter(entry => entry?.projectId === project.id
+      && entry.id === message.clarificationThreadId && entry.sourceMessageId === message.replyToMessageId && entry.replyMessageId === message.id);
+    const parent = getWhatsAppMessages(project).find(entry => entry.id === message.replyToMessageId);
+    if (threads.length !== 1 || !parent || parent.clarificationReplyMessageId !== message.id || item?.pricingType !== 'measured') return invalid;
+    if (message.areaId) {
+      const saved = message.areaMapping;
+      if (!saved || saved.areaId !== message.areaId || saved.code !== message.area || !saved.drawingId
+        || !Array.isArray(saved.workItemIds) || !saved.workItemIds.includes(item.id)) return invalid;
+      // The reply already captured its selected area. Renaming or reusing an
+      // area code must not move that original evidence to another saved area.
+      areaLink = { ...areaLink, area: { ...clone(saved), id: saved.areaId }, conflict: false };
+    }
+  }
   if (message.kind === 'progress' && areaLink.conflict) {
     return needsClarification(`Area ${areaLink.area.code} is mapped to ${areaLink.area.workItemIds.join(', ')}, but this message names ${message.itemId}. Check the area or work item before updating progress.`);
   }

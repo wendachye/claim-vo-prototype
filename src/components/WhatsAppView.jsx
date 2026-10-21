@@ -10,6 +10,8 @@ import { getSITDemoPhotoUpdate } from '../data/sit-demo-photos.js';
 import { isReviewableProgressReport, needsProgressClarification, needsMessageClarification } from '../data/report-status.js';
 import { getMessageSummary } from '../data/message-summary.js';
 import { getMessageReviewStatus as statusFor, isNewInboxMessage, matchesInboxFilter } from '../data/message-inbox.js';
+import { getMessageClarification, getMessageClarificationEligibility } from '../data/whatsapp-clarification.js';
+import { WhatsAppClarification } from './WhatsAppClarification.jsx';
 import './whatsapp.css';
 
 const waiting = isReviewableProgressReport;
@@ -25,11 +27,11 @@ function DemoPhoto({ src, alt, className = '', onOpen }) {
   return onOpen ? <button type="button" className={`wa-photo ${className}`} aria-label="Enlarge demo site photo" onClick={onOpen}>{photo}<span className="wa-photo-zoom"><ZoomIn size={13} />View photo</span><span className="wa-photo-demo">Generated demo photo</span></button> : <span className={`wa-photo ${className}`}>{photo}</span>;
 }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview }) {
+export function WhatsAppView({ project, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview }) {
   const voCases = getVOCases(project);
   const caseFor = (report) => voCases.find((entry) => entry.id === report?.id);
-  const orderedMessages = [...messages].sort((a, b) => Number(isNewInboxMessage(b, messageReport(project, b))) - Number(isNewInboxMessage(a, messageReport(project, a))) || Date.parse(b.date) - Date.parse(a.date));
-  const [selectedId, setSelectedId] = useState(() => initialMessageId || orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message)))?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
+  const orderedMessages = [...messages].sort((a, b) => Number(isNewInboxMessage(b, messageReport(project, b), getMessageClarification(project, b.id))) - Number(isNewInboxMessage(a, messageReport(project, a), getMessageClarification(project, a.id))) || Date.parse(b.date) - Date.parse(a.date));
+  const [selectedId, setSelectedId] = useState(() => initialMessageId || orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id)))?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [photo, setPhoto] = useState(null);
@@ -52,15 +54,16 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const shown = orderedMessages.filter((message) => {
     const report = messageReport(project, message);
     const matches = !search.trim() || `${message.sender} ${message.text} ${message.area} ${message.itemId || ''}`.toLowerCase().includes(search.trim().toLowerCase());
-    return matches && matchesInboxFilter(filter, message, report);
+    return matches && matchesInboxFilter(filter, message, report, getMessageClarification(project, message.id));
   });
   const unavailable = Boolean(initialMessageId && !messages.some((message) => message.id === initialMessageId));
   const selected = unavailable ? null : shown.find((message) => message.id === selectedId) || shown[0];
   const report = selected ? messageReport(project, selected) : null;
   const item = project.items.find((entry) => entry.id === (report && !report.vo ? report.itemId : selected?.itemId));
-  const status = selected ? statusFor(selected, report, caseFor(report)) : null;
+  const clarification = selected ? getMessageClarification(project, selected.id) : null;
+  const status = selected ? statusFor(selected, report, caseFor(report), clarification) : null;
   const voCase = caseFor(report);
-  const isNew = isNewInboxMessage(selected, report);
+  const isNew = isNewInboxMessage(selected, report, clarification);
   const isVerified = ['verified', 'approved'].includes(report?.status);
   const selectedSummary = selected ? getMessageSummary(selected) : null;
   const isVo = selected?.kind === 'vo' || Boolean(report?.vo);
@@ -73,8 +76,9 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
   const previousDemoPhotos = (Array.isArray(selected?.demoPhotoHistory) ? selected.demoPhotoHistory : [])
     .filter((entry) => /^\/assets\/demo-[a-z0-9-]+\.jpg$/.test(entry?.photo || ''));
   const isUnclear = needsMessageClarification(selected, report) || (isNew && areaLink?.conflict);
-  const newCount = messages.filter((message) => isNewInboxMessage(message, messageReport(project, message))).length;
-  const nextMessage = orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message)) && message.id !== selected?.id);
+  const showClarification = Boolean(selected && (clarification || getMessageClarificationEligibility(project, selected.id).eligible));
+  const newCount = messages.filter((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id))).length;
+  const nextMessage = orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id)) && message.id !== selected?.id);
   const hasPendingReview = Boolean(report && (isVo ? !['approved', 'rejected'].includes(voCase?.status) : waiting(report)));
   const nextMessageButton = !isNew && nextMessage ? <Button className={hasPendingReview ? 'ghost' : 'primary'} icon={ArrowRight} onClick={() => { setSearch(''); setFilter('all'); chooseMessage(nextMessage); }}>Next message</Button> : null;
   function processSelectedMessage() {
@@ -83,6 +87,19 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
     setSelectedId(selected.id);
     setReviewOpen(true);
     onProcess?.(selected);
+  }
+  function saveClarification(messageId, fields, callback) {
+    const result = callback?.(messageId, fields);
+    if (result && result.outcome !== 'invalid') {
+      setSearch(''); setFilter('all'); setSelectedId(messageId); setReviewOpen(true);
+      onSelectMessage?.(messageId);
+    }
+    return result;
+  }
+  function openThreadMessage(messageId) {
+    const message = messages.find((entry) => entry.id === messageId);
+    if (!message) return;
+    setSearch(''); setFilter('all'); chooseMessage(message);
   }
 
   function backToMessages() {
@@ -101,7 +118,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
     }
   }, [reviewOpen, selected?.id]);
   const filters = [['all', 'All messages'], ['new', 'New messages'], ['review', 'To check'], ['vo', 'Extra work'], ['clarification', 'Needs clarification'], ['processed', 'Saved messages']];
-  const filterCount = (key) => messages.filter((message) => matchesInboxFilter(key, message, messageReport(project, message))).length;
+  const filterCount = (key) => messages.filter((message) => matchesInboxFilter(key, message, messageReport(project, message), getMessageClarification(project, message.id))).length;
 
   return <div className={`whatsapp-view${reviewOpen ? ' wa-review-open' : ''}`}>
     <PageHeader title="WhatsApp messages" description="Review worker messages and photos before adding progress or flagging extra work." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} />
@@ -121,7 +138,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
           <h2 className="wa-list-heading" id="wa-inbox-heading">Inbox<span>New messages first</span></h2>
           <div className="wa-message-list" aria-label="Messages for selected project">{shown.length ? shown.map((message) => {
             const linked = messageReport(project, message);
-            const state = statusFor(message, linked, caseFor(linked));
+            const state = statusFor(message, linked, caseFor(linked), getMessageClarification(project, message.id));
             const summary = getMessageSummary(message);
             const area = message.area || message.location || 'Area unclear';
             return <button type="button" className={`wa-message${selected?.id === message.id ? ' selected' : ''}`} key={message.id} ref={(node) => { if (node) messageRefs.current.set(message.id,node); else messageRefs.current.delete(message.id); }} aria-label={`Open message: ${area}, ${summary.title}, ${time(message.date)}`} aria-pressed={selected?.id === message.id} onClick={() => chooseMessage(message)}>
@@ -147,6 +164,11 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
             <DemoPhoto src={selected.photo} alt={selected.photoAlt} className="wa-evidence-photo" onOpen={() => setPhoto({ src: selected.photo, alt: selected.photoAlt })} />
             {previousDemoPhotos.length > 0 && <details className="wa-message-details" key={`${selected.id}-photos`}><summary>Earlier demo illustrations</summary>{previousDemoPhotos.map((entry, index) => <Button key={`${entry.photo}-${index}`} className="ghost" aria-label={`View earlier demo illustration ${index + 1}`} onClick={() => setPhoto({ src: entry.photo, alt: entry.photoAlt })}>View earlier illustration {index + 1}</Button>)}</details>}
 
+            {showClarification ? <WhatsAppClarification project={project} message={selected}
+              onSaveRequest={onSaveClarificationRequest ? (messageId, fields) => saveClarification(messageId, fields, onSaveClarificationRequest) : undefined}
+              onSaveReply={onSaveClarificationReply ? (messageId, fields) => saveClarification(messageId, fields, onSaveClarificationReply) : undefined}
+              onProcess={onProcess ? (reply) => { setSearch(''); setFilter('all'); onProcess(reply); } : undefined}
+              onReview={onReview} onOpenCompletion={onOpenCompletion} onSelectMessage={openThreadMessage} /> : <>
             <div className="wa-interpretation-heading"><h3>{isNew ? 'Proposed update' : 'Update result'}</h3></div>
             {!item && <p className="wa-unmatched-note">{isVo ? 'Contract match needs QS review. Related area links are context only.' : 'No matched work item. Confirm the work with the worker before changing progress.'}</p>}
             {areaLink?.conflict && <div className="notice warning"><CircleAlert size={16}/><span>Area {areaLink.area.code} is linked to {areaLink.linkedItems.map((entry) => entry.id).join(', ') || 'no work items'}, while this message names {selected.itemId}. Confirm the area or work item before changing progress.</span></div>}
@@ -156,6 +178,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
               <div className="wa-progress-comparison"><div><span>{isNew ? 'Reported total' : 'Current reported total'}</span><strong>{isNew ? <>{percent(item?.reported)}<ArrowRight size={15} /><em>{percent(selected.completion)}</em></> : percent(item?.reported)}</strong></div><div><span>Verified total</span><strong className="wa-verified-number">{percent(item?.verified)}{!isVerified && <small>unchanged</small>}</strong></div></div>
               <div className="wa-result-foot">{isNew ? 'This replaces the reported total. Supervisor verification stays unchanged.' : isVerified ? 'Verification saved with the original message and photo.' : report?.status === 'rejected' ? 'Dismissed. Verified progress stays unchanged.' : report?.status === 'superseded' ? 'Use the newer update when reviewing progress.' : 'Next, ask the supervisor to verify the update.'}</div>
             </div>}
+            </>}
 
             <details className="wa-context-details" key={`${selected.id}-context`}><summary>Contract &amp; drawing links</summary><div>
             {contractItems.length > 0 && <section className="wa-contract-context" aria-label="Contract work referenced by this update">
@@ -167,14 +190,14 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onOp
             <div className={`area-mapping-reference${areaLink?.conflict ? ' conflict' : ''}`}><div>{areaLink?.area ? <><strong>Area {areaLink.area.code} · {areaLink.area.name}</strong><p>{areaLink.linkedItems.length ? `Drawing links: ${areaLink.linkedItems.map(entry=>entry.id).join(', ')}` : 'No contract work items linked yet.'}</p>{areaLink.conflict && <p>This message names a different work item. Confirm the area or item before changing progress.</p>}</> : <span>This message has no saved drawing-area link.</span>}</div><a className="area-mapping-link" href={areaLink?.area ? `#drawing?area=${encodeURIComponent(areaLink.area.id)}` : '#drawing'} onClick={event=>{if(onOpenDrawing){event.preventDefault();onOpenDrawing(areaLink?.area?.id);}}}>View area map<ArrowRight size={13}/></a></div>
             </div></details>
             <details className="wa-message-details"><summary>Message details</summary><p><strong>Message:</strong> {selected.id}{report && <><br /><strong>Report:</strong> {report.id}</>}<br /><strong>Interpretation:</strong> Predefined demo fields; AI is not connected.</p>{selected.processingNote && <p>{selected.processingNote}</p>}</details>
-            {!project.locked && !isVo && !isUnclear && <div className="wa-baseline-note"><LockKeyhole size={13} /><span>Confirm the contract first so the supervisor can verify progress.</span><button type="button" onClick={() => onOpenContract?.()}>Review contract<ChevronRight size={12} /></button></div>}
+            {!showClarification && !project.locked && !isVo && !isUnclear && <div className="wa-baseline-note"><LockKeyhole size={13} /><span>Confirm the contract first so the supervisor can verify progress.</span><button type="button" onClick={() => onOpenContract?.()}>Review contract<ChevronRight size={12} /></button></div>}
           </div>
-          <footer className="wa-review-footer"><FormActions secondary={hasPendingReview && nextMessageButton ? nextMessageButton : <span className="wa-footer-note">{isNew ? 'Check the message before adding it.' : isUnclear ? 'Waiting for a clearer update.' : isVo && hasPendingReview ? 'Next: review the extra work.' : waiting(report) && !isVo ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>
+          {!showClarification && <footer className="wa-review-footer"><FormActions secondary={hasPendingReview && nextMessageButton ? nextMessageButton : <span className="wa-footer-note">{isNew ? 'Check the message before adding it.' : isUnclear ? 'Waiting for a clearer update.' : isVo && hasPendingReview ? 'Next: review the extra work.' : waiting(report) && !isVo ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>
             {isNew ? <Button className="primary" icon={isVo ? Flag : isUnclear ? MessageSquare : Check} onClick={processSelectedMessage}>{isVo ? 'Flag extra work' : isUnclear ? 'Needs clarification' : 'Add progress update'}</Button> : <>
               {report ? isVo ? <Button className={hasPendingReview || !nextMessage ? 'primary' : ''} icon={ArrowRight} onClick={() => onOpenVO?.(report.id)}>Review extra work</Button> : needsProgressClarification(report) ? <Button icon={MessageSquare} onClick={() => onReview?.(report)}>View clarification</Button> : waiting(report) ? <Button className="primary" icon={ShieldCheck} onClick={() => onReview?.(report)}>Review progress</Button> : <Button icon={ArrowRight} onClick={() => onOpenCompletion?.(item?.id, areaLink?.area?.id, selected.id)}>View progress</Button> : <Badge tone="amber">Clarification needed</Badge>}
               {!hasPendingReview && nextMessageButton}
             </>}
-          </FormActions></footer>
+          </FormActions></footer>}
         </section> : <section className="wa-review wa-no-selection"><MessageSquare size={30} /><h3>Select a message</h3><p>Its photo and proposed update will appear here.</p></section>}
       </div>
 

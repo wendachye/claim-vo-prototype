@@ -41,6 +41,10 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 - `#claim-preview?draft=…` — preview a saved revision, download CSV or print/save PDF
 - `#claim-status?draft=…` — track mock submission, certification and payment for one prepared revision
 
+## Mock clarification replies
+
+Open an unclear WhatsApp message and **Save clarification request**. Use **Use demo reply** or enter a measured work item, compatible site area, cumulative total and worker reply, then **Save mock reply**. The original message and photo stay in the thread; the reply is a separate saved message and reuses the original attachment with an explicit label. No progress changes until **Add clarified progress update**. Use **Verify clarified progress** for the supervisor's review. Needs attention follows the reply and then its pending report, clearing that action after verification. Threads survive reload, while unfinished forms remain in session memory by project/message. This is a local demonstration; no WhatsApp message is sent.
+
 ## Mock claim status
 
 After marking a saved claim **Prepared**, choose **Track claim status**. Record a mock submission, a certificate and the total paid to date. **Use demo details** fills an example for review; each stage still requires an explicit save. A partial payment stays at **Certified** until the recorded total matches the certified amount. Different certified and claimed amounts require an explanation.

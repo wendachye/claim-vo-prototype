@@ -20,6 +20,8 @@ Keep items, source references, baselines, messages, reports, physical progress, 
 
 ## Mock workflow
 
+Unclear inbox-only WhatsApp messages can save a mock clarification request and one separate worker reply. Keep original text, photo, sender/date and the saved request immutable; store the thread under messageClarifications and link the new progress message back to its original. A reply must identify a measured work item, compatible area and explicit 0–100 cumulative completion. Saving requests/replies changes no physical totals. Process the reply explicitly to update reported progress; supervisor verification remains separate. The original stays in history while its reply owns the next attention task; derive resolution from the actual reply report. Included/rate-only scope, existing report clarifications and VO follow-ups retain their separate review flows. Preserve thread evidence across reload and keep unfinished reply forms isolated by project/original message. Reset only the selected project's threads. All replies are simulated; nothing is sent to WhatsApp.
+
 Matched cumulative messages update reported completion only. Supervisor verification requires a confirmed baseline. Ambiguous messages require clarification without changing progress. Retain messages/photos and prevent duplicate events.
 
 Flagged extra work shares VO review records across modules. Track Flagged, Needs information, Awaiting approval, Approved and Rejected, retaining evidence and decision history. Unknown values remain unknown and zero remains valid. Reopen final decisions with a reason before editing.
