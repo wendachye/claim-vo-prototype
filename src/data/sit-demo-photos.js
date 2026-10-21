@@ -1,6 +1,6 @@
 // Distinct generated illustrations for known S.I.T. demo messages only.
-// Refresh is explicit: prior illustrations are archived, not treated as new
-// site evidence, and saved claim revisions are never rewritten.
+// Existing workspaces refresh eligible photos automatically on load. Prior
+// illustrations are archived; saved claim revisions are never rewritten.
 import { initialItems } from './sit-contract-source.js';
 
 const record = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -82,6 +82,12 @@ export function getSITDemoPhotoUpdate(project) {
   for (const message of project.whatsappMessages) {
     const desired = getSITDemoPhoto(project, message);
     if (!desired) continue;
+    const original = Array.isArray(project.seed?.whatsappMessages)
+      ? project.seed.whatsappMessages.find((value) => value.id === message.id) : null;
+    if (original && original.text !== message.text) {
+      skipped.push({ messageId: message.id, reason: 'The sample message was edited. Its original illustration was retained.' });
+      continue;
+    }
     const reports = project.reports.filter((report) => report.sourceMessageId === message.id || report.id === message.reportId);
     const expectedReportId = /-CASE-WA-00[1-4]$/.test(message.id)
       ? message.id.replace('-CASE-WA-', '-CASE-REPORT-') : `WA-REPORT-${message.id}`;
@@ -104,7 +110,7 @@ export function getSITDemoPhotoUpdate(project) {
     reportCount: changes.reduce((count, value) => count + value.reportIds.length, 0), changes, skipped, reason: null };
 }
 
-/** Explicit replacement of synthetic demo illustrations, with prior paths retained. */
+/** Replace eligible synthetic demo illustrations, with prior paths retained. */
 export function refreshSITDemoPhotos(project, now = new Date()) {
   const preview = getSITDemoPhotoUpdate(project);
   if (!preview.available) return { ...preview, project, outcome: 'unavailable', error: preview.reason };

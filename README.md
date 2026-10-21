@@ -132,6 +132,10 @@ Open **All projects → New project → Original S.I.T. contract — realistic s
 
 The contract identity, parties, original rates, source quantities and source dates come from the supplied S.I.T. scaffolding schedule. The 18 rows are a representative subset, not the full contract schedule. **Compare with contract** displays the source schedule; **Drawing & areas** displays the supplied site plan with illustrative W3/W5 links. The two images persist across refreshes without a database or file upload.
 
+When the app loads, existing original S.I.T. demos automatically receive the matching generated message photos, including inactive projects. Only recognized bundled illustrations and consistent paired reports are refreshed; prior photos remain in **Earlier demo illustrations**. Uploaded attachments, changed scopes or mismatched evidence are retained. Progress, VO decisions, baseline and reset data, and saved claim revisions stay unchanged. Reloading again does not repeat the update or add duplicate history.
+
+Saved claims and exports keep the evidence captured in that revision. If refreshed report evidence differs from an unprepared saved draft, the existing source-change check still requires reviewing and saving a new revision before preparation; the photo refresh does not rewrite or automatically prepare claims.
+
 The scenario includes a newer 65% worker report against 50% verified work, completed and not-started items, an unclear incremental message, an additional-platform scope query and explicitly simulated approval/rejection examples. The saved claim uses separately specified mock QS inputs and remains an unsubmitted gross draft before retention, GST and deductions. No source percentage automatically creates claim money.
 
 This source profile is intended for the user-requested deployed showcase. Deploying it makes the included real contract metadata, prices and two source images accessible with the app. The full original PDF and other uploaded documents are excluded. Run `node --test tests/sit-contract-demo.test.mjs tests/source-documents.test.mjs` for source integrity, project isolation, preview resolution and saved-evidence checks.

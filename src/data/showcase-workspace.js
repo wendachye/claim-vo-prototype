@@ -2,6 +2,7 @@
 // fictional fixtures and existing migrations remain independent of the demo factory.
 import { loadWorkspace, WORKSPACE_STORE } from './projects.js';
 import { createSITContractDemo } from './provided-contract-demo.js';
+import { refreshSITDemoPhotos } from './sit-demo-photos.js';
 
 export const SIT_SHOWCASE_VERSION = 1;
 
@@ -64,7 +65,13 @@ function browserStorage() {
 
 export function loadShowcaseWorkspace(storage = browserStorage(), now = new Date()) {
   // Passing null prevents the base loader from accessing a blocked browser getter.
-  const workspace = ensureSITShowcase(loadWorkspace(storage ?? null), now);
+  const loaded = ensureSITShowcase(loadWorkspace(storage ?? null), now);
+  // Refresh eligible generated illustrations in every original demo, including
+  // inactive projects. The guarded refresh archives old photos and leaves
+  // progress, uploaded attachments and saved claim snapshots untouched.
+  const projects = loaded.projects.map((project) => refreshSITDemoPhotos(project, now).project);
+  const workspace = projects.some((project, index) => project !== loaded.projects[index])
+    ? { ...loaded, projects } : loaded;
   try { storage?.setItem(WORKSPACE_STORE, JSON.stringify(workspace)); } catch { /* Keep the showcase usable in memory. */ }
   return workspace;
 }
