@@ -45,8 +45,9 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 3. Process an extra-work message. In **VO review**, inspect the evidence, record a scope assessment and instruction reference, then track approval. Decisions retain their history.
 4. In **Monthly claims**, choose a month and enter QS-assessed cumulative quantities and VO values. Review prior claimed values, confirm any undated evidence as of the cutoff, save a revision and mark a valid draft prepared. Prepared drafts do not become prior claimed values. Open **Preview & export** from Saved drafts to read the frozen revision, download its CSV or use Print / Save PDF.
 
-The PDF uses a compact A4 landscape print layout with a white page background, repeating table headers and evidence cards that flow between pages. It retains full messages, photos and recorded approval details from the saved revision. Generated photos are labelled as demo images.
 5. Switch to **Warehouse Extension (Demo)**. Its schedule, activity, VO reviews and claim drafts remain separate. New projects offer a fictional warehouse sample or an empty register for mock contract upload.
+
+The PDF uses a compact A4 landscape print layout with a white page background, repeating table headers and evidence cards that flow between pages. Every page includes the saved claim reference and **Page X of Y** in its bottom margin. Use a current Chrome or Edge browser to save the PDF, and turn off the browser's own **Headers and footers** option to avoid duplicate browser details. It retains full messages, photos and recorded approval details from the saved revision. Generated photos are labelled as demo images.
 
 ## Checks
 

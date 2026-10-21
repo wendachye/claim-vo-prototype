@@ -77,7 +77,27 @@
 .claim-pack-invalid p { font-size:11px; line-height:1.9; margin:8px auto 18px; max-width:420px; }
 @media screen and (max-width:1000px) { .claim-pack-document { padding:24px; } .claim-pack-document-header h2 { font-size:20px; } }
 @media screen and (max-width:760px) { .claim-pack-document { padding:19px 16px; border-radius:8px; } .claim-pack-document-header { flex-direction:column; gap:13px; } .claim-pack-document-id { text-align:left; } .claim-pack-document-id > strong { margin-top:0; font-size:12px; } .claim-pack-document-header h2 { font-size:19px; } .claim-pack-eyebrow { margin-top:16px; } .claim-pack-parties { gap:16px; } .claim-pack-meta { grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; } .claim-pack-totals { gap:7px; } .claim-pack-total { padding:11px 9px; } .claim-pack-total > span { font-size:8px; } .claim-pack-total > strong { font-size:17px; } .claim-pack-total > strong small { display:block; font-size:8px; margin-bottom:2px; } .claim-pack-notes { grid-template-columns:1fr; gap:9px; } .claim-pack-evidence { grid-template-columns:minmax(0,1fr); gap:12px; padding:12px; } .claim-pack-photo { display:flex; align-items:flex-end; gap:10px; } .claim-pack-photo figcaption { max-width:140px; } .claim-pack-document-footer { flex-direction:column; } }
-@page claim-pack { size:A4 landscape; margin:12mm; }
+@page claim-pack {
+  size:A4 landscape;
+  margin:12mm;
+  @bottom-left {
+    width:80%;
+    font:7pt/1.4 'Inter',sans-serif;
+    color:#64748b;
+    text-align:left;
+    vertical-align:middle;
+    overflow-wrap:anywhere;
+  }
+  @bottom-right {
+    content:"Page " counter(page) " of " counter(pages);
+    width:20%;
+    font:7pt/1.4 'Inter',sans-serif;
+    color:#64748b;
+    text-align:right;
+    vertical-align:middle;
+    white-space:nowrap;
+  }
+}
 @media print {
   html:has(.claim-pack-view), body:has(.claim-pack-view) { page:claim-pack; background:#fff !important; height:auto !important; min-height:0 !important; }
   body:has(.claim-pack-view) { background:#fff !important; color:#172033; font-size:9pt; }
