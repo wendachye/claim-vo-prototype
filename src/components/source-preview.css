@@ -430,6 +430,11 @@
   line-height: 16px;
 }
 
+.source-preview__details { margin-top:5px; }
+.source-preview__details > summary { width:fit-content; padding:3px 0; color:var(--source-preview-muted); font-size:11px; line-height:1.6; cursor:pointer; }
+.source-preview__details > summary:focus-visible { outline:2px solid var(--source-preview-blue); outline-offset:3px; border-radius:3px; }
+.source-preview__details > p { margin-top:6px; font-size:11px; line-height:1.7; }
+
 .source-preview--compact .source-preview__heading {
   padding: 12px 14px;
 }

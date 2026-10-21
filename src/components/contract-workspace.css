@@ -17,16 +17,15 @@
 .contract-more > div .button { justify-content:flex-start; }
 .contract-register { container-type:inline-size; }
 .data-table.contract-table { min-width:0; table-layout:fixed; }
-.contract-table th:first-child { width:30%; }
+.contract-table th:first-child { width:28%; }
 .contract-table th:nth-child(2) { width:18%; }
 .contract-table th:nth-child(3) { width:12%; }
 .contract-table th:nth-child(4) { width:10%; }
 .contract-table th:nth-child(5) { width:14%; }
-.contract-table th:nth-child(6) { width:16%; }
+.contract-table th:nth-child(6) { width:18%; }
 .contract-table th { white-space:normal; }
 .contract-table td { overflow-wrap:anywhere; }
-.contract-table .cell-secondary, .contract-subsection { margin-top:5px; color:#64748b; font-size:12px; line-height:1.7; }
-.contract-table .contract-subsection { font-size:11px; }
+.contract-table .contract-item-reference { margin-top:5px; color:#64748b; font-size:12px; line-height:1.7; }
 .contract-area-links { display:flex; align-items:center; flex-wrap:wrap; gap:3px 8px; margin-top:4px; }
 .contract-location { font-size:12px; }
 .contract-quantity strong { font-size:13px; font-weight:500; }
@@ -34,13 +33,28 @@
 .contract-quantity > svg { margin-left:5px; }
 .contract-card-label { display:none; }
 .contract-review-action .badge { white-space:normal; }
-.contract-review-action .button { margin-top:7px; padding-inline:8px; white-space:normal; text-align:left; }
+.contract-review-action .button { padding-inline:8px; white-space:normal; text-align:left; }
+.contract-review-action .contract-row-action { width:100%; justify-content:flex-start; gap:8px; margin:0; }
+.contract-row-action > svg:last-child { margin-left:auto; }
+.contract-row-action-copy { display:grid; gap:2px; overflow-wrap:normal; text-align:left; }
+.contract-row-action-copy > span { font-size:12px; font-weight:500; }
+.contract-row-action-copy > small { color:#64748b; font-size:11px; font-weight:400; }
 .contract-check-button { color:#1d4ed8; border-color:#bfdbfe; background:#eff6ff; }
 .contract-comparison-tabs { display:none; }
 .contract-source-panel, .contract-editor-panel { min-width:0; min-height:0; }
-.contract-review-page .review-navigation .review-context { flex-wrap:wrap; }
-.contract-review-page .review-navigation .review-item-navigation .cell-secondary { display:inline; }
-.contract-review-page .review-layout { height:calc(100dvh - 290px); min-height:430px; }
+.contract-review-navigation { gap:12px 20px; margin-bottom:16px; }
+.contract-review-navigation .contract-item-picker { display:block; flex:1; min-width:0; max-width:600px; }
+.contract-item-picker .form-field { width:100%; }
+.contract-item-picker select { min-width:0; max-width:100%; text-overflow:ellipsis; }
+.contract-review-navigation .review-item-navigation { align-self:flex-end; flex-shrink:0; }
+.contract-review-page .review-navigation .review-item-navigation .cell-secondary { display:inline; font-size:12px; white-space:nowrap; }
+.contract-review-page .contract-comparison .review-layout { align-items:start; height:auto; min-height:0; gap:16px; border:0; overflow:visible; }
+.contract-review-page .contract-source-panel { position:sticky; top:80px; }
+.contract-review-page .review-layout .source-preview { height:clamp(440px,68dvh,680px); border:1px solid var(--border); border-radius:10px; }
+.contract-review-page .review-editor { height:auto; min-height:0; border:1px solid var(--border); border-radius:10px; }
+.contract-review-page .editor-body { overflow:visible; }
+.contract-review-page .source-preview__reference { align-items:flex-start; }
+.contract-review-page .source-preview__reference-description { font-size:11px; line-height:1.6; white-space:normal; }
 @container (max-width:850px) {
   .data-table.contract-table { display:block; }
   .contract-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
@@ -63,8 +77,14 @@
   .contract-comparison-tabs > button { display:flex; align-items:center; justify-content:center; gap:7px; flex:1; min-height:38px; padding:8px 12px; border:0; border-radius:5px; color:#64748b; background:transparent; font:inherit; font-size:13px; }
   .contract-comparison-tabs > button[aria-pressed='true'] { background:#eff6ff; color:#1d4ed8; font-weight:550; }
   .contract-review-page .contract-comparison .review-layout { height:auto; min-height:0; }
+  .contract-review-page .contract-source-panel { position:static; }
   .contract-comparison[data-panel='item'] .contract-source-panel, .contract-comparison[data-panel='source'] .contract-editor-panel { display:none; }
   .contract-review-page .contract-comparison .source-preview { height:clamp(440px,70dvh,640px); min-height:0; }
+}
+@media screen and (max-width:760px) {
+  .contract-review-navigation .contract-item-picker { flex-basis:100%; max-width:none; }
+  .contract-review-navigation .review-item-navigation { width:100%; }
+  .contract-review-navigation .review-item-navigation .cell-secondary { margin-right:auto; white-space:nowrap; }
 }
 @media screen and (max-width:420px) {
   .contract-filter-fields { gap:10px; }

@@ -93,6 +93,9 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
       : sourceKind === 'provided'
         ? 'Showcase values copied from the supplied schedule.'
         : 'Seeded showcase values. No source document is supplied.';
+  const sourceContext = contract.demoImport ? 'Demo PDF'
+    : sourceKind === 'provided' ? 'Supplied schedule'
+      : sourceKind === 'illustrative' ? 'Demo schedule' : 'Demo values';
   const amountNote = included
     ? 'Included in other rates. No separate charge.'
     : rateOnly
@@ -106,7 +109,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
       <div className='editor-header'>
         <div>
           <h2>{locked ? 'Work item details' : 'Review work item'}</h2>
-          <p>{item.ref} <span aria-hidden='true'>·</span> {item.id}</p>
+          <p>{item.ref} <span aria-hidden='true'>·</span> {sourceContext}</p>
         </div>
         <Badge tone={locked ? 'green' : item.needsReview ? 'amber' : 'green'}>
           {locked ? 'Contract confirmed' : item.needsReview ? 'Needs review' : 'Reviewed'}
@@ -116,7 +119,6 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
       <div className='editor-body'>
         {hasEdits && <p className='contract-item-unsaved' role='status'>Unsaved changes stay while you browse. Confirm this item before refreshing.</p>}
         {locked ? <p className='contract-item-context'><Lock size={14} aria-hidden='true' /><span>Read only. To edit, choose More options → Edit contract.</span></p> : <p className='contract-item-context'><FileText size={14} aria-hidden='true' /><span>Compare the values with the source before confirming this item.</span></p>}
-        <p className='contract-item-demo'>{demoContext}</p>
 
         {item.needsReview && (
           <div className='notice warning contract-quantity-warning' role='note'>
@@ -170,7 +172,9 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
         <details className='contract-item-source'>
           <summary>Source &amp; scope details <span>{item.ref}</span></summary>
           <div>
+            <p>{demoContext}</p>
             <dl><div><dt>Location</dt><dd>{form.location || 'Not specified'}</dd></div><div><dt>Start / duration</dt><dd>{formatMonth(item.startDate)}{item.durationMonths != null ? ` · ${item.durationMonths} months` : ''}</dd></div></dl>
+            <p>Item record: {item.id}.</p>
             <p>Area aliases do not change contract scope. Source duration is not a monthly rate multiplier.</p>
             <p>{contract.demoImport
               ? `${sourceFilename || 'Demo source'} · fictional demo PDF, page 1.`

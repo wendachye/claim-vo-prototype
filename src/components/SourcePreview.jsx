@@ -110,6 +110,13 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
       : !showImage ? 'No source'
         : !isSchedule ? 'Reference plan'
           : page ? `Page ${page}${pageCount ? ` / ${pageCount}` : ''}` : 'Schedule image';
+  const provenanceNote = showUploaded
+    ? 'This upload does not replace the seeded schedule or update work-item values. Use the external-link control if your browser cannot display the PDF.'
+    : hasDemoAssets ? 'Review the mock values against this fictional source. No live extraction or contract approval is performed.'
+      : showIllustrative ? (contract?.sampleNote || 'This locally rendered schedule contains invented demo data, not a supplied contract. No AI extraction is running.')
+        : showImage ? isSchedule ? (contract?.sampleNote || 'Seeded review preview. Compare the selected reference with the source; no live AI extraction is running.')
+          : 'Area aliases are demo mappings. No drawing quantities or completion percentages are inferred from this image.'
+          : 'Review values are not evidence of a supplied contract. Attach and review this project’s own source before relying on them.';
 
   return (
     <section className={`source-preview${compact ? ' source-preview--compact' : ''}`} aria-label='Contract source document'>
@@ -195,13 +202,7 @@ export function SourcePreview({ item, compact = false, uploadedDocument = null, 
 
       <div className='source-preview__provenance'>
         <div className='source-preview__provenance-line'><FileText size={13} aria-hidden='true' /><span>{showUploaded ? 'Uploaded document · browser PDF preview' : hasDemoAssets ? 'Fictional demo PDF · page 1 of 1' : showIllustrative ? 'Illustrative demo schedule · active project only' : showImage ? isSchedule ? 'Original schedule image · printed page 1 of 1' : 'Drawing reference · manual area mapping' : 'No source preview · active project only'}</span></div>
-        <p>{showUploaded
-          ? 'This upload does not replace the seeded schedule or update work-item values. Use the external-link control if your browser cannot display the PDF.'
-          : hasDemoAssets ? 'Review the mock values against this fictional source. No live extraction or contract approval is performed.'
-            : showIllustrative ? (contract?.sampleNote || 'This locally rendered schedule contains invented demo data, not a supplied contract. No AI extraction is running.')
-            : showImage ? isSchedule ? (contract?.sampleNote || 'Seeded review preview. Compare the selected reference with the source; no live AI extraction is running.')
-              : 'Area aliases are demo mappings. No drawing quantities or completion percentages are inferred from this image.'
-              : 'Review values are not evidence of a supplied contract. Attach and review this project’s own source before relying on them.'}</p>
+        {compact ? <details className='source-preview__details'><summary>About this source</summary><p>{provenanceNote}</p></details> : <p>{provenanceNote}</p>}
       </div>
     </section>
   );
