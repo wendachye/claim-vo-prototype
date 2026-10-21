@@ -181,4 +181,17 @@
   .claim-pack-photo img,.claim-pack-photo-unavailable { width:33mm; height:23mm; }
   .claim-pack-photo figcaption { display:block; width:auto; max-width:none; font-size:6pt; white-space:normal; word-break:normal; overflow-wrap:normal; }
   .claim-pack-document-footer { flex-direction:row; font-size:6.5pt; margin-top:2mm; padding-top:1.5mm; line-height:1.5; break-inside:avoid; }
+  /* Single-line claims use portrait paper without scaling or clipping their contents. */
+  .claim-pack-document-short .claim-pack-document-header { gap:6mm; }
+  .claim-pack-document-short .claim-pack-document-header > div:first-child { min-width:0; flex:1; overflow-wrap:anywhere; }
+  .claim-pack-document-short .claim-pack-document-id { min-width:0; flex:0 1 55mm; overflow-wrap:anywhere; }
+  .claim-pack-document-short .claim-pack-section { margin-top:1.5mm; }
+  .claim-pack-document-short .claim-pack-parties,.claim-pack-document-short .claim-pack-meta,.claim-pack-document-short .claim-pack-notes > div,.claim-pack-document-short .claim-pack-evidence { padding-block:1.5mm; }
+  .claim-pack-document-short .claim-pack-section-heading { margin-bottom:1mm; }
+  .claim-pack-document-short .claim-pack-empty-schedule { padding:1mm 2mm; }
+  .claim-pack-document-short .claim-pack-table td:not(.numeric) { overflow-wrap:anywhere; }
+  .claim-pack-document-short .claim-pack-evidence-header > div { min-width:0; flex:1; flex-wrap:wrap; }
+  .claim-pack-document-short .claim-pack-evidence-id { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+  .claim-pack-document-short .claim-pack-evidence-meta > span { min-width:0; overflow-wrap:anywhere; }
+  .claim-pack-document-short .claim-pack-document-footer { margin-top:1mm; padding-top:1mm; }
 }
