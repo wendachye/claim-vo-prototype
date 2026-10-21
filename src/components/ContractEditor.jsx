@@ -1,15 +1,16 @@
 import { useId } from 'react';
-import { AlertTriangle, ArrowRight, Check, FileText, Lock, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, FileText, Lock } from 'lucide-react';
 import { contract as sampleContract, initialItems } from '../data/contract.js';
 import { contractFormValues as formFor, contractFormScope } from '../data/form-buffer.js';
-import { Button, FormActions, FormField } from './ui.jsx';
+import { Badge, Button, FormActions, FormField } from './ui.jsx';
 import { useBufferedState } from './useFormBuffer.js';
+import './contract-editor.css';
 
 const UNITS = ['m²', 'm³', 'm', 'set', 'design', 'visit', 'pc', 'hr'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function formatMoney(value, currency) {
-  if (value == null || !Number.isFinite(Number(value))) return '—';
+  if (value == null || value === '' || !Number.isFinite(Number(value))) return '—';
   const prefix = currency === 'SGD' ? 'S$' : currency === 'MYR' ? 'RM' : currency;
   return `${prefix} ${Number(value).toLocaleString('en-SG', {
     minimumFractionDigits: 2,
@@ -18,7 +19,7 @@ function formatMoney(value, currency) {
 }
 
 function formatQuantity(value) {
-  return value == null ? '—' : Number(value).toLocaleString('en-SG', {
+  return value == null || value === '' ? '—' : Number(value).toLocaleString('en-SG', {
     maximumFractionDigits: 4,
   });
 }
@@ -38,7 +39,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
   if (!item) {
     return (
       <section className='review-editor'>
-        <div className='editor-header'><h2>Review extracted item</h2></div>
+        <div className='editor-header'><h2>Review work item</h2></div>
         <div className='editor-body'><p>Select a contract item to begin the review.</p></div>
       </section>
     );
@@ -85,184 +86,111 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
     });
   }
 
+  const demoContext = contract.demoImport
+    ? 'Simulated values from the fictional demo PDF. Any separately selected PDF was previewed only.'
+    : sourceKind === 'illustrative'
+      ? 'Invented showcase values from the illustrative schedule; no supplied contract was extracted.'
+      : sourceKind === 'provided'
+        ? 'Showcase values copied from the supplied schedule.'
+        : 'Seeded showcase values. No source document is supplied.';
+  const amountNote = included
+    ? 'Included in other rates. No separate charge.'
+    : rateOnly
+      ? 'Actual work or hours need separate measurement and approval.'
+      : printed
+        ? `${sourceLabel}: ${money(printed.amount)}${matchesPrintedAmount ? ' · matches current entries' : ' · compare current entries'}`
+        : 'Source amount unavailable for this item.';
+
   return (
-    <form className='review-editor' onSubmit={saveItem} noValidate>
+    <form className='review-editor contract-item-editor' onSubmit={saveItem} noValidate>
       <div className='editor-header'>
         <div>
-          <h2>Review extracted item</h2>
-          <p>{item.id} <span aria-hidden='true'>·</span> {item.ref}</p>
+          <h2>{locked ? 'Work item details' : 'Review work item'}</h2>
+          <p>{item.ref} <span aria-hidden='true'>·</span> {item.id}</p>
         </div>
-        <span className={`badge ${locked ? 'neutral' : item.needsReview ? 'warning' : 'success'}`}>
-          {locked ? 'Baseline locked' : item.needsReview ? 'Needs review' : 'Reviewed'}
-        </span>
+        <Badge tone={locked ? 'green' : item.needsReview ? 'amber' : 'green'}>
+          {locked ? 'Contract confirmed' : item.needsReview ? 'Needs review' : 'Reviewed'}
+        </Badge>
       </div>
 
       <div className='editor-body'>
-        {hasEdits && <p className='field-note' role='status'>Unsaved changes kept while you browse. Confirm this item before refreshing.</p>}
-        {locked ? <div className='notice success' role='status'>
-          <Lock size={16} aria-hidden='true' />
-          <div>
-            <strong>Demo baseline confirmed · read only</strong>
-            <p>{contract.demoImport
-              ? 'Seeded values use the fictional demo PDF; any separately selected PDF was previewed only.'
-              : sourceKind === 'illustrative'
-              ? 'Values are invented for this showcase and use the illustrative schedule. No supplied contract was extracted.'
-              : sourceKind === 'provided'
-              ? 'Values are seeded from the supplied schedule for this showcase.'
-              : 'Values are seeded for this showcase. No source document is supplied.'} Choose Edit contract to create a revision.</p>
-          </div>
-        </div> : <div className='notice'>
-          <Sparkles size={16} aria-hidden='true' />
-          <div>
-            <strong>{contract.demoImport ? 'Mock extraction' : sourceKind === 'illustrative' ? 'Illustrative review data' : 'Simulated extraction'}</strong>
-            <p>{contract.demoImport
-              ? 'Check these simulated values against the fictional demo PDF. Any separately selected PDF was previewed only.'
-              : sourceKind === 'illustrative'
-              ? 'These editable values are invented for this project’s showcase. Compare them with the illustrative schedule; no supplied contract has been extracted.'
-              : 'These editable values are seeded for the showcase. Compare them with this project’s source schedule before confirming.'}</p>
-          </div>
-        </div>}
+        {hasEdits && <p className='contract-item-unsaved' role='status'>Unsaved changes stay while you browse. Confirm this item before refreshing.</p>}
+        {locked ? <p className='contract-item-context'><Lock size={14} aria-hidden='true' /><span>Read only. To edit, choose More options → Edit contract.</span></p> : <p className='contract-item-context'><FileText size={14} aria-hidden='true' /><span>Compare the values with the source before confirming this item.</span></p>}
+        <p className='contract-item-demo'>{demoContext}</p>
 
         {item.needsReview && (
-          <div className='notice warning' role='note'>
+          <div className='notice warning contract-quantity-warning' role='note'>
             <AlertTriangle size={17} aria-hidden='true' />
             <div>
-              <strong>Quantity needs a source check</strong>
+              <strong>Check the quantity</strong>
               <p>
-                The simulated extraction read {formatQuantity(item.rawExtractedQuantity ?? item.quantity)} {item.unit}.
+                Simulated extraction: {formatQuantity(item.rawExtractedQuantity ?? item.quantity)} {item.unit}.
                 {' '}{hasSourceQuantity
-                  ? `The ${sourceKind === 'illustrative' ? 'illustrative' : 'printed'} schedule shows ${formatQuantity(printed.quantity)} ${printed.unit}.`
-                  : 'A source quantity is unavailable for this item in the active project. Review this project’s source before confirming.'}
+                  ? `${sourceKind === 'illustrative' ? 'Illustrative' : 'Printed'} schedule: ${formatQuantity(printed.quantity)} ${printed.unit}.`
+                  : 'A source quantity is unavailable. Check this project’s source before confirming.'}
               </p>
               {hasSourceQuantity && <Button
-                className='secondary'
                 disabled={locked}
                 onClick={() => changeField('quantity', String(printed.quantity))}
-              >
-                Use source value: {formatQuantity(printed.quantity)}
-              </Button>}
-              {hasSourceQuantity && <p className='field-note'>Filling the source value does not confirm the item.</p>}
+              >Use source value: {formatQuantity(printed.quantity)}</Button>}
+              {hasSourceQuantity && <p className='field-note'>This fills the quantity. Confirm the item separately.</p>}
             </div>
           </div>
         )}
 
-        <div className='field-grid'>
-          <FormField className='field-card field-full' label='Work description' id={`${inputId}-description`} hint={item.subsection ?? item.section}>
-            <textarea
-              id={`${inputId}-description`}
-              className='form-textarea'
-              rows={3}
-              value={form.description}
-              disabled={locked}
-              onChange={(event) => changeField('description', event.target.value)}
-            />
+        {locked ? <>
+          <div className='contract-readonly-work'><h3>{form.description}</h3><p>{item.subsection ?? item.section}</p></div>
+          <dl className='contract-readonly-values'>
+            <div><dt>Contract quantity</dt><dd>{formatQuantity(form.quantity)} <span>{form.unit}</span></dd>{rateOnly ? <p>Rate-reference quantity; not actual hours.</p> : printed && <p>{sourceLabel}: {formatQuantity(printed.quantity)} {printed.unit}</p>}</div>
+            <div><dt>Unit rate</dt><dd>{included ? 'Included' : money(form.rate)}</dd>{!included && <p>{printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : `per ${form.unit}`}</p>}</div>
+          </dl>
+          <div className={`contract-line-amount${matchesPrintedAmount ? ' matches' : ''}`}><span>Line amount</span><strong>{included ? 'Included' : rateOnly ? 'Rate only' : money(calculatedAmount)}</strong><p>{amountNote}</p></div>
+        </> : <div className='field-grid contract-item-fields'>
+          <FormField className='field-full' label='Work description' id={`${inputId}-description`} hint={item.subsection ?? item.section}>
+            <textarea id={`${inputId}-description`} className='form-textarea' rows={3} value={form.description} onChange={(event) => changeField('description', event.target.value)} />
           </FormField>
-
-          <FormField className={`field-card${item.needsReview ? ' warning' : ''}`} label='Contract quantity' id={`${inputId}-quantity`} hint={rateOnly
-            ? 'Printed rate-reference quantity; this is not authorised work or actual hours.'
+          <FormField className={item.needsReview ? 'contract-quantity-field' : ''} label='Contract quantity' id={`${inputId}-quantity`} hint={rateOnly
+            ? 'Rate-reference quantity; not authorised work or actual hours.'
             : printed
               ? `${sourceLabel}: ${formatQuantity(printed.quantity)} ${printed.unit ?? ''} · ${printed.quantityBasis ?? item.quantityBasis ?? 'provisional'}`
-              : 'Source quantity unavailable for this item in the active project.'}>
-            <input
-              id={`${inputId}-quantity`}
-              className='form-input'
-              type='number'
-              min='0'
-              step='any'
-              inputMode='decimal'
-              value={form.quantity}
-              disabled={locked}
-              onChange={(event) => changeField('quantity', event.target.value)}
-            />
+              : 'Source quantity unavailable for this item.'}>
+            <input id={`${inputId}-quantity`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.quantity} onChange={(event) => changeField('quantity', event.target.value)} />
           </FormField>
-
-          <FormField className='field-card' label='Unit' id={`${inputId}-unit`} hint='Keep the source unit; unlike quantities are not combined.'>
-            <select
-              id={`${inputId}-unit`}
-              className='form-select'
-              value={form.unit}
-              disabled={locked}
-              onChange={(event) => changeField('unit', event.target.value)}
-            >
+          <FormField label='Unit' id={`${inputId}-unit`} hint='Keep the source unit.'>
+            <select id={`${inputId}-unit`} className='form-select' value={form.unit} onChange={(event) => changeField('unit', event.target.value)}>
               {unitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
             </select>
           </FormField>
-
-          <FormField className='field-card' label='Unit rate' suffix={currency} id={`${inputId}-rate`} hint={included ? 'Included scope has no separate source rate.' : printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : 'Source rate unavailable for this item in the active project.'}>
-            <input
-              id={`${inputId}-rate`}
-              className='form-input'
-              type='number'
-              min='0'
-              step='any'
-              inputMode='decimal'
-              value={form.rate}
-              placeholder={included ? 'Included in other rates' : 'Enter rate'}
-              disabled={locked || included}
-              onChange={(event) => changeField('rate', event.target.value)}
-            />
+          <FormField label='Unit rate' suffix={currency} id={`${inputId}-rate`} hint={included ? 'Included scope has no separate source rate.' : printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : 'Source rate unavailable for this item.'}>
+            <input id={`${inputId}-rate`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.rate} placeholder={included ? 'Included in other rates' : 'Enter rate'} disabled={included} onChange={(event) => changeField('rate', event.target.value)} />
           </FormField>
+          <div className={`contract-line-amount${matchesPrintedAmount ? ' matches' : ''}`}><span>Line amount</span><strong>{included ? 'Included' : rateOnly ? 'Rate only' : money(calculatedAmount)}</strong><p>{amountNote}</p></div>
+        </div>}
 
-          <div className={`field-card${matchesPrintedAmount ? ' verified' : ''}`}>
-            <span className='field-label'>Line amount · {currency}</span>
-            <div className='field-value'>
-              {included ? 'Included' : rateOnly ? 'Rate only' : money(calculatedAmount)}
-            </div>
-            <p className='field-note'>
-              {included
-                ? 'No separate charge is inferred.'
-                : rateOnly
-                  ? 'Actual eligible work must be measured and approved separately.'
-                  : printed
-                    ? `${sourceLabel}: ${money(printed.amount)}${matchesPrintedAmount ? ' · matches current entries' : ' · compare current entries'}`
-                    : 'Source amount unavailable for this item in the active project.'}
-            </p>
-          </div>
-
-          <div className='field-card'>
-            <span className='field-label'>Location</span>
-            <div className='field-value'>{form.location || 'Not specified'}</div>
-            <p className='field-note'>Source location. Demo area aliases do not change contract scope.</p>
-          </div>
-
-          <div className='field-card'>
-            <span className='field-label'>Start / duration</span>
-            <div className='field-value'>
-              {formatMonth(item.startDate)}{item.durationMonths != null ? ` · ${item.durationMonths} months` : ''}
-            </div>
-            <p className='field-note'>Source duration is not a monthly rate multiplier.</p>
-          </div>
-        </div>
-
-        <div className='notice'>
-          <FileText size={16} aria-hidden='true' />
+        <details className='contract-item-source'>
+          <summary>Source &amp; scope details <span>{item.ref}</span></summary>
           <div>
-            <strong>Source reference {item.ref}</strong>
+            <dl><div><dt>Location</dt><dd>{form.location || 'Not specified'}</dd></div><div><dt>Start / duration</dt><dd>{formatMonth(item.startDate)}{item.durationMonths != null ? ` · ${item.durationMonths} months` : ''}</dd></div></dl>
+            <p>Area aliases do not change contract scope. Source duration is not a monthly rate multiplier.</p>
             <p>{contract.demoImport
-              ? `${sourceFilename} · fictional demo PDF, page 1.`
+              ? `${sourceFilename || 'Demo source'} · fictional demo PDF, page 1.`
               : sourceKind === 'illustrative'
-              ? 'Illustrative demo schedule · not a supplied contract.'
-              : sourceKind === 'provided'
-                ? `${sourceFilename || 'Project source'}${sourcePage ? ` · PDF page ${sourcePage}${contract?.sourcePageCount ? ` of ${contract.sourcePageCount}` : ''}` : ''}.`
-                : 'No supplied source document is available for this project.'} This is a contract-data review, not certification of work or a payment claim.</p>
-            {item.sourceNote && <p className='field-note'>{item.sourceNote}</p>}
+                ? 'Illustrative demo schedule; not a supplied contract.'
+                : sourceKind === 'provided'
+                  ? `${sourceFilename || 'Project source'}${sourcePage ? ` · PDF page ${sourcePage}${contract?.sourcePageCount ? ` of ${contract.sourcePageCount}` : ''}` : ''}.`
+                  : 'No supplied source document is available for this project.'}</p>
+            {item.sourceNote && <p>{item.sourceNote}</p>}
+            <p>Contract-data review only. This does not certify work or create a payment claim.</p>
           </div>
-        </div>
+        </details>
       </div>
 
       <FormActions className='editor-footer' secondary={<div className='editor-summary'>
-          <strong>{locked ? 'Read-only baseline' : item.id}</strong>
-          <span>{locked ? 'A revision is required for edits.' : 'Confirm only after checking the source.'}</span>
-        </div>}>
-        {!locked && onNext && (
-          <Button className='secondary' onClick={onNext}>{nextLabel || 'Skip item'}</Button>
-        )}
-        <Button
-          type='submit'
-          className='primary'
-          icon={locked ? ArrowRight : Check}
-          disabled={locked ? !onNext : !onSave}
-        >
+        <strong>{locked ? 'Read-only contract' : item.ref}</strong>
+        <span>{locked ? 'Create a revision to edit.' : 'Confirm after checking the source.'}</span>
+      </div>}>
+        {!locked && onNext && <Button onClick={onNext}>{nextLabel || 'Skip item'}</Button>}
+        <Button type='submit' className='primary' icon={locked ? ArrowRight : Check} disabled={locked ? !onNext : !onSave}>
           {locked ? nextLabel || 'Next item' : 'Confirm item'}
         </Button>
       </FormActions>
