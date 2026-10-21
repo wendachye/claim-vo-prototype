@@ -47,7 +47,7 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 
 5. Switch to **Warehouse Extension (Demo)**. Its schedule, activity, VO reviews and claim drafts remain separate. New projects offer a fictional warehouse sample or an empty register for mock contract upload.
 
-The PDF uses a compact A4 landscape print layout with a white page background, repeating table headers and evidence cards that flow between pages. Every page includes the saved claim reference and **Page X of Y** in its bottom margin. Use a current Chrome or Edge browser to save the PDF, and turn off the browser's own **Headers and footers** option to avoid duplicate browser details. It retains full messages, photos and recorded approval details from the saved revision. Generated photos are labelled as demo images.
+The PDF uses a compact A4 landscape print layout with a white page background, repeating table headers and evidence cards that flow between pages. Every page includes the saved project name and claim month in its top margin, plus the saved claim reference and **Page X of Y** in its bottom margin. Use a current Chrome or Edge browser to save the PDF, and turn off the browser's own **Headers and footers** option to avoid duplicate browser details. It retains full messages, photos and recorded approval details from the saved revision. Generated photos are labelled as demo images.
 
 ## Checks
 

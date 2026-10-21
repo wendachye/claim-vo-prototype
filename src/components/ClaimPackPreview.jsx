@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Building2, CircleAlert, Download, FileCheck2, Info, Printer } from 'lucide-react';
 import { buildClaimPack } from '../data/claim-pack.js';
 import { Badge, Button, PageHeader, formatMoney, formatNumber } from './ui.jsx';
-import { claimPrintReferenceRule } from './claim-print.js';
+import { claimPrintPageRule } from './claim-print.js';
 import './claim-pack.css';
 
 const known = (value) => value != null && value !== '';
@@ -38,7 +38,7 @@ export function ClaimPackPreview({ project, draftId, onBack, onDownloadCSV }) {
   }
 
   return <div className="claim-pack-view">
-    <style media="print">{claimPrintReferenceRule(pack.draftId)}</style>
+    <style media="print">{claimPrintPageRule({ reference: pack.draftId, projectName: value(details.name, 'Project name not recorded'), claimMonth: month(pack.period) })}</style>
     <PageHeader className="claim-pack-toolbar" title="Claim preview" onBack={onBack} backLabel="Back to claims" actions={<><Button icon={Download} onClick={download} disabled={!onDownloadCSV}>Download CSV</Button><Button className="primary" icon={Printer} onClick={() => window.print()}>Print / Save PDF</Button></>} />
     <p className="claim-pack-screen-note"><Info size={14} /><span>Saved revision · read-only. To save a PDF, choose “Save as PDF” in the print window.</span></p>
     {downloadError && <p className="claim-pack-screen-note" role="alert"><CircleAlert size={14} /><span>{downloadError}</span></p>}
