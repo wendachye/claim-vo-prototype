@@ -83,7 +83,9 @@ describe('S.I.T. workflow navigation retains source context without changing rec
       if (target[field]) expect(params().get(query)).toBe(target[field]);
     }
     expect(params().get('from')).toBe('overview');
-    expect(screen.queryByRole('navigation', { name: 'Project workflow' })).toBeNull();
+    // A report task may open a dialog, which correctly hides the header from
+    // the accessibility tree while leaving the shared tracker mounted.
+    expect(document.querySelector('nav[aria-label="Project workflow"]')).toBeTruthy();
     if (target.route === 'completion') await user.click(screen.getByRole('button', { name: 'Close site report' }));
     else await user.click(screen.getByRole('button', { name: 'Back to overview' }));
     await screen.findByRole('heading', { name: 'Project overview' });
@@ -202,6 +204,96 @@ describe('S.I.T. workflow navigation retains source context without changing rec
     expect(screen.queryByRole('textbox', { name: 'Work description' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Show work items' }));
     await waitFor(() => expect(location.hash).toBe('#contract'));
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('highlights the owning workflow step on every module and keeps an exact record open when the current step is clicked', async () => {
+    const { project, caseId } = fixture();
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    const draftId = project.claimDrafts[0].id;
+    const messageId = project.whatsappMessages[0].id;
+    const routes = [
+      ['#contract?item=WI-007', 'Contract'],
+      ['#drawing', 'Contract'],
+      [`#whatsapp?message=${encodeURIComponent(messageId)}`, 'Site updates'],
+      ['#completion?item=WI-002', 'Site updates'],
+      [`#vo?case=${encodeURIComponent(caseId)}`, 'Extra work'],
+      ['#claims?tab=drafts', 'Monthly claims'],
+      [`#claim-preview?draft=${encodeURIComponent(draftId)}`, 'Monthly claims'],
+      [`#claim-status?draft=${encodeURIComponent(draftId)}`, 'Monthly claims'],
+    ];
+    for (const [hash, currentLabel] of routes) {
+      const view = mount(hash);
+      const tracker = screen.getByRole('navigation', { name: 'Project workflow' });
+      const buttons = within(tracker).getAllByRole('button');
+      expect(buttons.map(button => button.getAttribute('aria-current'))).toEqual(
+        ['Contract', 'Site updates', 'Extra work', 'Monthly claims'].map(label => label === currentLabel ? 'step' : null),
+      );
+      const current = within(tracker).getByRole('button', { name: currentLabel, exact: true });
+      expect(current.disabled).toBe(true);
+      const originalHash = location.hash;
+      await user.click(current);
+      expect(location.hash).toBe(originalHash);
+      if (hash.startsWith('#claim-preview')) {
+        expect(document.querySelector('.claim-pack-document')).toBeTruthy();
+        expect(tracker.closest('.claim-pack-document')).toBeNull();
+      }
+      view.unmount();
+    }
+    for (const hash of ['#projects', '#projects?manage=1']) {
+      const view = mount(hash);
+      expect(screen.queryByRole('navigation', { name: 'Project workflow' })).toBeNull();
+      view.unmount();
+    }
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('uses the tracker to move between modules while retaining unfinished VO checks and saved records', async () => {
+    const { project, caseId } = fixture();
+    const entry = getVOCases(project).find(record => record.id === caseId);
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    mount(`#vo?case=${encodeURIComponent(caseId)}`);
+    await user.click(screen.getByRole('button', { name: 'Edit claim checks', exact: true }));
+    const note = screen.getByRole('textbox', { name: /^QS scope assessment/ });
+    await user.clear(note);
+    await user.type(note, 'Unfinished scope check retained while navigating.');
+    await user.click(within(screen.getByRole('navigation', { name: 'Project workflow' })).getByRole('button', { name: 'Contract', exact: true }));
+    await screen.findByRole('heading', { name: 'Contract', exact: true });
+    expect(location.hash).toBe('#contract');
+    await user.click(within(screen.getByRole('navigation', { name: 'Project workflow' })).getByRole('button', { name: 'Extra work', exact: true }));
+    await user.click(screen.getByRole('button', { name: `Open extra work: ${entry.reference}, ${entry.title}, Approved`, exact: true }));
+    expect(screen.getByRole('textbox', { name: /^QS scope assessment/ }).value).toBe('Unfinished scope check retained while navigating.');
+    expect(readWorkspace().activeProjectId).toBe(project.id);
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('shows the overview workflow statuses for the selected project and refreshes them on project switch', async () => {
+    const { project, other, caseId } = fixture();
+    const workspace = readWorkspace();
+    const otherProject = workspace.projects.find(record => record.id === other.id);
+    otherProject.locked = false;
+    localStorage.setItem(WORKSPACE_STORE, JSON.stringify(workspace));
+    const before = readWorkspace().projects;
+    const labels = ['Contract', 'Site updates', 'Extra work', 'Monthly claims'];
+    const statuses = record => getProjectWorkflow(record).steps.map(step => step.status);
+    const expectStatuses = record => {
+      const tracker = screen.getByRole('navigation', { name: 'Project workflow' });
+      statuses(record).forEach((status, index) => {
+        const button = within(tracker).getByRole('button', { name: labels[index], exact: true });
+        expect(within(button).getByText(status, { exact: true })).toBeTruthy();
+      });
+    };
+    expect(statuses(project)).not.toEqual(statuses(otherProject));
+    const user = userEvent.setup();
+    mount(`#vo?case=${encodeURIComponent(caseId)}`);
+    expectStatuses(project);
+    await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
+    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    expectStatuses(otherProject);
+    expect(location.hash).toBe('#vo');
+    expect(readWorkspace().activeProjectId).toBe(other.id);
     expect(readWorkspace().projects).toEqual(before);
   });
 });

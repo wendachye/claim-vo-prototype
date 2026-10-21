@@ -5,6 +5,32 @@ import { periodLabel } from './claim-view-utils.js';
 import { Button, PageHeader } from './ui.jsx';
 import './project-workflow.css';
 
+const moduleSteps = [
+  { id: 'contract', label: 'Contract', route: 'contract', views: ['contract', 'drawing'] },
+  { id: 'site', label: 'Site updates', route: 'whatsapp', views: ['whatsapp', 'completion'] },
+  { id: 'vo', label: 'Extra work', route: 'vo', views: ['vo'] },
+  { id: 'claims', label: 'Monthly claims', route: 'claims', views: ['claims', 'claim-preview', 'claim-status'] },
+];
+
+export function WorkflowNav({ project, view, onNavigate }) {
+  if (!moduleSteps.some(step => step.views.includes(view))) return null;
+  const workflow = getProjectWorkflow(project);
+
+  return <nav className="workflow-nav" aria-label="Project workflow">
+    <ol>{moduleSteps.map((step, index) => {
+      const current = step.views.includes(view);
+      const state = workflow.steps.find(entry => entry.id === step.id);
+      const statusId = `workflow-status-${step.id}`;
+      return <li key={step.route}>
+        <button type="button" aria-label={step.label} aria-describedby={statusId} aria-current={current ? 'step' : undefined} disabled={current} onClick={() => onNavigate(step.route)}>
+          <span className="workflow-step-number" aria-hidden="true">{index + 1}</span>
+          <span className="workflow-step-copy"><strong>{step.label}</strong><small id={statusId}>{state.status}</small></span>
+        </button>
+      </li>;
+    })}</ol>
+  </nav>;
+}
+
 function nextTaskContext(project, task) {
   if (task.category === 'claims') {
     const draft = project.claimDrafts?.find(entry => entry.id === task.target.draftId);
