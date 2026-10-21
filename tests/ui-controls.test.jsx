@@ -186,7 +186,7 @@ describe('overlay navigation and focus', () => {
     render(<AddUpdateFlow />);
     const opener = screen.getByRole('button', { name: 'View work progress' });
     await user.click(opener);
-    const drawer = await screen.findByRole('dialog', { name: 'WI-002 · Work item progress' });
+    const drawer = await screen.findByRole('dialog', { name: 'Ref. A.2 · Work item progress' });
     await user.click(within(drawer).getByRole('button', { name: 'Add site update' }));
     expect(added).toHaveBeenCalledExactlyOnceWith('WI-002');
     const modal = await screen.findByRole('dialog', { name: 'Add a site update' });
@@ -209,7 +209,7 @@ describe('overlay navigation and focus', () => {
     render(<Review />);
     const opener = screen.getByRole('button', { name: 'Review site report' });
     await user.click(opener);
-    const dialog = await screen.findByRole('dialog', { name: 'WI-001 · A1' });
+    const dialog = await screen.findByRole('dialog', { name: 'Ref. A.1 · A1' });
     expect(dialog.closest('.app-shell')).not.toBeNull();
     const completion = within(dialog).getByRole('spinbutton', { name: 'Verified cumulative completion (%)' });
     await user.clear(completion);

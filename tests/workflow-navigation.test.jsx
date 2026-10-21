@@ -123,8 +123,8 @@ describe('S.I.T. workflow navigation retains source context without changing rec
     const view = mount(`#completion?${new URLSearchParams({ item: 'WI-002', area: area.id, message: message.id })}`);
     const table = screen.getByRole('table');
     expect(within(table).getAllByRole('row')).toHaveLength(2);
-    expect(table.textContent).toContain('WI-002');
-    expect(table.textContent).not.toContain('WI-001');
+    expect(table.textContent).toContain(project.items.find(item=>item.id==='WI-002').ref);
+    expect(table.textContent).not.toContain(project.items.find(item=>item.id==='WI-001').ref);
     view.unmount();
     render(<App />);
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2);

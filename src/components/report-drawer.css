@@ -9,3 +9,35 @@
 /* The Sheet supplies focus trapping and dismissal; preserve the existing drawer skin. */
 .site-report-layer { display:contents; }
 .drawer[data-slot='sheet-content'] { gap:0; border:0; border-radius:0; padding:0; }
+
+/* Keep current totals, this observation and the explicit decision distinct. */
+.site-report-progress { margin:16px 0 20px; padding:16px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; }
+.site-report-totals { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin:0; }
+.site-report-totals > div { min-width:0; }
+.site-report-totals dt { color:#64748b; font-size:12px; line-height:1.7; }
+.site-report-totals dd { margin:6px 0 3px; color:#3156c8; font-size:23px; font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
+.site-report-totals > div + div dd { color:#24765e; }
+.site-report-totals small { color:#64748b; font-size:12px; line-height:1.7; }
+.site-report-observation { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; margin-top:14px; padding-top:13px; border-top:1px solid #e2e8f0; }
+.site-report-observation > span, .site-report-observation small { color:#64748b; font-size:12px; line-height:1.7; }
+.site-report-observation strong { color:#334155; font-size:18px; font-weight:550; }
+.site-report-verification-preview { display:flex; align-items:flex-start; gap:7px; margin:12px 0 0; padding-top:12px; border-top:1px solid #e2e8f0; color:#475569; font-size:12px; line-height:1.7; }
+.site-report-verification-preview > svg { flex-shrink:0; margin-top:3px; color:#4265df; }
+.site-report-verification-preview strong { color:#3156c8; }
+.site-report-review-help { margin:8px 0 16px; color:#64748b; font-size:12px; line-height:1.7; }
+.site-report-other-actions { margin-top:16px; }
+.site-report-other-actions > span { color:#64748b; font-size:12px; line-height:1.7; }
+.site-report-other-actions .review-actions { margin-top:6px; gap:5px; }
+.site-report-evidence { margin-top:20px; border-top:1px solid #e2e8f0; color:#475569; font-size:13px; line-height:1.7; }
+.site-report-evidence > summary { padding:14px 0; cursor:pointer; font-weight:500; }
+.site-report-evidence > summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
+.site-report-evidence .message-card { margin-bottom:12px; }
+.site-report-evidence .evidence-placeholder { margin-bottom:0; padding:12px; }
+.site-report-evidence .evidence-placeholder:not(figure) { min-height:100px; }
+.site-report-evidence .evidence-placeholder img { max-height:220px; }
+@media (max-width:420px) {
+  .site-report-progress { padding:13px; }
+  .site-report-totals { gap:12px; }
+  .site-report-totals dt { min-height:3.4em; }
+  .site-report-totals dd { font-size:21px; }
+}

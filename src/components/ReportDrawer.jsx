@@ -5,7 +5,6 @@ import {
   Check,
   Flag,
   ImageOff,
-  Info,
   MessageSquare,
   Plus,
   RotateCcw,
@@ -72,8 +71,7 @@ export function ReportDrawer({
   const reportStatus = isVo ? 'Flagged extra work'
     : isVerified ? 'Verified'
       : isClarification ? 'Needs clarification'
-        : report?.status === 'pending' ? 'Pending review'
-        : report?.status === 'needsReview' ? 'Needs review'
+        : isPending ? 'Needs verification'
           : report?.status === 'rejected' ? 'Rejected'
             : report?.status || 'No attached update';
 
@@ -115,6 +113,8 @@ export function ReportDrawer({
     const original = report?.completion;
     if ((original == null || Number(original) !== numericCompletion)
       && needReason('Explain the corrected percentage before verifying progress.')) return;
+    if (numericCompletion < item?.verified
+      && needReason('Explain the lower verified total before verifying progress.')) return;
     setError('');
     onApprove(report, completion.trim(), reason.trim());
   }
@@ -139,8 +139,8 @@ export function ReportDrawer({
       >
         <header className="drawer-header">
           <div>
-            <div className="eyebrow">{projectCode && `${projectCode} · `}{report ? 'Site evidence' : 'Progress details'}</div>
-            <SheetTitle asChild><h2 id={`${id}-title`}>{item?.id || report?.itemId || 'Unmatched update'} · {report ? report.area || item?.demoArea || 'Area unassigned' : 'Work item progress'}</h2></SheetTitle>
+            <div className="eyebrow">{projectCode && `${projectCode} · `}{isPending ? 'Supervisor review' : 'Progress details'}</div>
+            <SheetTitle asChild><h2 id={`${id}-title`}>{item?.ref ? `Ref. ${item.ref}` : 'Unmatched update'} · {report ? report.area || item?.demoArea || 'Area unassigned' : 'Work item progress'}</h2></SheetTitle>
             <SheetDescription asChild><p id={`${id}-description`}>{item?.description || 'Review the report and match its scope before updating progress.'}</p></SheetDescription>
           </div>
           <Button className="ghost icon" aria-label="Close site report" onClick={onClose}>
@@ -158,57 +158,14 @@ export function ReportDrawer({
             )}
           </div>
 
-          <h3>Original site update</h3>
-          {report ? (
-            <div className="message-card">
-              <div className="message-meta">
-                <strong>{report.sender || 'Sender not recorded'}</strong>
-                <time dateTime={report.date || undefined}>{timeLabel(report.date)}</time>
-              </div>
-              <blockquote className="message-text" style={{ margin: 0 }}>
-                {report.message || 'No message text attached.'}
-              </blockquote>
-            </div>
-          ) : (
-            <div className="notice info"><MessageSquare aria-hidden="true" /><span>No site update is attached to this work item. Add an update to record new progress.</span></div>
-          )}
-
-          {photoUrl && !photoFailed ? (
-            <figure className="evidence-placeholder" style={{ marginInline: 0 }}>
-              <img
-                src={photoUrl}
-                alt={report?.photoAlt || `Site evidence attached to report ${report?.id || ''}`}
-                onError={() => setPhotoFailed(true)}
-              />
-              <figcaption>{report?.channel === 'whatsapp-mock' ? 'Generated demo photo · not actual project evidence' : isSimulated ? 'Demo attachment' : 'Attached site photo'} · review alongside the original message</figcaption>
-            </figure>
-          ) : (
-            <div className="evidence-placeholder">
-              <ImageOff aria-hidden="true" />
-              <strong>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</strong>
-              <span>{photoFailed ? 'The report is retained. Check the attachment before verifying.' : report ? 'This update contains text only. No photo evidence is being implied.' : 'A site photo will appear here when an update includes one.'}</span>
-            </div>
-          )}
-
-          <h3>Cumulative physical progress</h3>
-          <div className="detail-grid">
-            <div className="detail-block">
-              <div className="detail-label">{report ? 'Reported in this update' : 'Reported total'}</div>
-              <div className="detail-value">{percent(report?.completion ?? (!report ? item?.reported : null))}</div>
-            </div>
-            <div className="detail-block">
-              <div className="detail-label">Currently verified</div>
-              <div className="detail-value">{percent(item?.verified)}</div>
-            </div>
-            <div className="detail-block">
-              <div className="detail-label">Work item</div>
-              <div className="detail-value">{hasMatchedItem || !report ? item?.ref || 'Not matched' : 'Not matched'}</div>
-            </div>
-            <div className="detail-block">
-              <div className="detail-label">Completion basis</div>
-              <div className="detail-value">{report?.completionBasis === 'cumulative' ? 'Total to date' : report ? 'Needs confirmation' : 'No report selected'}</div>
-            </div>
-          </div>
+          <section className="site-report-progress" aria-label="Completion totals">
+            <dl className="site-report-totals">
+              <div><dt>Current reported total</dt><dd>{percent(item?.reported)}</dd><small>Worker’s latest total</small></div>
+              <div><dt>Current verified total</dt><dd>{percent(item?.verified)}</dd><small>Supervisor checked</small></div>
+            </dl>
+            {report && <div className="site-report-observation"><span>This update</span><strong>{percent(report.completion)}</strong><small>{report.completionBasis === 'cumulative' ? 'Cumulative total to date' : 'Completion basis needs confirmation'}</small></div>}
+            {isPending && !isVo && <p className="site-report-verification-preview"><ShieldCheck size={15} aria-hidden="true" /><span>After verification: <strong>{validCompletion ? percent(numericCompletion) : 'Enter a valid total'}</strong> verified. Reported total stays {percent(item?.reported)}.</span></p>}
+          </section>
 
           {isVo ? (
             <div className="notice warning">
@@ -218,7 +175,7 @@ export function ReportDrawer({
           ) : isVerified ? (
             <div className="notice success">
               <ShieldCheck aria-hidden="true" />
-              <span><strong>This report is already verified.</strong><br />{report?.verifiedBy ? `${report.verifiedBy}. ` : ''}Replaying its event will not add progress again.</span>
+              <span><strong>This report is already verified.</strong><br />{report?.verifiedBy ? `${report.verifiedBy}. ` : ''}{report?.approvedCompletion != null ? `Verified in this review: ${percent(report.approvedCompletion)}. ` : ''}Original evidence is retained.</span>
             </div>
           ) : !hasMatchedItem && report ? (
             <div className="notice warning"><AlertTriangle aria-hidden="true" /><span>Match the update to one work item and area before verifying progress.</span></div>
@@ -238,16 +195,10 @@ export function ReportDrawer({
             <div className="notice warning"><AlertTriangle aria-hidden="true" /><span>Review and lock the contract baseline before verifying this progress update.</span></div>
           )}
 
-          <div className="notice info">
-            <Info aria-hidden="true" />
-            <span>Verification records a physical observation. The QS reviews claimable quantity, valuation and eligibility separately.</span>
-          </div>
-
           {isPending && report && !isVo && (
             <div>
-              <h3 className="form-section-heading">Review decision</h3>
-              {!isVo && (
-                <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
+              <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">Check the original update and photo below, then confirm the whole work item’s verified total.</p>
+              <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
                   <input
                     id={`${id}-completion`}
                     className="form-input"
@@ -261,36 +212,59 @@ export function ReportDrawer({
                     aria-invalid={completion.trim() !== '' && !validCompletion}
                     onChange={(event) => { setCompletion(event.target.value); setError(''); }}
                   />
-                </FormField>
-              )}
-              <FormField className="drawer-note-field" label={isVo ? 'QS review note' : 'Review note or correction reason'} error={error}>
+              </FormField>
+              <FormField className="drawer-note-field" label="Review note or correction reason" error={error}>
                 <textarea
                   ref={noteRef}
                   id={`${id}-reason`}
                   className="form-textarea"
                   value={reason}
                   rows={3}
-                  placeholder={isVo ? 'Record the scope question, instruction evidence or next action…' : 'Add context, or explain why this update needs a correction…'}
+                  placeholder="Add context, or explain why this update needs a correction…"
                   aria-invalid={Boolean(error)}
                   onChange={(event) => { setReason(event.target.value); setError(''); }}
                 />
               </FormField>
-              <div className="review-actions">
-                {isVo ? (
-                  <>
-                    <Button icon={X} disabled={!onChange} onClick={() => change('reject')}>Dismiss flag</Button>
-                    <Button icon={MessageSquare} disabled={!onChange} onClick={() => change('clarify')}>Save review note</Button>
-                  </>
-                ) : (
-                  <>
-                    <Button disabled={!onChange} onClick={() => change('reject')}>Reject</Button>
-                    <Button icon={MessageSquare} disabled={!onChange} onClick={() => change('clarify')}>Needs clarification</Button>
-                    <Button icon={Flag} disabled={!onChange} onClick={() => change('vo')}>Flag possible VO</Button>
-                  </>
-                )}
-              </div>
+              <div className="site-report-other-actions"><span>Other review actions</span><div className="review-actions">
+                <Button className="ghost" disabled={!onChange} onClick={() => change('reject')}>Reject</Button>
+                <Button className="ghost" icon={MessageSquare} disabled={!onChange} onClick={() => change('clarify')}>Needs clarification</Button>
+                <Button className="ghost" icon={Flag} disabled={!onChange} onClick={() => change('vo')}>Flag possible VO</Button>
+              </div></div>
             </div>
           )}
+
+          {report ? <details className="site-report-evidence" open={isPending || undefined}>
+            <summary>Original site update &amp; photo</summary>
+            <div className="site-report-evidence-body">
+              <div className="message-card">
+              <div className="message-meta">
+                <strong>{report.sender || 'Sender not recorded'}</strong>
+                <time dateTime={report.date || undefined}>{timeLabel(report.date)}</time>
+              </div>
+              <blockquote className="message-text" style={{ margin: 0 }}>
+                {report.message || 'No message text attached.'}
+              </blockquote>
+              </div>
+
+              {photoUrl && !photoFailed ? (
+            <figure className="evidence-placeholder" style={{ marginInline: 0 }}>
+              <img
+                src={photoUrl}
+                alt={report?.photoAlt || `Site evidence attached to report ${report?.id || ''}`}
+                onError={() => setPhotoFailed(true)}
+              />
+              <figcaption>{report?.channel === 'whatsapp-mock' ? 'Generated demo photo · not actual project evidence' : isSimulated ? 'Demo attachment' : 'Attached site photo'} · review alongside the original message</figcaption>
+            </figure>
+          ) : (
+            <div className="evidence-placeholder">
+              <ImageOff aria-hidden="true" />
+              <strong>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</strong>
+              <span>{photoFailed ? 'The report is retained. Check the attachment before verifying.' : report ? 'This update contains text only. No photo evidence is being implied.' : 'A site photo will appear here when an update includes one.'}</span>
+            </div>
+          )}
+
+            </div>
+          </details> : <div className="notice info"><MessageSquare aria-hidden="true" /><span>No site update is attached to this work item. Add an update to record new progress.</span></div>}
 
           {report?.note && <p className="field-note" style={{ marginTop: 18 }}>{report.note}</p>}
           {report && (
@@ -300,6 +274,8 @@ export function ReportDrawer({
                 <div><dt>Event ID</dt><dd>{report.id || 'ID unavailable'}</dd></div>
                 {report.sourceMessageId && <div><dt>Original message ID</dt><dd>{report.sourceMessageId}</dd></div>}
               </dl>
+              <p>Verification records physical progress. The QS reviews claim quantities, values and eligibility separately.</p>
+              {report.reviewReason && <p><strong>Recorded review note:</strong> {report.reviewReason}</p>}
               <p>The original message and photo stay with this report. Replaying the same update checks that it cannot add progress twice.</p>
               <Button icon={RotateCcw} disabled={!onReplay} onClick={() => onReplay?.(report)}>Replay demo update</Button>
             </details>
