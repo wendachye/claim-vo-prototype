@@ -1,8 +1,9 @@
-import { ArrowRight, Bell, CheckCheck, ChevronDown, FileText, MapPin } from 'lucide-react';
+import { ArrowRight, Bell, Check, CheckCheck, ChevronDown, ClipboardList, FileText, Flag, MapPin, MessageSquare } from 'lucide-react';
 import { getProjectWorkflow } from '../data/workflow.js';
 import { getProjectAttention } from '../data/project-attention.js';
+import { getProjectOverview } from '../data/project-overview.js';
 import { periodLabel } from './claim-view-utils.js';
-import { Button, PageHeader } from './ui.jsx';
+import { Badge, Button, formatTime, PageHeader } from './ui.jsx';
 import './project-workflow.css';
 
 const moduleSteps = [
@@ -11,6 +12,11 @@ const moduleSteps = [
   { id: 'vo', label: 'Extra work', route: 'vo', views: ['vo'] },
   { id: 'claims', label: 'Monthly claims', route: 'claims', views: ['claims', 'claim-preview', 'claim-status'] },
 ];
+
+const overviewIcons = { contract: FileText, site: MessageSquare, vo: Flag, claims: ClipboardList };
+const overviewTone = (status) => /needs|awaiting|pending|part paid|ready to confirm/i.test(status) ? 'amber'
+  : /^(price approved|new updates|submitted|certified)$/i.test(status) ? 'blue'
+    : /^(confirmed|prepared|paid|up to date|reviewed|completed)$/i.test(status) ? 'green' : 'slate';
 
 export function WorkflowNav({ project, view, onNavigate }) {
   if (!moduleSteps.some(step => step.views.includes(view))) return null;
@@ -43,8 +49,9 @@ function nextTaskContext(project, task) {
   return [...new Set([source?.area || source?.location, item?.description].filter(Boolean))].join(' · ') || task.detail;
 }
 
-export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onReviewContract, onOpenAttention, attentionOpen }) {
+export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onOpenActivity, onReviewContract, onOpenAttention, attentionOpen }) {
   const workflow = getProjectWorkflow(project);
+  const overview = getProjectOverview(project);
   const attentionTasks = getProjectAttention(project).filter(task => task.projectId === project.id);
   const nextTask = workflow.next.route === 'contract' ? null : attentionTasks[0];
   const usesProvidedSource = project.contract?.sourceKind === 'provided';
@@ -55,7 +62,7 @@ export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onRev
   const openNext = () => nextTask ? onOpenTask ? onOpenTask(nextTask) : onOpenAttention?.() : onNext(workflow.next);
 
   return <section className="project-overview">
-    <PageHeader title="Project overview" description="Your next task and the steps in this project." />
+    <PageHeader title="Project overview" description="Your project at a glance, and what to do next." />
     <section className="overview-next-task" aria-labelledby="overview-attention-heading">
       <header className="overview-next-header">
         <div>{taskCount ? <Bell size={16} aria-hidden="true" /> : <CheckCheck size={16} aria-hidden="true" />}<h2 id="overview-attention-heading">{attentionHeading}</h2></div>
@@ -66,7 +73,33 @@ export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onRev
         <Button className="primary" onClick={openNext}>{nextTask ? nextTask.actionLabel : workflow.next.label}<ArrowRight size={16} /></Button>
       </div>
     </section>
-    <nav className="overview-workflow" aria-label="Project steps">{workflow.steps.map((step, index) => <button type="button" className="overview-step" key={step.id} onClick={() => onNavigate(step.route)} title={step.detail}><span className="overview-step-number" aria-hidden="true">{index + 1}</span><span className="overview-step-copy"><strong>{step.label}</strong><small>{step.status}</small></span><ArrowRight size={15} aria-hidden="true" /></button>)}</nav>
+    <div className="overview-workflow-heading"><h2>How this project works</h2><span>Open any step to review it</span></div>
+    <nav className="overview-workflow" aria-label="Project steps">{workflow.steps.map((step, index) => {
+      const card = overview.cards.find(entry => entry.id === step.id);
+      const Icon = overviewIcons[step.id];
+      const status = card?.status || step.status;
+      const summary = card?.summary || step.detail;
+      const detail = card?.detail;
+      const tone = overviewTone(status);
+      return <button type="button" className="overview-step" key={step.id} onClick={() => onNavigate(step.route)}>
+        <span className="overview-step-top"><span className="overview-step-icon"><Icon size={20} aria-hidden="true" /></span><span className="overview-step-number">Step {index + 1}</span><ArrowRight size={16} aria-hidden="true" /></span>
+        <h3>{step.label}</h3>
+        <span className="overview-step-copy">
+          {summary !== status && <span className="overview-step-summary">{summary}</span>}
+          {detail && detail !== status && detail !== summary && <span className="overview-step-detail">{detail}</span>}
+        </span>
+        <Badge tone={tone}>{tone === 'green' && <Check size={11} aria-hidden="true" />}{status}</Badge>
+      </button>;
+    })}</nav>
+    <section className="overview-activity" aria-labelledby="overview-activity-heading">
+      <header><h2 id="overview-activity-heading">Recent activity</h2><p>Latest updates in this project.</p></header>
+      {overview.activities.length ? <ul>{overview.activities.slice(0, 3).map(activity => <li key={activity.id}>
+        <button type="button" className="overview-activity-row" aria-label={`${activity.title}: ${activity.detail} · ${formatTime(activity.date)}`} onClick={() => onOpenActivity?.(activity)} disabled={!onOpenActivity}>
+          <span className="overview-activity-copy"><strong>{activity.title}</strong><span>{activity.detail}</span></span>
+          <time dateTime={activity.date}>{formatTime(activity.date)}</time><ArrowRight size={15} aria-hidden="true" />
+        </button>
+      </li>)}</ul> : <p className="overview-activity-empty">No activity yet. Updates will appear as you work on this project.</p>}
+    </section>
     {project.providedContractDemo && <details className="contract-scenario-guide">
       <summary><span>About this demo<small>{usesProvidedSource ? 'Provided contract · simulated site activity' : 'Fictional contract · simulated site activity'}</small></span><ChevronDown size={16} aria-hidden="true" /></summary>
       <div className="contract-scenario-content">
