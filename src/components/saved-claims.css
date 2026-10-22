@@ -1,24 +1,31 @@
 .claim-history-list { display:flex; flex-direction:column; gap:14px; }
 .claim-history-group { overflow:hidden; border:1px solid var(--border); border-radius:10px; background:#fff; }
-.claim-history-record { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:18px 24px; padding:21px; }
+.claim-history-record { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:12px 24px; padding:21px; }
 .claim-history-main { min-width:0; }
 .claim-history-title { display:flex; align-items:center; flex-wrap:wrap; gap:9px; }
 .claim-history-title h3 { font-size:15px; line-height:1.5; color:#1e293b; font-weight:600; }
 .claim-history-title .badge { font-size:10px; min-height:22px; }
-.claim-history-meta,.claim-history-date { color:#64748b; font-size:12px; line-height:1.8; }
+.claim-history-meta { color:#64748b; font-size:12px; line-height:1.8; }
 .claim-history-meta { margin-top:7px; }
-.claim-history-date { margin-top:2px; font-size:11px; }
-.claim-history-help { margin-top:9px; color:#a16207; font-size:12px; line-height:1.8; }
-.claim-history-revision { margin-top:7px; color:#475569; font-size:12px; line-height:1.8; }
-.claim-history-response { margin-top:7px; color:#64748b; font-size:12px; line-height:1.8; }
-.claim-history-response summary { cursor:pointer; }
-.claim-history-response p { margin-top:5px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.claim-history-meta strong { color:#475569; font-weight:550; }
+.claim-history-next { grid-column:1/-1; color:#64748b; font-size:12px; line-height:1.8; }
+.claim-history-next.needs-attention { color:#a16207; }
+.claim-version-details { grid-column:1; min-width:0; color:#64748b; font-size:12px; line-height:1.8; }
+.claim-version-details > summary { display:flex; align-items:center; gap:8px; width:fit-content; min-height:40px; cursor:pointer; list-style:none; }
+.claim-version-details > summary::after { content:'+'; color:#94a3b8; }
+.claim-version-details[open] > summary::after { content:'−'; }
+.claim-version-details-content { display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding-top:8px; }
+.claim-version-details-content > p { overflow-wrap:anywhere; }
+.claim-version-details-content > .button { margin-top:4px; }
+.claim-history-response { max-width:720px; }
+.claim-history-response > strong { color:#475569; font-weight:550; }
+.claim-history-response p { margin-top:3px; white-space:pre-wrap; overflow-wrap:anywhere; }
 .claim-unsaved { color:#b45309; font-size:11px; }
 .claim-history-amount { text-align:right; font-variant-numeric:tabular-nums; }
 .claim-history-amount small { display:block; margin-bottom:5px; color:#64748b; font-size:12px; line-height:1.7; }
 .claim-history-amount strong { color:#1e293b; font-size:23px; font-weight:600; line-height:1.4; letter-spacing:-.4px; white-space:nowrap; }
 .claim-history-amount strong > span { color:#64748b; font-size:12px; font-weight:450; letter-spacing:0; }
-.claim-history-actions { grid-column:1/-1; display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:9px; padding-top:16px; border-top:1px solid #edf1f5; }
+.claim-history-actions { grid-column:2; display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:9px; }
 .claim-older-versions { border-top:1px solid var(--border); background:#fafcfe; }
 .claim-older-versions > summary { display:flex; align-items:center; gap:7px; padding:13px 21px; color:#64748b; cursor:pointer; font-size:12px; list-style:none; }
 .claim-older-versions > summary::after { content:'+'; margin-left:auto; font-size:15px; }
@@ -29,6 +36,8 @@
 .claim-history-record.older .claim-history-actions { padding-top:0; border:0; }
 @media screen and (max-width:760px) {
   .claim-history-record { padding:17px; gap:16px; }
+  .claim-version-details,.claim-history-actions { grid-column:1/-1; }
+  .claim-history-actions { padding-top:14px; border-top:1px solid #edf1f5; }
   .claim-history-title h3 { font-size:14px; }
   .claim-history-meta { font-size:11px; }
   .claim-history-amount strong { font-size:21px; }

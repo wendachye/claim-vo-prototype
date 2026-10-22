@@ -20,24 +20,40 @@ export function SavedClaimsList({ project, groups, currency, dirtyPeriods, onCon
       : !draft.snapshot?.canPrepare ? 'Continue editing to finish the checks before preparing.' : '' : '';
     const helpId = `claim-prepare-help-${encodeURIComponent(draft.id)}`;
     const itemCount = selectedRows(draft.snapshot).length;
-    const continueAction = latest && status !== 'queried' && !(prepared && revisionSource) && <Button className={prepareHelp ? 'primary' : ''} icon={prepared ? Plus : ArrowRight} onClick={() => !prepared && revisionSource && onRevise ? onRevise(revisionSource.id) : onContinue(draft)}>{prepared ? 'Start new version' : revisionSource ? 'Continue revision' : 'Continue editing'}</Button>;
+    const continueClaim = () => !prepared && revisionSource && onRevise ? onRevise(revisionSource.id) : onContinue(draft);
+    const canContinue = latest && status !== 'queried' && !(prepared && revisionSource);
+    const continueLabel = prepared ? 'Start new version' : revisionSource ? 'Continue revision' : 'Continue editing';
+    const nextStep = prepareHelp || ({
+      draft: 'Review the saved claim, then mark it prepared.',
+      prepared: 'Record submission for this prepared version.',
+      submitted: 'Record certification or a query for this version.',
+      queried: queryContext?.revision ? `Version ${queryContext.revision.revision} responds to this query. Open the query to follow its progress.` : 'Review the query and respond in a separate claim revision.',
+      certified: 'Record the total paid to date for this version.',
+      paid: 'Payment is fully recorded. View the claim status for its history.',
+    }[status]);
     const previewAction = <Button className={prepared && latest && !onTrack ? 'primary' : ''} icon={FileText} onClick={() => onPreview?.(draft.id)}>Preview &amp; export</Button>;
     const trackingAction = prepared && onTrack && <Button className={latest ? 'primary' : ''} icon={ArrowRight} onClick={() => onTrack(draft.id)}>{status === 'queried' ? latest ? 'Review query' : 'View query history' : latest ? 'Track claim status' : 'View claim status'}</Button>;
-    const prepareAction = showPrepare && <Button className={prepareHelp ? '' : 'primary'} icon={CheckCheck} disabled={!!prepareHelp} aria-describedby={prepareHelp ? helpId : undefined} onClick={() => onPrepare(draft.id)}>Mark prepared</Button>;
+    const primaryDraftAction = showPrepare && (prepareHelp
+      ? <Button className="primary" icon={ArrowRight} aria-describedby={helpId} onClick={continueClaim}>{continueLabel}</Button>
+      : <Button className="primary" icon={CheckCheck} onClick={() => onPrepare(draft.id)}>Mark prepared</Button>);
+    const blockedPrepareAction = showPrepare && prepareHelp && <Button icon={CheckCheck} disabled aria-describedby={helpId}>Mark prepared</Button>;
 
     return <article className={`claim-history-record${latest ? '' : ' older'}`} key={draft.id}>
       <div className="claim-history-main">
         <div className="claim-history-title"><h3>{latest ? periodLabel(draft.period) : `Version ${draft.revision}`}</h3><Badge tone={['prepared', 'paid'].includes(status) ? 'green' : status === 'queried' && !queryContext?.revision ? 'amber' : status === 'draft' ? 'slate' : 'blue'}>{statusLabel}</Badge>{latest && dirtyPeriods[draft.period] && <span className="claim-unsaved">Unsaved edits</span>}</div>
-        <p className="claim-history-meta">{latest && `Version ${draft.revision} · `}{itemCount} selected {itemCount === 1 ? 'item' : 'items'}</p>
-        <p className="claim-history-date">Saved {formatTime(draft.createdAt)}</p>
-        {revisionSource && <p className="claim-history-revision">Revises version {revisionSource.revision} · Query {revisionContext.query.reference}</p>}
-        {revisionSource && draft.revisionResponse && <details className="claim-history-response"><summary>QS response</summary><p>{draft.revisionResponse}</p></details>}
-        {queryContext?.revision && <p className="claim-history-revision">Revised in version {queryContext.revision.revision}. Original assessment retained.</p>}
-        {prepareHelp && <p className="claim-history-help" id={helpId}>{prepareHelp}</p>}
+        <p className="claim-history-meta">{latest && <strong>Version {draft.revision}</strong>}{latest && ' · '}{itemCount} selected {itemCount === 1 ? 'item' : 'items'}</p>
       </div>
       <div className="claim-history-amount"><small>{prepared ? 'Claim amount' : 'This month'}</small><strong><span>{draft.snapshot?.currency || currency}</span> {amount(draft.snapshot?.totals?.currentValue)}</strong></div>
+      {latest && <p className={`claim-history-next${prepareHelp ? ' needs-attention' : ''}`} id={prepareHelp ? helpId : undefined}>{nextStep}</p>}
+      <details className="claim-version-details"><summary>Version details</summary><div className="claim-version-details-content">
+        <p>Saved {formatTime(draft.createdAt)}</p>
+        {revisionSource && <p>Revises version {revisionSource.revision} · Query {revisionContext.query.reference}</p>}
+        {revisionSource && draft.revisionResponse && <div className="claim-history-response"><strong>QS response</strong><p>{draft.revisionResponse}</p></div>}
+        {queryContext?.revision && <p>Revised in version {queryContext.revision.revision}. Original assessment retained.</p>}
+        {canContinue && !prepareHelp && <Button icon={prepared ? Plus : ArrowRight} onClick={continueClaim}>{continueLabel}</Button>}
+      </div></details>
       <div className="claim-history-actions">
-        {prepareHelp ? <>{previewAction}{prepareAction}{continueAction}</> : <>{continueAction}{previewAction}{prepareAction}{trackingAction}</>}
+        {previewAction}{blockedPrepareAction}{primaryDraftAction}{trackingAction}
       </div>
     </article>;
   }
