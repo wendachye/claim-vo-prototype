@@ -8,7 +8,7 @@ import './vo-review.css';
 
 const reviewStatusLabel = (status) => status === 'approved' ? 'Price approved' : VO_STATUS_LABELS[status];
 
-export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }) {
+export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }) {
   const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -77,7 +77,7 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
     <PageHeader title="Extra work (VO)" description="Check the scope, instruction, price and claim eligibility." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} />
     {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This extra-work case is not available in the selected project.</span><Button onClick={onClearCaseSelection}>Show all extra work</Button></div>}
 
-    {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>Flag extra work from Site updates. Its message and photo will appear here for review.</p><Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button></div> : <>
+    {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>{project.items?.length ? 'Flag extra work from Site updates. Its message and photo will appear here for review.' : 'Add and review a contract work list before recording site updates and extra work.'}</p>{!project.items?.length && onReviewContract ? <Button icon={ChevronRight} onClick={onReviewContract}>Add a contract</Button> : <Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button>}</div> : <>
       <div className="vo-list-controls">
         <div className="vo-filter-fields">
           <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find extra work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search VO records" placeholder="Search work, references or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear VO search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>

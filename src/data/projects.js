@@ -357,9 +357,10 @@ export function resetProject(project) {
   const resetSeed = { ...clone(seed), whatsappMessages: clone(getWhatsAppMessages({
     ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   })), voReviews: normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews }),
-  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }), claimTracking: [], messageClarifications: [] };
+  claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }),
+  claimTracking: project.claimExamplesDemo === true ? normalizeClaimTracking({ ...project, ...seed, claimTracking: seed.claimTracking }) : [], messageClarifications: [] };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
-  delete next.lockedAt;
+  if (project.claimExamplesDemo !== true) delete next.lockedAt;
   delete next.drawingMapping;
   return next;
 }

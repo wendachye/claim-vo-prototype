@@ -118,15 +118,15 @@ describe('WhatsApp review retains the exact message and separates saved updates 
     expect(workspace().projects).toEqual(before);
   });
 
-  it('describes an approved VO as a price approval with a separate claim eligibility review', () => {
+  it('describes price approval alongside the recorded claim eligibility result', () => {
     const { project } = fixture();
     const report = project.reports.find(entry => entry.vo && entry.status === 'voApproved');
     const before = workspace().projects;
     mount(report.sourceMessageId);
     expect(within(review()).getByText('Price approved', { exact: true, selector: 'strong' })).toBeTruthy();
-    expect(document.querySelector('.wa-result-vo').textContent).toMatch(/claim eligibility/i);
+    expect(document.querySelector('.wa-result-vo').textContent).toMatch(/claim eligibility checks are complete/i);
     expect(document.querySelector('.wa-result-vo').textContent).not.toContain('Extra work approved');
-    expect(within(review()).getByRole('button', { name: 'Review extra work', exact: true })).toBeTruthy();
+    expect(within(review()).getByRole('button', { name: 'View extra work', exact: true })).toBeTruthy();
     expect(workspace().projects).toEqual(before);
   });
 

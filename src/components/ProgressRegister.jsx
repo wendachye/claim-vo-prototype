@@ -28,7 +28,7 @@ export function ProgressFilters({ project, items, search, block, filter, blocks,
     <div className="progress-filter-fields">
       <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search completion list" placeholder="Search references, work or areas…" value={search} onChange={(event) => onSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear search" onClick={() => onSearch('')}><X size={14}/></button>}</div></div>
       <FormField label="Block / location"><NativeSelect value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</NativeSelect></FormField>
-      <FormField label="Review status"><NativeSelect value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}{filter === 'vo' && <option value="vo">Extra work</option>}</NativeSelect></FormField>
+      <FormField label="Review status"><NativeSelect value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}</NativeSelect></FormField>
     </div>
     <div className="progress-list-tools">
       <span>Whole-item totals · claim assessment stays separate.</span>

@@ -7,7 +7,6 @@ import {
   ImageOff,
   MessageSquare,
   Plus,
-  RotateCcw,
   ShieldCheck,
   X,
 } from 'lucide-react';
@@ -38,7 +37,6 @@ export function ReportDrawer({
   onClose,
   onApprove,
   onChange,
-  onReplay,
   onAdd,
   onReviewVO,
 }) {
@@ -269,15 +267,14 @@ export function ReportDrawer({
           {report?.note && <p className="field-note" style={{ marginTop: 18 }}>{report.note}</p>}
           {report && (
             <details className="site-report-details">
-              <summary>Update details &amp; demo tools</summary>
+              <summary>Update details</summary>
               <dl>
                 <div><dt>Event ID</dt><dd>{report.id || 'ID unavailable'}</dd></div>
                 {report.sourceMessageId && <div><dt>Original message ID</dt><dd>{report.sourceMessageId}</dd></div>}
               </dl>
               <p>Verification records physical progress. The QS reviews claim quantities, values and eligibility separately.</p>
               {report.reviewReason && <p><strong>Recorded review note:</strong> {report.reviewReason}</p>}
-              <p>The original message and photo stay with this report. Replaying the same update checks that it cannot add progress twice.</p>
-              <Button icon={RotateCcw} disabled={!onReplay} onClick={() => onReplay?.(report)}>Replay demo update</Button>
+              <p>The original message and photo stay with this report.</p>
             </details>
           )}
         </div>

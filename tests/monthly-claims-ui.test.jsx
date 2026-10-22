@@ -46,6 +46,39 @@ function SavedClaimJourney({ initial, onChange, onSave }) {
 }
 
 describe('simplified monthly claims journey', () => {
+  it('opens a saved draft directly from its visible edit control without an extra details step', async () => {
+    const user = userEvent.setup();
+    const project = fixture();
+    const original = structuredClone(project);
+    const save = vi.fn();
+    render(<MonthlyClaimView project={project} initialTab="drafts" onSave={save} />);
+    expect(screen.queryByText('Version details', { exact: true })).toBeNull();
+    const edit = screen.getByRole('button', { name: 'Edit claim', exact: true });
+    expect(edit.closest('details')).toBeNull();
+    await user.click(edit);
+    expect(screen.getByRole('heading', { name: 'Prepare a monthly claim' })).toBeTruthy();
+    expect(screen.getByRole('spinbutton', { name: 'A QS cumulative quantity' }).value).toBe('40');
+    expect(screen.getByRole('spinbutton', { name: 'A previously claimed value' }).value).toBe('5');
+    expect(save).not.toHaveBeenCalled();
+    expect(project).toEqual(original);
+  });
+
+  it('offers a new version for a prepared assessment instead of editing its saved values', async () => {
+    const user = userEvent.setup();
+    const draftProject = fixture();
+    const project = markClaimPrepared(draftProject, draftProject.claimDrafts[0].id).project;
+    const original = structuredClone(project);
+    const save = vi.fn();
+    render(<MonthlyClaimView project={project} initialTab="drafts" onSave={save} onTrack={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Edit claim', exact: true })).toBeNull();
+    expect(screen.queryByText('Version details', { exact: true })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Start new version', exact: true }));
+    expect(screen.getByRole('spinbutton', { name: 'A QS cumulative quantity' }).value).toBe('40');
+    expect(screen.getByRole('spinbutton', { name: 'A previously claimed value' }).value).toBe('5');
+    expect(save).not.toHaveBeenCalled();
+    expect(project).toEqual(original);
+  });
+
   it('previews a saved draft, prepares that same version and tracks it without saving again', async () => {
     const user = userEvent.setup();
     const project = fixture();
