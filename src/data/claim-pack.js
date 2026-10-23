@@ -45,6 +45,8 @@ export function buildClaimPack(project, draftId) {
     || !Array.isArray(snapshot.workRows) || !Array.isArray(snapshot.voRows)
     || !record(snapshot.totals) || !record(snapshot.assessment) || !Array.isArray(snapshot.issues)) return invalid();
   if (draft.projectDetails != null && (!record(draft.projectDetails) || draft.projectDetails.id !== project.id)) return invalid();
+  if (snapshot.claimBasis != null && (!record(snapshot.claimBasis) || snapshot.claimBasis.version !== 1)) return invalid();
+  const hasBasis = record(snapshot.claimBasis);
   const workRows = snapshot.workRows.filter((row) => record(row) && row.included === true);
   const voRows = snapshot.voRows.filter((row) => record(row) && row.included === true);
   if ([...workRows, ...voRows].some((row) => row.evidence?.projectId && row.evidence.projectId !== project.id)) return invalid();
@@ -60,9 +62,10 @@ export function buildClaimPack(project, draftId) {
       : 'Legacy draft: project and contract details below are current workspace details, not a saved metadata snapshot. Financial values and evidence remain from the saved draft.',
     projectDetails: hasSavedDetails ? draft.projectDetails : captureClaimProjectDetails(project),
     workRows, voRows, totals: snapshot.totals, assessment: snapshot.assessment,
+    ...(hasBasis ? { claimBasis: snapshot.claimBasis } : {}),
     issues: snapshot.issues, canPrepare: snapshot.canPrepare === true,
     evidenceRefs: [...workRows.map((row) => evidenceFor(row, 'work')), ...voRows.map((row) => evidenceFor(row, 'vo'))],
-    prototypeNotice: 'Local demonstration assessment. Prepared status does not submit, certify or pay a claim. Values are before tax, retention and other deductions; unknown amounts remain blank.',
+    prototypeNotice: hasBasis ? 'Local demonstration assessment using the saved mock claim basis. Retention is included in the net application; tax, retention releases and other deductions are not supported. Prepared status does not submit, certify or pay a claim; unknown amounts remain blank.' : 'Local demonstration assessment. Prepared status does not submit, certify or pay a claim. Values are before tax, retention and other deductions; unknown amounts remain blank.',
   }) };
 }
 
@@ -111,6 +114,18 @@ export function toClaimCSV(pack) {
   metadata('Document notice', pack.prototypeNotice);
   metadata('Project details source', pack.metadataNotice);
   metadata('Previous claims checked', pack.assessment?.priorConfirmed === true ? 'Confirmed by QS' : 'Not yet confirmed');
+  const basis = pack.claimBasis?.version === 1 ? pack.claimBasis : null;
+  if (basis) {
+    metadata('Claim basis version', basis.version);
+    metadata('Billing method', basis.billingMethod === 'quantityRate' ? 'Cumulative quantity × rate' : 'Needs billing-method review');
+    metadata('Retention method', basis.retentionMode === 'none' ? 'No retention' : 'Rate with cumulative cap');
+    if (basis.retentionMode === 'rateCap') {
+      metadata('Retention rate (%)', basis.retentionRate);
+      metadata('Retention cap', basis.retentionCap);
+    }
+    metadata('Previous claim reference', basis.priorReference || 'Not recorded');
+    metadata('Line amount basis', 'Work and variation amounts are gross, before retention. Previous net is the cumulative amount submitted, not certified or paid.');
+  }
   if (pack.assessment?.note) metadata('QS note', pack.assessment.note);
   if (pack.assessment?.adjustmentReason) metadata('Adjustment reason', pack.assessment.adjustmentReason);
   for (const issue of list(pack.issues)) add({ Section: 'Review needed', 'Review notes': issue });
@@ -127,11 +142,23 @@ export function toClaimCSV(pack) {
     'Evidence reference': row.approvalReference, 'Evidence date': row.approvalDate,
     'Reviewer / approver': row.approver, 'Review notes': list(row.issues).join('\n'),
   });
-  add({ Section: 'Total', Description: 'Selected work and variations',
-    'Previous claimed': pack.totals?.previousValue, 'Assessed to date': pack.totals?.cumulativeValue,
-    'This period': pack.totals?.currentValue, Currency: pack.currency });
-  add({ Section: 'Total', Description: 'Contract work this period', 'This period': pack.totals?.workCurrentValue, Currency: pack.currency });
-  add({ Section: 'Total', Description: 'Variations this period', 'This period': pack.totals?.voCurrentValue, Currency: pack.currency });
+  if (basis) {
+    add({ Section: 'Total', Description: 'Selected work and variations (gross)',
+      'Previous claimed': pack.totals?.previousValue, 'Assessed to date': pack.totals?.cumulativeValue,
+      'This period': pack.totals?.grossCurrentValue, Currency: pack.currency });
+    add({ Section: 'Reconciliation', Description: 'Retention held (cumulative)', 'Assessed to date': pack.totals?.retentionValue, Currency: pack.currency });
+    add({ Section: 'Reconciliation', Description: 'Cumulative net after retention', 'Assessed to date': pack.totals?.netCumulativeValue, Currency: pack.currency });
+    add({ Section: 'Reconciliation', Description: 'Previously submitted net', 'Previous claimed': pack.totals?.previousNetValue, Currency: pack.currency });
+    add({ Section: 'Reconciliation', Description: 'Net claim this period', 'This period': pack.totals?.currentValue, Currency: pack.currency });
+    add({ Section: 'Total', Description: 'Contract work this period (gross)', 'This period': pack.totals?.workCurrentValue, Currency: pack.currency });
+    add({ Section: 'Total', Description: 'Variations this period (gross)', 'This period': pack.totals?.voCurrentValue, Currency: pack.currency });
+  } else {
+    add({ Section: 'Total', Description: 'Selected work and variations',
+      'Previous claimed': pack.totals?.previousValue, 'Assessed to date': pack.totals?.cumulativeValue,
+      'This period': pack.totals?.currentValue, Currency: pack.currency });
+    add({ Section: 'Total', Description: 'Contract work this period', 'This period': pack.totals?.workCurrentValue, Currency: pack.currency });
+    add({ Section: 'Total', Description: 'Variations this period', 'This period': pack.totals?.voCurrentValue, Currency: pack.currency });
+  }
   for (const evidence of list(pack.evidenceRefs)) add({
     Section: evidence.kind === 'vo' ? 'Variation evidence' : 'Work evidence',
     Reference: evidence.rowRef ?? evidence.rowId, Description: evidence.title,

@@ -49,6 +49,14 @@ Use **View evidence** on a work item or VO in Choose work, Enter totals or Revie
 
 In **Preview & export**, each saved schedule item opens evidence captured with that exact version. New site updates, changed reviews or missing live records never replace its saved evidence. Missing attachments are shown explicitly. These controls stay out of the printed claim; its existing evidence appendix remains available.
 
+## Mock claim basis
+
+In **Enter totals**, expand **Claim basis** to set cumulative quantity × rate billing, no retention or a retention rate with a cumulative monetary cap, and previously submitted net amounts/reference. Item-level **Claimed before (gross)** values stay separate from the prior net total. Confirm the settings and prior submissions before preparation; saved drafts and status tracking never become prior claims automatically.
+
+Review reconciles gross value, retention held, cumulative net and prior submitted net to this month's net claim. For example, SGD 14,094 gross with 5% retention and a SGD 1,000 cap gives SGD 13,389.30 net with no prior submission. These are explicit mock QS inputs, not extracted S.I.T. terms. The supported profile is SGD quantity × rate; other methods/currencies require review. Tax, advances and retention releases remain outside this prototype.
+
+Existing gross-only drafts keep their original calculation until **Set claim basis** is chosen for a new revision. Saved versions, evidence, preview/CSV/PDF and tracker amounts retain the basis captured with that version; incomplete settings can be saved for later but cannot be prepared.
+
 ## Mock clarification replies
 
 Open an unclear WhatsApp message and **Save clarification request**. Use **Use demo reply** or enter a measured work item, compatible site area, cumulative total and worker reply, then **Save mock reply**. The original message and photo stay in the thread; the reply is a separate saved message and reuses the original attachment with an explicit label. No progress changes until **Add clarified progress update**. Use **Verify clarified progress** for the supervisor's review. Needs attention follows the reply and then its pending report, clearing that action after verification. Threads survive reload, while unfinished forms remain in session memory by project/message. This is a local demonstration; no WhatsApp message is sent.

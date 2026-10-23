@@ -1,5 +1,6 @@
 import { getVOCases, getVOClaimEligibility } from './vo.js';
 import { captureClaimProjectDetails } from './claim-pack.js';
+import { normalizeClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum, claimBasisDifference, applyClaimBasis } from './claim-basis.js';
 
 // Preparation only: these records never certify, submit or pay a claim.
 const clone = (value) => structuredClone(value);
@@ -32,13 +33,14 @@ function normalizeAssessment(project, input) {
   const raw = record(input) ? input : {};
   if (!record(input)) errors.push('Use a valid QS assessment.');
   if (raw.projectId && raw.projectId !== project.id) errors.push('Use assessment values from the selected project.');
+  const hasBasis = Object.hasOwn(raw, 'claimBasis');
   const normalizeRows = (value, type, allowedIds) => {
     if (value !== undefined && !record(value)) { errors.push(`Use valid ${type} assessment rows.`); return {}; }
     return Object.fromEntries(Object.entries(value || {}).flatMap(([id, entry]) => {
       if (!allowedIds.has(id) || !record(entry)) { errors.push(`Unknown ${type} row in this project: ${id}.`); return []; }
       const field = type === 'work' ? 'assessedQuantity' : 'assessedValue';
-      const assessed = optionalNumber(entry[field], type !== 'work');
-      const prior = optionalNumber(entry.previousValue, true);
+      const assessed = hasBasis ? claimBasisNumber(entry[field], type === 'work' ? 4 : 2) : optionalNumber(entry[field], type !== 'work');
+      const prior = hasBasis ? claimBasisNumber(entry.previousValue, 2) : optionalNumber(entry.previousValue, true);
       if (Number.isNaN(assessed) || Number.isNaN(prior)) errors.push(`${id}: enter non-negative finite values, or leave them blank.`);
       return [[id, {
         include: entry.include === true,
@@ -55,6 +57,11 @@ function normalizeAssessment(project, input) {
     adjustmentReason: text(raw.adjustmentReason),
     note: text(raw.note),
   };
+  if (hasBasis) {
+    const normalized = normalizeClaimBasis(raw.claimBasis, assessment.priorConfirmed);
+    assessment.claimBasis = normalized.value;
+    errors.push(...normalized.errors);
+  }
   return { assessment, errors };
 }
 
@@ -116,6 +123,7 @@ export function countPendingClaimVOs(review) {
 export function buildClaimReview(project, period, input = {}) {
   const { assessment, errors } = normalizeAssessment(project, input);
   const { cutoff, end } = periodEnd(period);
+  const hasBasis = Object.hasOwn(assessment, 'claimBasis');
   const issues = [...errors];
   if (!cutoff) issues.push('Choose a valid claim month.');
   if (!project.locked || (project.items || []).some((entry) => entry.needsReview)) issues.push('Confirm the reviewed contract baseline before preparing this claim.');
@@ -135,12 +143,14 @@ export function buildClaimReview(project, period, input = {}) {
     const previousValue = entered.previousValue ?? (assessment.priorConfirmed ? 0 : null);
     const included = entered.include === true || (entered.previousValue ?? 0) > 0;
     const assessedQuantity = entered.assessedQuantity ?? null;
-    const cumulativeValue = assessedQuantity === null || !sourceValid ? null : money(assessedQuantity * item.rate);
-    const currentValue = cumulativeValue === null || previousValue === null ? null : money(cumulativeValue - previousValue);
+    const cumulativeValue = assessedQuantity === null || !sourceValid ? null : hasBasis ? claimBasisProduct(assessedQuantity, item.rate) : money(assessedQuantity * item.rate);
+    const currentValue = cumulativeValue === null || previousValue === null ? null : hasBasis ? claimBasisDifference(cumulativeValue, previousValue) : money(cumulativeValue - previousValue);
     const rowIssues = [];
     if (included) {
       if (!eligible) rowIssues.push(exclusionReason);
       if (assessedQuantity === null) rowIssues.push('Enter the QS-assessed cumulative quantity.');
+      if (hasBasis && assessedQuantity !== null && sourceValid && cumulativeValue === null) rowIssues.push('Quantity or rate exceeds the supported decimal precision or amount limit.');
+      if (hasBasis && cumulativeValue !== null && previousValue !== null && currentValue === null) rowIssues.push('The calculation exceeds the supported amount limit.');
       if (assessedQuantity !== null && sourceValid && (assessedQuantity > item.quantity + 0.000001 || cumulativeValue > item.amount + 0.01)) rowIssues.push('Assessed work exceeds the baseline quantity or amount; review a variation.');
       if (previousValue === null) rowIssues.push('Confirm the previous claimed value.');
       if (verification.requiresDateConfirmation && !entered.evidenceDateConfirmed) rowIssues.push(`Confirm that the undated verified progress was valid as of ${cutoff || 'the cutoff'}.`);
@@ -165,13 +175,14 @@ export function buildClaimReview(project, period, input = {}) {
     const included = entered.include === true || (entered.previousValue ?? 0) > 0;
     const assessedValue = entered.assessedValue ?? null;
     const cumulativeValue = assessedValue;
-    const currentValue = assessedValue === null || previousValue === null ? null : money(assessedValue - previousValue);
+    const currentValue = assessedValue === null || previousValue === null ? null : hasBasis ? claimBasisDifference(assessedValue, previousValue) : money(assessedValue - previousValue);
     const rowIssues = [];
     if (included) {
       if (!approval.eligible) rowIssues.push(`${approval.exclusionReason}${(entered.previousValue ?? 0) > 0 ? ' Reconcile the previously claimed value; this row cannot be omitted.' : ''}`);
       if (assessedValue === null) rowIssues.push('Enter the QS-assessed cumulative VO value.');
       if (assessedValue !== null && finite(entry.approvedValue) && assessedValue > entry.approvedValue + 0.001) rowIssues.push('Assessed VO value exceeds the recorded approval.');
       if (previousValue === null) rowIssues.push('Confirm the previous claimed value.');
+      if (hasBasis && assessedValue !== null && previousValue !== null && currentValue === null) rowIssues.push('The calculation exceeds the supported amount limit.');
       if (currentValue < 0 && !assessment.adjustmentReason) rowIssues.push('Explain the negative adjustment before preparing.');
     }
     return {
@@ -198,14 +209,27 @@ export function buildClaimReview(project, period, input = {}) {
   if (!selected.length) issues.push('Select at least one verified work item or approved VO for assessment.');
   if (selected.length && !assessment.priorConfirmed) issues.push('Confirm that previous claim values have been checked; blank prior values mean zero only after confirmation.');
   for (const row of selected) for (const issue of row.issues) issues.push(`${row.ref || row.reference || row.id}: ${issue}`);
+  const sum = hasBasis ? (rows, field) => claimBasisSum(rows.map(row => row[field])) : total;
+  const grossTotals = {
+    previousValue: sum(selected, 'previousValue'), cumulativeValue: sum(selected, 'cumulativeValue'),
+    currentValue: sum(selected, 'currentValue'), workCurrentValue: sum(selectedWork, 'currentValue'), voCurrentValue: sum(selectedVOs, 'currentValue'),
+  };
+  const currency = project.contract?.currency || 'SGD';
+  const basisResult = hasBasis ? applyClaimBasis(assessment.claimBasis, grossTotals, currency, assessment.adjustmentReason) : null;
+  if (basisResult) {
+    issues.push(...basisResult.issues);
+    const aggregates = [[selected, 'previousValue'], [selected, 'cumulativeValue'], [selected, 'currentValue'],
+      [selectedWork, 'currentValue', 'workCurrentValue'], [selectedVOs, 'currentValue', 'voCurrentValue']];
+    if (aggregates.some(([rows, field, totalField = field]) => rows.length && rows.every(row => row[field] !== null) && grossTotals[totalField] === null)) {
+      issues.push('The calculation exceeds the supported amount limit.');
+    }
+  }
   return {
-    period, cutoff, currency: project.contract?.currency || 'SGD', projectId: project.id,
+    period, cutoff, currency, projectId: project.id,
     baselineVersion: project.version, baselineLockedAt: project.lockedAt || null,
     assessment, workRows, voRows,
-    totals: {
-      previousValue: total(selected, 'previousValue'), cumulativeValue: total(selected, 'cumulativeValue'),
-      currentValue: total(selected, 'currentValue'), workCurrentValue: total(selectedWork, 'currentValue'), voCurrentValue: total(selectedVOs, 'currentValue'),
-    },
+    ...(hasBasis ? { claimBasis: clone(assessment.claimBasis) } : {}),
+    totals: basisResult ? basisResult.totals : grossTotals,
     issues, canPrepare: issues.length === 0, selectedCount: selected.length,
     excludedCount: [...workRows, ...voRows].filter((row) => !row.eligible).length,
     validationErrors: errors,

@@ -1,0 +1,26 @@
+.claim-basis-settings { max-width:1000px; margin-bottom:18px; border:1px solid var(--border); border-radius:9px; background:#fff; overflow:hidden; }
+.claim-basis-settings > summary { display:flex; align-items:center; gap:12px; padding:16px 20px; color:#64748b; cursor:pointer; list-style:none; }
+.claim-basis-settings > summary::-webkit-details-marker { display:none; }
+.claim-basis-settings > summary > strong { flex-shrink:0; color:#334155; font-size:13px; font-weight:600; line-height:1.8; }
+.claim-basis-settings > summary > span { flex:1; min-width:0; color:#64748b; font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
+.claim-basis-settings > summary > svg { flex-shrink:0; color:#64748b; transition:transform .15s ease; }
+.claim-basis-settings[open] > summary > svg { transform:rotate(180deg); }
+.claim-basis-settings > summary:focus-visible { outline:2px solid #2563eb; outline-offset:-3px; border-radius:9px; }
+.claim-basis-content { padding:19px 20px; border-top:1px solid var(--border); }
+.claim-basis-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 20px; }
+.claim-basis-prior { margin:17px 0 0; padding-top:14px; border-top:1px solid #edf1f5; }
+.claim-basis-prior > div { display:flex; align-items:baseline; justify-content:space-between; gap:15px; }
+.claim-basis-prior dt { color:#64748b; font-size:12px; line-height:1.8; }
+.claim-basis-prior dd { margin:0; color:#475569; font-size:13px; line-height:1.8; font-weight:550; font-variant-numeric:tabular-nums; }
+.claim-basis-help,.claim-basis-legacy p { margin:12px 0 0; color:#64748b; font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
+.claim-basis-legacy p { margin-top:0; }
+.claim-basis-legacy .button { margin-top:13px; }
+.claim-basis-blocked { margin-top:12px; color:#a16207; font-size:12px; line-height:1.8; }
+@media screen and (max-width:600px) {
+  .claim-basis-settings > summary { flex-wrap:wrap; gap:5px 10px; padding:15px 17px; }
+  .claim-basis-settings > summary > span { flex-basis:calc(100% - 30px); order:3; }
+  .claim-basis-settings > summary > svg { margin-left:auto; }
+  .claim-basis-content { padding:17px; }
+  .claim-basis-fields { grid-template-columns:minmax(0,1fr); gap:16px; }
+  .claim-basis-prior > div { align-items:flex-start; flex-direction:column; gap:4px; }
+}

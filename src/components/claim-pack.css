@@ -198,3 +198,26 @@
 
 .claim-pack-view .claim-evidence-action { margin-top:8px; }
 @media print { .claim-pack-view .claim-evidence-action { display:none !important; } }
+
+.claim-pack-claim-basis { margin-top:21px; padding:15px 17px; border:1px solid var(--border); border-radius:7px; break-inside:avoid; }
+.claim-pack-claim-basis > header { display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:6px 15px; }
+.claim-pack-claim-basis h3 { color:#334155; font-size:12px; font-weight:600; line-height:1.7; }
+.claim-pack-claim-basis header > span,.claim-pack-claim-basis > p { color:#64748b; font-size:10px; line-height:1.8; }
+.claim-pack-claim-basis > p { margin-top:6px; overflow-wrap:anywhere; }
+.claim-pack-claim-basis dl { max-width:580px; margin-top:13px; }
+.claim-pack-claim-basis dl > div { display:flex; justify-content:space-between; align-items:baseline; gap:15px; padding-top:7px; color:#475569; font-size:11px; line-height:1.7; }
+.claim-pack-claim-basis dd { margin:0; flex-shrink:0; font-weight:550; font-variant-numeric:tabular-nums; }
+.claim-pack-claim-basis .current { margin-top:9px; padding-top:12px; border-top:1px solid var(--border); color:#1d4ed8; font-weight:600; }
+.claim-pack-claim-basis .current dd { font-size:17px; }
+.claim-pack-claim-basis .claim-pack-basis-reference { margin-top:13px; padding-top:10px; border-top:1px solid var(--border); font-size:9px; }
+@media screen and (max-width:420px) { .claim-pack-claim-basis { padding:13px; } .claim-pack-claim-basis dl > div { flex-wrap:wrap; gap:2px 12px; } }
+@media print {
+  .claim-pack-claim-basis { margin-top:2mm; padding:2mm 3mm; border-radius:0; }
+  .claim-pack-claim-basis h3 { font-size:8.5pt; }
+  .claim-pack-claim-basis header > span,.claim-pack-claim-basis > p { font-size:7pt; line-height:1.5; }
+  .claim-pack-claim-basis dl { margin-top:1mm; }
+  .claim-pack-claim-basis dl > div { padding-top:.7mm; font-size:8pt; line-height:1.5; }
+  .claim-pack-claim-basis .current { margin-top:1mm; padding-top:1mm; }
+  .claim-pack-claim-basis .current dd { font-size:10pt; }
+  .claim-pack-claim-basis .claim-pack-basis-reference { margin-top:1mm; padding-top:1mm; font-size:6.5pt; }
+}

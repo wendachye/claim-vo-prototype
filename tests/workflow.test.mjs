@@ -236,7 +236,9 @@ test('tracking guidance stays bound to the selected project and exact prepared r
 });
 
 
-test('claim queries guide a separate revision and exact resubmission without rewriting the original', () => {
+test('claim queries guide a separate revision and exact resubmission without rewriting the original', (t) => {
+  // Preparation must precede the fixed submission dates, independent of today's date.
+  t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-22T00:00:00Z') });
   let value = project();
   value.history = [];
   value.lockedAt = '2026-10-01T12:00:00+08:00';
@@ -247,7 +249,9 @@ test('claim queries guide a separate revision and exact resubmission without rew
   const saved = saveClaimDraft(value, '2026-10', assessment);
   value = markClaimPrepared(saved.project, saved.draft.id).project;
   const original = structuredClone(value.claimDrafts[0]);
-  value = recordClaimStage(value, saved.draft.id, 'submitted', { date: '2026-10-22', reference: 'DEMO-SUB' }).project;
+  const submitted = recordClaimStage(value, saved.draft.id, 'submitted', { date: '2026-10-22', reference: 'DEMO-SUB' });
+  assert.equal(submitted.outcome, 'updated', submitted.error);
+  value = submitted.project;
   const query = recordClaimStage(value, saved.draft.id, 'query', { date: '2026-10-23', reference: 'DEMO-QUERY', note: 'Check the quantity.', targetType: 'work', targetId: 'A' });
   assert.equal(query.outcome, 'updated', query.error);
   value = query.project;
