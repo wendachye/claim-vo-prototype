@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
@@ -99,7 +100,7 @@ describe('monthly claim basis workflow', () => {
     expect(changes).toHaveLength(0);
     await user.click(screen.getByRole('button', { name: 'Set claim basis', exact: true }));
     expect(checked(priorCheck())).toBe(false);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Retention', exact: true }), 'rateCap');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Retention', exact: true }), 'rateCap');
     await user.type(screen.getByRole('spinbutton', { name: 'Retention rate', exact: true }), '5');
     await user.type(screen.getByRole('spinbutton', { name: 'Retention cap', exact: true }), '1000');
     await user.type(priorNet(), '0');
@@ -245,7 +246,7 @@ describe('monthly claim basis workflow', () => {
     expect(screen.getByRole('button', { name: 'Mark prepared', exact: true }).disabled).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Continue editing', exact: true }));
     await openBasis(user);
-    expect(screen.getByRole('combobox', { name: 'Billing method', exact: true }).value).toBe('unsupported');
+    expect(screen.getByRole('combobox', { name: 'Billing method', exact: true }).getAttribute('data-value')).toBe('unsupported');
     expect(screen.getByRole('spinbutton', { name: 'Retention cap', exact: true }).value).toBe('');
     expect(reference().value).toBe(''); expect(priorNet().value).toBe('13389.3');
     await user.clear(screen.getByRole('spinbutton', { name: 'Retention rate', exact: true }));

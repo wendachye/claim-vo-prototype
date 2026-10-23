@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -72,9 +73,9 @@ describe('contract work list and source review stay connected', () => {
     await user.click(screen.getByRole('button', { name: 'Review WI-002', exact: true }));
     await screen.findByRole('heading', { name: 'Contract review', exact: true });
     expect(params().get('item')).toBe('WI-002');
-    expect(picker().value).toBe('WI-002');
+    expect(picker().getAttribute('data-value')).toBe('WI-002');
     expect(within(editor()).getByRole('heading', { name: project.items[1].description })).toBeTruthy();
-    await user.selectOptions(picker(), 'WI-007');
+    await chooseSelect(user, picker(), 'WI-007');
     await waitFor(() => expect(params().get('item')).toBe('WI-007'));
     expect(within(editor()).getByRole('heading', { name: project.items.find(item => item.id === 'WI-007').description })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Back to work items', exact: true }));
@@ -94,8 +95,8 @@ describe('contract work list and source review stay connected', () => {
     expect(document.querySelector('.contract-comparison').getAttribute('data-panel')).toBe('source');
     expect(screen.getByRole('region', { name: 'Contract source document', exact: true }).textContent).toContain(project.items[0].ref);
     await user.click(screen.getByRole('button', { name: 'Work item', exact: true }));
-    await user.selectOptions(picker(), 'WI-002');
-    await user.selectOptions(picker(), 'WI-001');
+    await chooseSelect(user, picker(), 'WI-002');
+    await chooseSelect(user, picker(), 'WI-001');
     expect(screen.getByRole('spinbutton', { name: 'Contract quantity', exact: true }).value).toBe('2088');
     await user.click(screen.getByRole('button', { name: 'Back to work items', exact: true }));
     await user.click(screen.getByRole('button', { name: 'Review WI-001', exact: true }));
@@ -140,7 +141,7 @@ describe('contract work list and source review stay connected', () => {
     expect(screen.queryByRole('button', { name: 'Confirm item', exact: true })).toBeNull();
     expect(editor().textContent).toContain('Included in other rates. No separate charge.');
     expect(screen.getByRole('img', { name: /Original contract schedule/ }).getAttribute('alt')).toContain(included.ref);
-    await user.selectOptions(picker(), rateOnly.id);
+    await chooseSelect(user, picker(), rateOnly.id);
     expect(editor().textContent).toContain('Rate only');
     expect(editor().textContent).toContain('Rate-reference quantity; not actual hours.');
     expect(editor().textContent).not.toContain('S$ 0.00');
@@ -154,8 +155,11 @@ describe('contract work list and source review stay connected', () => {
     const user = userEvent.setup();
     mount('#contract?item=OTHER-ONLY-ITEM');
     expect(screen.getByText('This contract item is not available in the selected project.')).toBeTruthy();
-    expect(picker().value).toBe('');
-    expect(within(picker()).queryByRole('option', { name: /Work belonging only to the other project/ })).toBeNull();
+    expect(picker().getAttribute('data-value')).toBe('');
+    await user.click(picker());
+    expect(screen.queryByRole('option', { name: /Work belonging only to the other project/ })).toBeNull();
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
+    await user.keyboard('{Escape}');
     expect(document.querySelector('.contract-item-editor')).toBeNull();
     expect(screen.queryByText('Work belonging only to the other project')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Show work items', exact: true }));

@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -67,7 +68,7 @@ describe('WhatsApp review retains the exact message and separates saved updates 
     const before = workspace().projects;
     const user = userEvent.setup();
     const view = mount(source.id);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Filter site updates', exact: true }), 'new');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Filter site updates', exact: true }), 'new');
     await user.type(screen.getByRole('textbox', { name: 'Search site updates', exact: true }), next.itemId);
     expect(screen.getByText('Selected message is outside these filters.', { exact: true })).toBeTruthy();
     expect(params().get('message')).toBe(source.id);

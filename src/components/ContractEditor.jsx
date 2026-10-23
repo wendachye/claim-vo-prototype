@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowRight, Check, FileText, Lock } from 'lucide-react';
 import { contract as sampleContract, initialItems } from '../data/contract.js';
 import { contractFormValues as formFor, contractFormScope } from '../data/form-buffer.js';
 import { claimBasisProduct } from '../data/claim-basis.js';
-import { Badge, Button, FormActions, FormField } from './ui.jsx';
+import { Badge, Button, FormActions, FormField, SelectField } from './ui.jsx';
 import { useBufferedState } from './useFormBuffer.js';
 import './contract-editor.css';
 
@@ -164,9 +164,9 @@ export function ContractEditor({ item, checkIssue, locked = false, onSave, onNex
             <input id={`${inputId}-quantity`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.quantity} onChange={(event) => changeField('quantity', event.target.value)} />
           </FormField>
           <FormField label='Unit' id={`${inputId}-unit`} hint='Keep the source unit.'>
-            <select id={`${inputId}-unit`} className='form-select' value={form.unit} onChange={(event) => changeField('unit', event.target.value)}>
+            <SelectField id={`${inputId}-unit`} className='form-select' value={form.unit} onChange={(event) => changeField('unit', event.target.value)}>
               {unitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
-            </select>
+            </SelectField>
           </FormField>
           <FormField label='Unit rate' suffix={currency} id={`${inputId}-rate`} hint={included ? 'Included scope has no separate source rate.' : printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : 'Source rate unavailable for this item.'}>
             <input id={`${inputId}-rate`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.rate} placeholder={included ? 'Included in other rates' : 'Enter rate'} disabled={included} onChange={(event) => changeField('rate', event.target.value)} />

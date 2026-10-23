@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -76,7 +77,7 @@ describe('claim queries revise and resubmit an independent project-scoped versio
     const view = mount(`#claim-status?draft=${encodeURIComponent(sourceId)}`);
     await user.click(screen.getByRole('button', { name: 'Record a query' }));
     await user.click(screen.getByRole('button', { name: 'Use demo details' }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Related work' }), 'work:WI-001');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Related work' }), 'work:WI-001');
     await user.click(screen.getByRole('button', { name: 'Record query', exact: true }));
     await screen.findByRole('heading', { name: 'Query needs a revision' });
     expect(getClaimTracking(selectedProject(), sourceId).query.targetId).toBe('WI-001');

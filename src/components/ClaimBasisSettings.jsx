@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react';
 import { defaultClaimBasis } from '../data/claim-basis.js';
-import { Button, FormField, Input, NativeSelect, formatMoney, formatNumber } from './ui.jsx';
+import { Button, FormField, Input, SelectField, formatMoney, formatNumber } from './ui.jsx';
 import './claim-basis.css';
 
 const known = (value) => value !== null && value !== undefined && (typeof value !== 'string' || value.trim() !== '');
@@ -28,8 +28,8 @@ export function ClaimBasisSettings({ value, currency = 'SGD', previousGrossValue
     <div className="claim-basis-content">
       {!configured ? <div className="claim-basis-legacy"><p>This assessment keeps its original gross-only basis. Set a basis to review retention and prior submitted net amounts in a new draft.</p><Button onClick={() => onChange?.(defaultClaimBasis())}>Set claim basis</Button></div> : <>
         <div className="claim-basis-fields">
-          <FormField label="Billing method" required><NativeSelect value={basis.billingMethod || ''} aria-label="Billing method" onChange={event => update('billingMethod', event.target.value)}><option value="">Choose billing method</option><option value="quantityRate">Cumulative quantity × rate</option><option value="unsupported">Other method (needs review)</option></NativeSelect></FormField>
-          <FormField label="Retention" required><NativeSelect value={basis.retentionMode || ''} aria-label="Retention" onChange={event => update('retentionMode', event.target.value)}><option value="">Choose retention</option><option value="none">None</option><option value="rateCap">Rate with cap</option></NativeSelect></FormField>
+          <FormField label="Billing method" required><SelectField value={basis.billingMethod || ''} aria-label="Billing method" onChange={event => update('billingMethod', event.target.value)}><option value="">Choose billing method</option><option value="quantityRate">Cumulative quantity × rate</option><option value="unsupported">Other method (needs review)</option></SelectField></FormField>
+          <FormField label="Retention" required><SelectField value={basis.retentionMode || ''} aria-label="Retention" onChange={event => update('retentionMode', event.target.value)}><option value="">Choose retention</option><option value="none">None</option><option value="rateCap">Rate with cap</option></SelectField></FormField>
           {basis.retentionMode === 'rateCap' && <>
             <FormField label="Retention rate" required suffix="%" error={rateError}><Input type="number" min="0" max="100" step="0.01" inputMode="decimal" aria-label="Retention rate" value={basis.retentionRate ?? ''} onChange={event => update('retentionRate', event.target.value)} placeholder="Enter rate" /></FormField>
             <FormField label="Retention cap" required suffix={currency} error={nonNegativeError(basis.retentionCap)} hint="Maximum cumulative retention held."><Input type="number" min="0" step="0.01" inputMode="decimal" aria-label="Retention cap" value={basis.retentionCap ?? ''} onChange={event => update('retentionCap', event.target.value)} placeholder="Enter cap" /></FormField>

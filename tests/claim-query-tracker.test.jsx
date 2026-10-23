@@ -1,3 +1,4 @@
+import { chooseSelect, selectOptions } from './select-helpers.mjs';
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -51,14 +52,15 @@ describe('claim query and revision tracker', () => {
     expect(screen.getByRole('heading', { name: 'Record certification' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Record a query' }));
     expect(screen.queryByLabelText(/Certified amount/)).toBeNull();
-    const choices = within(screen.getByRole('combobox', { name: /Related work/ })).getAllByRole('option');
+    const choices = await selectOptions(user, screen.getByRole('combobox', { name: /Related work/ }));
     expect(choices.map((entry) => entry.textContent)).toEqual(['Whole claim', 'A/01 · Scaffold access', 'VO-01 · Extra landing']);
+    await user.keyboard('{Escape}');
     await user.click(screen.getByRole('button', { name: 'Record query', exact: true }));
     expect(onRecord).not.toHaveBeenCalled();
     expect(screen.getByText('Describe the query so the QS knows what to review.')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Use demo details' }));
     expect(onRecord).not.toHaveBeenCalled();
-    await user.selectOptions(screen.getByRole('combobox', { name: /Related work/ }), 'vo:VO1');
+    await chooseSelect(user, screen.getByRole('combobox', { name: /Related work/ }), 'vo:VO1');
     await user.clear(screen.getByRole('textbox', { name: /Query remarks/ }));
     await user.type(screen.getByRole('textbox', { name: /Query remarks/ }), 'Please clarify the separately assessed landing.');
     await user.click(screen.getByRole('button', { name: 'Record query', exact: true }));

@@ -11,7 +11,7 @@ import { clearFormBuffer } from '../data/form-buffer.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { AreaEvidencePanel } from './AreaEvidencePanel.jsx';
 import { AreaVOPanel } from './AreaVOPanel.jsx';
-import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, Checkbox, Input, NativeSelect } from './ui.jsx';
+import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, Checkbox, Input, SelectField } from './ui.jsx';
 import './drawing-mapping.css';
 
 const mimeFor = (file) => file.type || ({ pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }[file.name.split('.').at(-1)?.toLowerCase()] || '');
@@ -155,9 +155,9 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
     <PageHeader title="Drawing & areas" description="Choose a site area, then open the contract work linked to it." onBack={onBack} backLabel="Back to contract" actions={drawing && onOpenSiteUpdates && <Button icon={ArrowRight} onClick={onOpenSiteUpdates}>Site updates</Button>} />
     {feedback && <div className={`notice ${feedback.error ? 'warning' : 'success'}`} role={feedback.error ? 'alert' : 'status'}><Info size={16} /><span>{feedback.message}</span></div>}
     {!drawing ? <section className="drawing-empty-state"><div className="drawing-empty-icon"><MapPin size={30} /></div><h2>Add a site drawing</h2><p>Use your drawing or the fictional demo plan, then choose which work belongs to each area.</p><div className="drawing-empty-actions"><Button className="primary" icon={Upload} onClick={() => setModal('upload')}>Upload drawing</Button><Button icon={FileText} onClick={() => install(sampleInput())} disabled={!onInstall}>Use demo drawing</Button></div><small>PDF, PNG, JPEG or WebP up to 15 MB. No drawing recognition or measurement is performed.</small></section> : <>
-      {areas.length > 0 && <section className="drawing-area-navigation" ref={areaNavigationRef} aria-label="Choose a site area"><div className="drawing-area-navigation-top"><div className="drawing-area-picker"><FormField label="Site area"><NativeSelect ref={areaPickerRef} aria-label="Choose site area" value={selectedId === 'new' || unavailableArea ? '' : selected?.id || ''} onChange={(event) => chooseArea(event.target.value)}><option value="" disabled>Choose a site area</option>{areas.map((area) => {
+      {areas.length > 0 && <section className="drawing-area-navigation" ref={areaNavigationRef} aria-label="Choose a site area"><div className="drawing-area-navigation-top"><div className="drawing-area-picker"><FormField label="Site area"><SelectField ref={areaPickerRef} aria-label="Choose site area" value={selectedId === 'new' || unavailableArea ? '' : selected?.id || ''} onChange={(event) => chooseArea(event.target.value)}><option value="" disabled>Choose a site area</option>{areas.map((area) => {
             return <option key={area.id} value={area.id}>{area.code} · {area.name}</option>;
-          })}</NativeSelect></FormField></div><Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button></div><details className="drawing-area-browser" open={browseAreas} onToggle={(event) => setBrowseAreas(event.currentTarget.open)}><summary>Browse all {areas.length} {areas.length === 1 ? 'area' : 'areas'}<span>{basisLabel} completion</span></summary>
+          })}</SelectField></FormField></div><Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button></div><details className="drawing-area-browser" open={browseAreas} onToggle={(event) => setBrowseAreas(event.currentTarget.open)}><summary>Browse all {areas.length} {areas.length === 1 ? 'area' : 'areas'}<span>{basisLabel} completion</span></summary>
           <div className="drawing-area-list" aria-label="Mapped site areas">{areas.map((area) => {
             const progress = areaProgress.get(area.id);
             const flags = areaVOFlags.get(area.id);

@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
@@ -79,8 +80,8 @@ describe('manual entry in the existing VO screen', () => {
     const dialog = await openForm(user);
     await fill(user, dialog, 'Extra escalator access');
     await user.click(within(dialog).getByText('Contract link & demo photo'));
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: /^Contract item for comparison/ }), 'WI-A');
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: /^Demo photo/ }), MANUAL_VO_PHOTOS[1].value);
+    await chooseSelect(user, within(dialog).getByRole('combobox', { name: /^Contract item for comparison/ }), 'WI-A');
+    await chooseSelect(user, within(dialog).getByRole('combobox', { name: /^Demo photo/ }), MANUAL_VO_PHOTOS[1].value);
     await user.click(within(dialog).getByRole('button', { name: 'Add for review', exact: true }));
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByRole('textbox', { name: 'Search VO records', exact: true }).value).toBe('');

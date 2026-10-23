@@ -4,7 +4,7 @@ import { getMessageClarification, getMessageClarificationEligibility } from '../
 import { getAreaLinkStatus, getDrawingMapping } from '../data/drawing-mapping.js';
 import { clearFormBuffer } from '../data/form-buffer.js';
 import { useBufferedState } from './useFormBuffer.js';
-import { BackButton, Button, FormActions, FormField, Input, NativeSelect, Textarea, formatTime } from './ui.jsx';
+import { BackButton, Button, FormActions, FormField, Input, SelectField, Textarea, formatTime } from './ui.jsx';
 import './whatsapp-clarification.css';
 
 const text = (value) => typeof value === 'string' ? value.trim() : '';
@@ -125,8 +125,8 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
       {!reply ? <form noValidate onSubmit={saveReply}>
         <div className="wa-clarification-reply-heading"><span>Confirm the work and total completed.</span><Button className="ghost" disabled={!choices.length} onClick={fillDemoReply}>Use demo reply</Button></div>
         <div className="wa-clarification-fields">
-          <FormField className="wa-clarification-wide" label="Contract work item" required error={errors.itemId}><NativeSelect ref={(node) => { controls.current.itemId = node; }} value={fields.itemId} onChange={(event) => update('itemId', event.target.value)}><option value="">Choose contract work</option>{choices.map((item) => <option key={item.id} value={item.id}>{item.ref || item.id} · {item.description}</option>)}</NativeSelect></FormField>
-          <FormField label="Site area" required error={errors.area}>{mapping.areas.length ? <NativeSelect ref={(node) => { controls.current.area = node; }} value={fields.areaId} disabled={!selectedItem} onChange={(event) => update('areaId', event.target.value)}><option value="">Choose linked area</option>{areas.map((area) => <option key={area.id} value={area.id}>Area {area.code} · {area.name}</option>)}</NativeSelect> : <Input ref={(node) => { controls.current.area = node; }} value={fields.area} onChange={(event) => update('area', event.target.value)} placeholder="e.g. Block W3, east side" />}</FormField>
+          <FormField className="wa-clarification-wide" label="Contract work item" required error={errors.itemId}><SelectField ref={(node) => { controls.current.itemId = node; }} value={fields.itemId} onChange={(event) => update('itemId', event.target.value)}><option value="">Choose contract work</option>{choices.map((item) => <option key={item.id} value={item.id}>{item.ref || item.id} · {item.description}</option>)}</SelectField></FormField>
+          <FormField label="Site area" required error={errors.area}>{mapping.areas.length ? <SelectField ref={(node) => { controls.current.area = node; }} value={fields.areaId} disabled={!selectedItem} onChange={(event) => update('areaId', event.target.value)}><option value="">Choose linked area</option>{areas.map((area) => <option key={area.id} value={area.id}>Area {area.code} · {area.name}</option>)}</SelectField> : <Input ref={(node) => { controls.current.area = node; }} value={fields.area} onChange={(event) => update('area', event.target.value)} placeholder="e.g. Block W3, east side" />}</FormField>
           <FormField label="Total completion (%)" required error={errors.completion} hint="Total to date, not an extra percentage."><Input ref={(node) => { controls.current.completion = node; }} type="number" min="0" max="100" step="any" inputMode="decimal" value={fields.completion} onChange={(event) => update('completion', event.target.value)} /></FormField>
           <FormField className="wa-clarification-wide" label="Worker reply" required error={errors.text}><Textarea ref={(node) => { controls.current.text = node; }} rows={3} value={fields.text} onChange={(event) => update('text', event.target.value)} placeholder="Clarify the work, location and total completion…" /></FormField>
         </div>

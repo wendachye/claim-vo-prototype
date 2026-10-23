@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Check, ChevronRight, CircleAlert, Download, MessageSquare, Search, X } from 'lucide-react';
 import { getAreasForItem } from '../data/drawing-mapping.js';
 import { getWorkItemSiteMessage } from '../data/contract-work-links.js';
-import { Badge, Button, FormField, formatMoney, formatNumber, Input, NativeSelect } from './ui.jsx';
+import { Badge, Button, FormField, formatMoney, formatNumber, Input, SelectField } from './ui.jsx';
 import './contract-workspace.css';
 
 export function ContractFilters({ items, reviewItemIds, resultCount, search, block, filter, blocks, onSearch, onBlock, onFilter, onClear, onExport }) {
@@ -11,8 +11,8 @@ export function ContractFilters({ items, reviewItemIds, resultCount, search, blo
   return <div className="contract-controls">
     <div className="contract-filter-fields">
       <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find an item</label><div className="search-box"><Search size={16} aria-hidden="true" /><Input id={searchId} aria-label="Search work items" placeholder="Search by item, reference or area…" value={search} onChange={(event) => onSearch(event.target.value)} />{search && <button type="button" aria-label="Clear search" onClick={() => onSearch('')}><X size={14} /></button>}</div></div>
-      <FormField label="Location"><NativeSelect aria-label="Filter by block" value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</NativeSelect></FormField>
-      <FormField label="Review status"><NativeSelect aria-label="Filter contract review status" value={filter} onChange={(event) => onFilter(event.target.value)}><option value="all">All items ({items.length})</option><option value="review">Needs review ({items.filter(needsReview).length})</option><option value="verified">Reviewed ({items.filter((item) => !needsReview(item)).length})</option></NativeSelect></FormField>
+      <FormField label="Location"><SelectField aria-label="Filter by block" value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</SelectField></FormField>
+      <FormField label="Review status"><SelectField aria-label="Filter contract review status" value={filter} onChange={(event) => onFilter(event.target.value)}><option value="all">All items ({items.length})</option><option value="review">Needs review ({items.filter(needsReview).length})</option><option value="verified">Reviewed ({items.filter((item) => !needsReview(item)).length})</option></SelectField></FormField>
     </div>
     <div className="contract-list-tools"><span>{resultCount} of {items.length} work items</span><div>{(search || block !== 'all' || filter !== 'all') && <Button className="ghost" onClick={onClear}>Clear filters</Button>}<Button className="ghost" icon={Download} onClick={onExport}>Export CSV</Button></div></div>
   </div>;

@@ -50,9 +50,9 @@ function mount(hash = '#contract') {
 }
 
 async function moreOption(user, name) {
-  const summary = screen.getByText('More options', { selector: 'summary' });
-  if (!summary.parentElement.open) await user.click(summary);
-  await user.click(screen.getByRole('button', { name, exact: true }));
+  const trigger = screen.getByRole('button', { name: 'More options', exact: true });
+  if (trigger.getAttribute('aria-expanded') !== 'true') await user.click(trigger);
+  await user.click(screen.getByRole('menuitem', { name, exact: true }));
 }
 
 async function switchProject(user, from, to) {

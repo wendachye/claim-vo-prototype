@@ -6,7 +6,7 @@ The default campus and warehouse projects are fictional. A separate, explicitly 
 
 ## Simple workflow
 
-Start on **Project overview** for the selected project's next action. The visible sequence is **Contract → Site updates → Extra work → Claims**. The top project dropdown stays available from every module.
+Start on **Project overview** for the selected project's next action. The visible sequence is **Contract → Site updates → Extra work → Claims**. The top project dropdown stays available from every module. Form and filter dropdowns use shadcn Select, action menus use shadcn DropdownMenu, and the searchable project picker retains its shadcn Popover.
 
 Project overview shows a compact attention count. Use **View tasks** or the **notification bell** at the top right of any module to see the selected project's outstanding site messages, latest progress reviews, open VOs and saved claim actions across months. The popup previews three tasks as simple clickable rows; View all reveals the remaining tasks. Rows show a short action and area or claim month/version, and open the exact message, report, VO case or claim version. Links opened here provide **Back to overview**. The list derives from current saved statuses: viewing a record leaves it pending; verification, VO decisions and claim tracking update or remove its task automatically. Submitted revisions replace their original query task, and part-paid claims remain pending until fully paid. This is a browser-local mock workflow; opening tasks never changes saved claim values.
 

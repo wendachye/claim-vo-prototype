@@ -13,6 +13,7 @@ import { ClaimEvidencePanel } from './ClaimEvidencePanel.jsx';
 import { ClaimBasisSettings } from './ClaimBasisSettings.jsx';
 import { amount, periodLabel, selectedRows } from './claim-view-utils.js';
 import './monthly-claims.css';
+import { ActionMenu } from './ActionMenu.jsx';
 
 const emptyAssessment = () => ({ work: {}, vos: {}, priorConfirmed: false, adjustmentReason: '', note: '', claimBasis: defaultClaimBasis() });
 const currentPeriod = () => { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; };
@@ -234,7 +235,7 @@ export function MonthlyClaimView({ project, initialTab, initialVOId, initialDraf
         {saved.status !== 'prepared' && <Button className={saved.snapshot.canPrepare ? 'primary' : ''} icon={CheckCheck} disabled={!saved.snapshot.canPrepare} onClick={() => prepare(saved.id)}>Mark prepared</Button>}
         {saved.status !== 'prepared' && !saved.snapshot.canPrepare && <Button className="primary" onClick={() => start(saved)}>Continue editing</Button>}
       </div>
-      {(saved.status === 'prepared' ? canStartSavedVersion : saved.snapshot.canPrepare) && <details className="claim-saved-options"><summary>More options</summary><Button icon={saved.status === 'prepared' ? Plus : ArrowRight} onClick={() => start(saved)}>{saved.status === 'prepared' ? 'Start new version' : 'Continue editing'}</Button></details>}
+      {(saved.status === 'prepared' ? canStartSavedVersion : saved.snapshot.canPrepare) && <div className="claim-saved-options"><ActionMenu align="start" items={[{label:saved.status === 'prepared' ? 'Start new version' : 'Continue editing',icon:saved.status === 'prepared' ? Plus : ArrowRight,onSelect:()=>start(saved)}]} /></div>}
       <p className="claim-local-note">Saved in this browser. No real submission or payment.</p>
     </section>}
 

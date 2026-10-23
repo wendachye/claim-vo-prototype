@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -41,9 +42,15 @@ function mount() {
 }
 
 async function openUpload(user) {
-  const summary = screen.queryByText('More options', { selector: 'summary' });
-  if (summary && !summary.parentElement.open) await user.click(summary);
-  await user.click(screen.getByRole('button', { name: 'Upload contract', exact: true }));
+  const trigger = screen.queryByRole('button', { name: 'More options', exact: true });
+  if (trigger && trigger.getAttribute('aria-expanded') !== 'true') {
+    await user.click(trigger);
+    await user.click(screen.getByRole('menuitem', { name: 'Upload contract', exact: true }));
+  } else if (trigger) {
+    await user.click(screen.getByRole('menuitem', { name: 'Upload contract', exact: true }));
+  } else {
+    await user.click(screen.getByRole('button', { name: 'Upload contract', exact: true }));
+  }
   return uploadDialog();
 }
 
@@ -64,7 +71,7 @@ async function startFailedDemo(user, { selectedFile = false } = {}) {
 
 async function confirmItem(user, id, { useSource = false } = {}) {
   const selector = screen.queryByRole('combobox', { name: 'Choose contract item', exact: true });
-  if (selector) await user.selectOptions(selector, id);
+  if (selector) await chooseSelect(user, selector, id);
   else await user.click(screen.getByRole('button', { name: `Review ${id}`, exact: true }));
   if (useSource) await user.click(screen.getByRole('button', { name: /^Use source value:/ }));
   await user.click(screen.getByRole('button', { name: 'Confirm item', exact: true }));
@@ -86,7 +93,7 @@ async function switchProject(user, from, to) {
 
 async function manualField(user, id, label, value) {
   const control = within(uploadDialog()).getByLabelText(`${label} · ${id}`, { exact: true });
-  if (control.tagName === 'SELECT') await user.selectOptions(control, value);
+  if (control.getAttribute('role') === 'combobox') await chooseSelect(user, control, value);
   else { await user.clear(control); await user.type(control, value); }
 }
 

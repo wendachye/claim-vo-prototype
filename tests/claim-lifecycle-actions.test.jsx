@@ -42,7 +42,7 @@ describe('claim actions follow the recorded lifecycle', () => {
     const onTrack = vi.fn(); const onSave = vi.fn();
     render(<MonthlyClaimView project={project} initialTab="drafts" onTrack={onTrack} onSave={onSave} />);
     const row = screen.getByRole('heading', { name: 'August 2026', exact: true }).closest('article');
-    expect(within(row).queryByRole('button', { name: 'Start new version', exact: true })).toBeNull();
+    expect(within(row).queryByRole('menuitem', { name: 'Start new version', exact: true })).toBeNull();
     expect(within(row).queryByRole('button', { name: 'Edit claim', exact: true })).toBeNull();
     expect(within(row).queryByRole('button', { name: 'Mark prepared', exact: true })).toBeNull();
     expect(within(row).getByRole('button', { name: 'Preview & export' })).toBeTruthy();
@@ -60,7 +60,7 @@ describe('claim actions follow the recorded lifecycle', () => {
     render(<MonthlyClaimView project={project} initialDraftId={draft.id} onTrack={onTrack} onSave={onSave} />);
     expect(screen.queryByRole('spinbutton')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Save claim draft', exact: true })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Start new version', exact: true })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: 'Start new version', exact: true })).toBeNull();
     await user.click(screen.getByRole('button', { name: statusAction(status), exact: true }));
     expect(onTrack).toHaveBeenCalledWith(draft.id);
     expect(onSave).not.toHaveBeenCalled();
@@ -106,14 +106,14 @@ describe('claim actions follow the recorded lifecycle', () => {
     let current = markClaimPrepared(project, ready.id).project;
     view.rerender(<MonthlyClaimView project={current} {...props} />);
     await user.click(screen.getByText('More options', { exact: true }));
-    expect(screen.getByRole('button', { name: 'Start new version', exact: true })).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: 'Start new version', exact: true })).toBeTruthy();
     const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
     for (const [action, value] of [['submitted', undefined], ['certified', ready.snapshot.totals.currentValue], ['payment', ready.snapshot.totals.currentValue]]) {
       const result = recordClaimStage(current, ready.id, action, { date, reference: `DEMO-RESULT-${action}`, value });
       expect(result.outcome).toBe('updated');
       current = result.project;
       view.rerender(<MonthlyClaimView project={current} {...props} />);
-      expect(screen.queryByRole('button', { name: 'Start new version', exact: true })).toBeNull();
+      expect(screen.queryByRole('menuitem', { name: 'Start new version', exact: true })).toBeNull();
       expect(screen.getByRole('button', { name: 'Preview & export' })).toBeTruthy();
       expect(current.claimDrafts.find(entry => entry.id === ready.id).snapshot).toEqual(ready.snapshot);
     }

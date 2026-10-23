@@ -136,9 +136,6 @@
 .wa-list-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; margin-top:10px; }
 .wa-list-tools > span { color:#64748b; font-size:12px; line-height:1.7; }
 .wa-list-tools > div { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-left:auto; }
-.wa-demo-options { color:#475569; font-size:12px; line-height:1.7; }
-.wa-demo-options > summary { cursor:pointer; padding:10px 0; }
-.wa-demo-options > div { display:flex; flex-wrap:wrap; gap:8px; padding-bottom:10px; }
 .wa-list-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; padding:13px 16px; border-bottom:1px solid #e2e8f0; color:#334155; font-size:13px; font-weight:600; }
 .wa-list-heading > span { color:#64748b; font-size:11px; font-weight:400; }
 .wa-message-copy { min-width:0; flex:1; }
@@ -160,7 +157,7 @@
 .wa-context-details .area-mapping-reference { margin-top:12px; }
 .wa-photo-unavailable.wa-evidence-photo { height:auto; min-height:80px; }
 .wa-message:focus-visible { outline:2px solid #2563eb; outline-offset:-2px; }
-.wa-context-details summary:focus-visible, .wa-message-details summary:focus-visible, .wa-demo-options summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
+.wa-context-details summary:focus-visible, .wa-message-details summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
 .wa-panel-header h2[tabindex='-1']:focus { outline:none; }
 @media(max-width:1050px) {
   .whatsapp-view:not(.wa-review-open) .wa-review { display:none; }

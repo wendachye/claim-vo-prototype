@@ -19,5 +19,5 @@
   .modal[data-slot='dialog-content'] { max-width:calc(100vw - 32px); }
 }
 @media print {
-  [data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='sheet-overlay'], [data-slot='sheet-content'], [data-slot='popover-content'] { display:none !important; }
+  [data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='sheet-overlay'], [data-slot='sheet-content'], [data-slot='popover-content'], [data-slot='dropdown-menu-content'], [data-slot='select-content'] { display:none !important; }
 }

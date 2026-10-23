@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
@@ -35,7 +36,7 @@ describe('compact claim basis settings', () => {
     render(<Editor initial={initial} previousGrossValue={14094} onChange={onChange} />);
     await open(user);
     expect(onChange).not.toHaveBeenCalled();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Retention', exact: true }), 'rateCap');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Retention', exact: true }), 'rateCap');
     await user.type(screen.getByRole('spinbutton', { name: 'Retention rate', exact: true }), '5');
     await user.type(screen.getByRole('spinbutton', { name: 'Retention cap', exact: true }), '1000');
     await user.type(screen.getByRole('spinbutton', { name: 'Previously submitted net', exact: true }), '13389.30');
@@ -48,9 +49,9 @@ describe('compact claim basis settings', () => {
     expect(document.querySelector('details').open).toBe(false);
     await open(user);
     expect(screen.getByRole('spinbutton', { name: 'Retention cap', exact: true }).value).toBe('1000');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Retention', exact: true }), 'none');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Retention', exact: true }), 'none');
     expect(screen.queryByRole('spinbutton', { name: 'Retention rate', exact: true })).toBeNull();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Retention', exact: true }), 'rateCap');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Retention', exact: true }), 'rateCap');
     expect(screen.getByRole('spinbutton', { name: 'Retention rate', exact: true }).value).toBe('5');
     expect(screen.getByRole('spinbutton', { name: 'Retention cap', exact: true }).value).toBe('1000');
     expect(screen.getByRole('spinbutton', { name: 'Previously submitted net', exact: true }).value).toBe(enteredNet);
@@ -78,10 +79,10 @@ describe('compact claim basis settings', () => {
     const onChange = vi.fn();
     render(<Editor onChange={onChange} />);
     await open(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Billing method', exact: true }), 'unsupported');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Billing method', exact: true }), 'unsupported');
     expect(screen.getByRole('status').textContent).toContain('needs review before the claim can be prepared');
     expect(onChange.mock.calls.at(-1)[0].billingMethod).toBe('unsupported');
-    expect(screen.getByRole('combobox', { name: 'Billing method', exact: true }).value).toBe('unsupported');
+    expect(screen.getByRole('combobox', { name: 'Billing method', exact: true }).getAttribute('data-value')).toBe('unsupported');
   });
 
   it('shows invalid numeric input without silently correcting the unfinished values', async () => {

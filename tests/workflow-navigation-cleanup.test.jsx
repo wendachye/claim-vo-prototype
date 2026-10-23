@@ -1,3 +1,4 @@
+import { selectOptions } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -59,6 +60,7 @@ afterEach(() => {
 
 describe('workflow navigation cleanup', () => {
   it('opens legacy extra-work links in the VO review on load and hash changes while preserving exact context and records', async () => {
+    const user = userEvent.setup();
     const project = fixture();
     const cases = getVOCases(project);
     const areas = getDrawingMapping(project).areas;
@@ -77,8 +79,9 @@ describe('workflow navigation cleanup', () => {
 
     changeHash('#completion');
     await screen.findByRole('heading', { name: 'Site progress', exact: true });
-    const statuses = within(screen.getByRole('combobox', { name: 'Review status', exact: true })).getAllByRole('option');
-    expect(statuses.some(option => option.value === 'vo' || /extra work/i.test(option.textContent))).toBe(false);
+    const statuses = await selectOptions(user, screen.getByRole('combobox', { name: 'Review status', exact: true }));
+    expect(statuses.some(option => option.getAttribute('data-value') === 'vo' || /extra work/i.test(option.textContent))).toBe(false);
+    await user.keyboard('{Escape}');
     expect(screen.getAllByRole('table')).toHaveLength(1);
     expect(screen.getByRole('columnheader', { name: /Reported total/ })).toBeTruthy();
     expect(screen.queryByRole('region', { name: 'Extra-work cases', exact: true })).toBeNull();

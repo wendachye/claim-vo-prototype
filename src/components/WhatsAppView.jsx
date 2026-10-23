@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ImagePlus, ListChecks, LockKeyhole, MapPin, MessageSquare, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
-import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, formatMoney, Input, NativeSelect } from './ui.jsx';
+import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, formatMoney, Input, SelectField } from './ui.jsx';
 import { getVOCases, getVOClaimEligibility } from '../data/vo.js';
 import { getMessageReport as messageReport } from '../data/whatsapp.js';
 import { getAreaLinkStatus } from '../data/drawing-mapping.js';
@@ -13,6 +13,7 @@ import { getMessageReviewStatus as statusFor, isNewInboxMessage, matchesInboxFil
 import { getMessageClarification, getMessageClarificationEligibility } from '../data/whatsapp-clarification.js';
 import { WhatsAppClarification } from './WhatsAppClarification.jsx';
 import './whatsapp.css';
+import { ActionMenu } from './ActionMenu.jsx';
 
 const waiting = isReviewableProgressReport;
 const percent = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? `${value}%` : 'Not recorded';
@@ -137,9 +138,9 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
       <div className="wa-list-controls">
         <div className="wa-filter-fields">
           <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find message</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search site updates" placeholder="Search messages, work items or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" className="wa-clear-search" aria-label="Clear message search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>
-          <FormField label="Review status"><NativeSelect aria-label="Filter site updates" value={filter} onChange={(event) => setFilter(event.target.value)}>{filters.map(([key,label]) => <option value={key} key={key}>{label} ({filterCount(key)})</option>)}</NativeSelect></FormField>
+          <FormField label="Review status"><SelectField aria-label="Filter site updates" value={filter} onChange={(event) => setFilter(event.target.value)}>{filters.map(([key,label]) => <option value={key} key={key}>{label} ({filterCount(key)})</option>)}</SelectField></FormField>
         </div>
-        <div className="wa-list-tools"><span>{shown.length} of {messages.length} messages · {newCount} new to review</span><div>{(search || filter !== 'all') && <Button className="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}{((areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages) || (photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos)) && <details className="wa-demo-options"><summary>Demo options</summary><div>{areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages && <Button icon={MessageSquare} onClick={onAddAreaMessages}>Add S.I.T. area messages</Button>}{photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos && <Button icon={ImagePlus} onClick={onRefreshDemoPhotos}>Use matching demo photos</Button>}</div></details>}</div></div>
+        <div className="wa-list-tools"><span>{shown.length} of {messages.length} messages · {newCount} new to review</span><div>{(search || filter !== 'all') && <Button className="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}{((areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages) || (photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos)) && <ActionMenu label="Demo options" items={[areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages && {label:'Add S.I.T. area messages',icon:MessageSquare,onSelect:onAddAreaMessages},photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos && {label:'Use matching demo photos',icon:ImagePlus,onSelect:onRefreshDemoPhotos}]} />}</div></div>
       </div>
       <div className="wa-workspace">
         <section ref={inboxRef} className="wa-inbox" aria-labelledby="wa-inbox-heading">

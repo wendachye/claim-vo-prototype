@@ -163,9 +163,9 @@ describe('overview recent activity opens exact saved records without changing th
     await screen.findByRole('heading', { name: 'Contract review', exact: true });
     expect(params().get('item')).toBe(item.id);
     expect(params().get('from')).toBe('overview');
-    expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).value).toBe(item.id);
+    expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).getAttribute('data-value')).toBe(item.id);
     view.unmount(); render(<App />);
-    expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).value).toBe(item.id);
+    expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).getAttribute('data-value')).toBe(item.id);
     await backToOverview(user);
     expect(workspace().projects).toEqual(before);
   });

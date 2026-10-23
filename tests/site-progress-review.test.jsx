@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -103,7 +104,7 @@ describe('site progress separates worker reports from supervisor verification', 
     const before = workspace().projects;
     const user = userEvent.setup();
     const view = mount(`#completion?${new URLSearchParams(scope)}`);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Review status', exact: true }), 'review');
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Review status', exact: true }), 'review');
     await user.click(reviewButton(project, 'WI-001'));
     const dialog = await screen.findByRole('dialog');
     await waitFor(() => expect(params().get('report')).toBe(latest.id));

@@ -2,8 +2,9 @@ import { useId } from 'react';
 import { Check, ChevronRight, Clock3, Flag, History, Plus, Search, X } from 'lucide-react';
 import { getAreasForItem, getDrawingMapping } from '../data/drawing-mapping.js';
 import { getItemProgressReview } from '../data/progress-review.js';
-import { Button, FormField, formatNumber, formatTime, Input, NativeSelect } from './ui.jsx';
+import { Button, FormField, formatNumber, formatTime, Input, SelectField } from './ui.jsx';
 import './progress-register.css';
+import { ActionMenu } from './ActionMenu.jsx';
 
 const hasTotal = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100;
 const reviewLabel = (review) => review.key === 'review' ? 'Needs verification' : review.key === 'verified' ? 'Verified progress' : review.label;
@@ -27,12 +28,12 @@ export function ProgressFilters({ project, items, search, block, filter, blocks,
   return <div className="progress-controls">
     <div className="progress-filter-fields">
       <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search completion list" placeholder="Search references, work or areas…" value={search} onChange={(event) => onSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear search" onClick={() => onSearch('')}><X size={14}/></button>}</div></div>
-      <FormField label="Block / location"><NativeSelect value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</NativeSelect></FormField>
-      <FormField label="Review status"><NativeSelect value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}</NativeSelect></FormField>
+      <FormField label="Block / location"><SelectField value={block} onChange={(event) => onBlock(event.target.value)}><option value="all">All blocks</option>{blocks.map((value) => <option key={value} value={value}>{value}</option>)}</SelectField></FormField>
+      <FormField label="Review status"><SelectField value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}</SelectField></FormField>
     </div>
     <div className="progress-list-tools">
       <span>Whole-item totals · claim assessment stays separate.</span>
-      <div>{(search || block !== 'all' || filter !== 'all') && <Button className="ghost" onClick={onClear}>Clear filters</Button>}<details className="progress-options"><summary>More options</summary><div>{onAdd && <Button className="ghost" icon={Plus} onClick={onAdd}>Add demo update</Button>}<Button className="ghost" icon={Flag} onClick={onExtraWork}>Extra work ({extraWorkCount})</Button><Button className="ghost" icon={History} onClick={onActivity}>Activity</Button></div></details></div>
+      <div>{(search || block !== 'all' || filter !== 'all') && <Button className="ghost" onClick={onClear}>Clear filters</Button>}<ActionMenu items={[onAdd && {label:'Add demo update',icon:Plus,onSelect:onAdd},{label:`Extra work (${extraWorkCount})`,icon:Flag,onSelect:onExtraWork},{label:'Activity',icon:History,onSelect:onActivity}]} /></div>
     </div>
   </div>;
 }

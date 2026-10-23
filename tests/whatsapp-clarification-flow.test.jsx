@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -47,8 +48,8 @@ async function enterReply(user, project, text, completion) {
   const itemId = 'WI-004';
   const area = getDrawingMapping(project).areas.find((entry) => entry.workItemIds.includes(itemId));
   await user.click(screen.getByRole('button', { name: 'Use demo reply', exact: true }));
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Contract work item' }), itemId);
-  await user.selectOptions(screen.getByRole('combobox', { name: 'Site area' }), area.id);
+  await chooseSelect(user, screen.getByRole('combobox', { name: 'Contract work item' }), itemId);
+  await chooseSelect(user, screen.getByRole('combobox', { name: 'Site area' }), area.id);
   await user.clear(completionInput());
   await user.type(completionInput(), String(completion));
   await user.clear(replyInput());
@@ -182,8 +183,8 @@ describe('mock WhatsApp clarification replies stay linked to the original and re
     await chooseUnclearMessage(user);
     expect(replyInput().value).toBe(replyText);
     expect(completionInput().value).toBe('42');
-    expect(screen.getByRole('combobox', { name: 'Contract work item' }).value).toBe(itemId);
-    expect(screen.getByRole('combobox', { name: 'Site area' }).value).toBe(area.id);
+    expect(screen.getByRole('combobox', { name: 'Contract work item' }).getAttribute('data-value')).toBe(itemId);
+    expect(screen.getByRole('combobox', { name: 'Site area' }).getAttribute('data-value')).toBe(area.id);
     expect(readWorkspace().projects).toEqual(savedProjects);
     expect(selectedProject().whatsappMessages.some((entry) => entry.replyToMessageId === source.id)).toBe(false);
   });

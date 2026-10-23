@@ -4,13 +4,13 @@ import { Button as ShadcnButton } from './ui/button.jsx';
 import { Badge as ShadcnBadge } from './ui/badge.jsx';
 import { Input } from './ui/input.jsx';
 import { Textarea } from './ui/textarea.jsx';
-import { NativeSelect } from './ui/native-select.jsx';
+import { SelectField } from './SelectField.jsx';
 import { Checkbox as ShadcnCheckbox } from './ui/checkbox.jsx';
 import { Label } from './ui/label.jsx';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from './ui/dialog.jsx';
 import './shadcn-compat.css';
 
-export { Input, Textarea, NativeSelect };
+export { Input, Textarea, SelectField };
 
 // Keep existing screen callbacks while Radix owns the checkbox interaction.
 export function Checkbox({ onChange, onCheckedChange, className = '', type: _type, ...props }) {
@@ -44,11 +44,11 @@ export function FormField({ label, children, hint, error, optional, required, su
   const hintId = hint ? `${controlId}-hint` : undefined;
   const errorId = error ? `${controlId}-error` : undefined;
   const describedBy = [...new Set([control.props['aria-describedby'], hintId, errorId].filter(Boolean).join(' ').split(/\s+/))].filter(Boolean).join(' ') || undefined;
-  const isSelect = control.type === 'select' || control.type === NativeSelect;
+  const isSelect = control.type === 'select' || control.type === SelectField;
   const isTextarea = control.type === 'textarea' || control.type === Textarea;
   const controlClass = isSelect ? 'form-select' : isTextarea ? 'form-textarea' : 'form-input';
   const fieldProps = { id: controlId, className: [...new Set([controlClass, ...(control.props.className || '').split(' ')])].filter(Boolean).join(' '), 'aria-describedby': describedBy, 'aria-invalid': error ? true : control.props['aria-invalid'], 'aria-required': required || control.props['aria-required'] || undefined };
-  const primitive = control.type === 'select' ? NativeSelect : control.type === 'textarea' ? Textarea : control.type === 'input' && control.props.type !== 'file' ? Input : null;
+  const primitive = control.type === 'select' ? SelectField : control.type === 'textarea' ? Textarea : control.type === 'input' && control.props.type !== 'file' ? Input : null;
   return <div className={`form-field ${className}`}>
     <Label className="form-field-label" htmlFor={controlId}><span>{label}{required && <span className="form-required" aria-hidden="true"> *</span>}</span>{(optional || suffix) && <span className="form-field-meta">{suffix}{suffix && optional && ' · '}{optional && 'Optional'}</span>}</Label>
     {primitive ? createElement(primitive, { ...control.props, ...fieldProps, key: control.key }) : cloneElement(control, fieldProps)}

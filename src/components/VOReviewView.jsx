@@ -4,7 +4,7 @@ import { VO_STATUS_LABELS, getVOClaimEligibility } from '../data/vo.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { VOCaseReview, voTone as tone, voAmountLabel as amountLabel } from './VOCaseReview.jsx';
 import { ManualVOForm } from './ManualVOForm.jsx';
-import { Badge, Button, FormField, Modal, PageHeader, Input, NativeSelect } from './ui.jsx';
+import { Badge, Button, FormField, Modal, PageHeader, Input, SelectField } from './ui.jsx';
 import './vo-review.css';
 
 const reviewStatusLabel = (status) => status === 'approved' ? 'Price approved' : VO_STATUS_LABELS[status];
@@ -94,7 +94,7 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
       <div className="vo-list-controls">
         <div className="vo-filter-fields">
           <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find extra work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search VO records" placeholder="Search work, references or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear VO search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>
-          <FormField label="Review status"><NativeSelect aria-label="Filter VO approval status" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All statuses ({cases.length})</option>{Object.keys(VO_STATUS_LABELS).map((value) => <option key={value} value={value}>{reviewStatusLabel(value)} ({filterCount(value)})</option>)}</NativeSelect></FormField>
+          <FormField label="Review status"><SelectField aria-label="Filter VO approval status" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">All statuses ({cases.length})</option>{Object.keys(VO_STATUS_LABELS).map((value) => <option key={value} value={value}>{reviewStatusLabel(value)} ({filterCount(value)})</option>)}</SelectField></FormField>
         </div>
         <div className="vo-list-tools"><span>{shown.length} of {cases.length} cases · {openCount} open</span><div>{(search || filter !== 'all') && <Button className="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}<Button className="ghost" icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Site messages</Button></div></div>
       </div>

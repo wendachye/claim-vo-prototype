@@ -62,7 +62,7 @@ async function openCheckedItem(user, id) {
   await user.click(panel.getByRole('button', { name: `Review checks for ${id}`, exact: true }));
   await screen.findByRole('heading', { name: 'Contract review', exact: true });
   expect(params().get('item')).toBe(id);
-  expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).value).toBe(id);
+  expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).getAttribute('data-value')).toBe(id);
 }
 
 async function switchProject(user, from, to) {
@@ -109,14 +109,14 @@ describe('contract checks connect saved issues to source review before confirmat
     expect(panel.queryByRole('button', { name: 'Review checks for WI-017', exact: true })).toBeNull();
     expect(panel.queryByRole('button', { name: 'Review checks for WI-012', exact: true })).toBeNull();
     const reviewFilter = screen.getByRole('combobox', { name: 'Filter contract review status', exact: true });
-    expect(within(reviewFilter).getByRole('option', { name: 'Needs review (2)', exact: true })).toBeTruthy();
-    await user.selectOptions(reviewFilter, 'review');
+    await user.click(reviewFilter);
+    await user.click(await screen.findByRole('option', { name: 'Needs review (2)', exact: true }));
     const filteredRegister = within(document.querySelector('.contract-register'));
     expect(filteredRegister.getByRole('button', { name: 'Review WI-001', exact: true }).textContent).toContain('Needs review');
     expect(filteredRegister.getByRole('button', { name: 'Review WI-002', exact: true }).textContent).toContain('Needs review');
     expect(filteredRegister.queryByRole('button', { name: 'Review WI-003', exact: true })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Clear filters', exact: true }));
-    expect(reviewFilter.value).toBe('all');
+    expect(reviewFilter.getAttribute('data-value')).toBe('all');
     expect(selectedProject().locked).toBe(false);
     await user.click(screen.getByRole('button', { name: 'Review 2 items', exact: true }));
     expect(params().get('item')).toBe('WI-001');
@@ -129,7 +129,9 @@ describe('contract checks connect saved issues to source review before confirmat
     await screen.findByRole('heading', { name: 'Contract', exact: true });
     expect(selectedProject().items[0].quantity).toBe(project.sourceItems[0].quantity);
     expect(selectedProject().items[0].amount).toBe(project.sourceItems[0].amount);
-    expect(screen.getByRole('option', { name: 'Needs review (1)', exact: true })).toBeTruthy();
+    await user.click(screen.getByRole('combobox', { name: 'Filter contract review status', exact: true }));
+    expect(await screen.findByRole('option', { name: 'Needs review (1)', exact: true })).toBeTruthy();
+    await user.keyboard('{Escape}');
     expect(within(document.querySelector('.contract-register')).getByRole('button', { name: 'Review WI-001', exact: true }).textContent).toContain('Reviewed');
     expect((await expandChecks(user)).queryByRole('button', { name: 'Review checks for WI-001', exact: true })).toBeNull();
     await openCheckedItem(user, 'WI-002');
@@ -138,7 +140,9 @@ describe('contract checks connect saved issues to source review before confirmat
     await user.click(screen.getByRole('button', { name: 'Confirm item', exact: true }));
     await screen.findByRole('heading', { name: 'Contract', exact: true });
     expect(selectedProject().items[1].amount).toBe(project.sourceItems[1].amount);
-    expect(screen.getByRole('option', { name: 'Needs review (0)', exact: true })).toBeTruthy();
+    await user.click(screen.getByRole('combobox', { name: 'Filter contract review status', exact: true }));
+    expect(await screen.findByRole('option', { name: 'Needs review (0)', exact: true })).toBeTruthy();
+    await user.keyboard('{Escape}');
     expect(within(checks()).getByText('No item issues', { exact: true })).toBeTruthy();
     expect(selectedProject().locked).toBe(false);
     await user.click(screen.getByRole('button', { name: 'Confirm work list', exact: true }));

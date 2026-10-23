@@ -1,3 +1,4 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -39,12 +40,12 @@ describe('manual extra-work entry', () => {
     await enter(user);
     await user.type(text('Location'), 'Previous unlisted location');
     const area = getDrawingMapping(project).areas[0];
-    await user.selectOptions(combo('Site area'), area.id);
+    await chooseSelect(user, combo('Site area'), area.id);
     expect(screen.queryByRole('textbox', { name: /^Location/ })).toBeNull();
     await user.type(text('Instruction or reference'), 'REPORTED-MEETING-01');
     await user.click(screen.getByText('Contract link & demo photo'));
-    await user.selectOptions(combo('Contract item for comparison'), 'WI-A');
-    await user.selectOptions(combo('Demo photo'), MANUAL_VO_PHOTOS[1].value);
+    await chooseSelect(user, combo('Contract item for comparison'), 'WI-A');
+    await chooseSelect(user, combo('Demo photo'), MANUAL_VO_PHOTOS[1].value);
     expect(screen.getByAltText(MANUAL_VO_PHOTOS[1].alt)).toBeTruthy();
     expect(onSave).not.toHaveBeenCalled();
     await user.click(add());

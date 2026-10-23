@@ -4,7 +4,7 @@ import { getDrawingMapping } from '../data/drawing-mapping.js';
 import { clearFormBuffer } from '../data/form-buffer.js';
 import { MANUAL_VO_PHOTOS } from '../data/manual-vo.js';
 import { useBufferedState } from './useFormBuffer.js';
-import { Button, FormActions, FormField, Input, Modal, NativeSelect, Textarea } from './ui.jsx';
+import { Button, FormActions, FormField, Input, Modal, SelectField, Textarea } from './ui.jsx';
 import './manual-vo.css';
 
 const FORM_SCOPE = 'vo:manual-entry';
@@ -77,14 +77,14 @@ export function ManualVOForm({ project, onClose, onSave }) {
     <form id={formId} className="manual-vo-form" onSubmit={save} noValidate>
       <FormField label="Work description" required error={fieldError('title')}><Input {...props('title')} maxLength={160} placeholder="e.g. Additional access platform at W5" autoFocus /></FormField>
       <FormField label="Details" required error={fieldError('description')} hint="Describe the additional work and how the instruction was received."><Textarea {...props('description')} rows={3} maxLength={4000} placeholder="What was requested, where and by whom?" /></FormField>
-      {areas.length > 0 || staleArea ? <FormField label="Site area" optional error={fieldError('areaId')}><NativeSelect {...props('areaId')}><option value="">Another location / not yet linked</option>{staleArea && <option value={fields.areaId} disabled>Previous area unavailable</option>}{areas.map(area => <option key={area.id} value={area.id}>{area.code} · {area.name}</option>)}</NativeSelect></FormField> : null}
+      {areas.length > 0 || staleArea ? <FormField label="Site area" optional error={fieldError('areaId')}><SelectField {...props('areaId')}><option value="">Another location / not yet linked</option>{staleArea && <option value={fields.areaId} disabled>Previous area unavailable</option>}{areas.map(area => <option key={area.id} value={area.id}>{area.code} · {area.name}</option>)}</SelectField></FormField> : null}
       {!fields.areaId && <FormField label="Location" optional error={fieldError('areaText')}><Input {...props('areaText')} maxLength={120} placeholder="e.g. W5, east side" /></FormField>}
       <FormField label="Instruction or reference" optional error={fieldError('instructionReference')}><Input {...props('instructionReference')} maxLength={500} placeholder="e.g. Reported site instruction or meeting reference" /></FormField>
       <details className="manual-vo-optional">
         <summary>Contract link &amp; demo photo <span>Optional</span></summary>
         <div className="manual-vo-optional-fields">
-          <FormField label="Contract item for comparison" optional error={fieldError('relatedItemId')} hint="A comparison link does not confirm a variation."><NativeSelect {...props('relatedItemId')}><option value="">Unmatched / outside listed items</option>{staleItem && <option value={fields.relatedItemId} disabled>Previous contract item unavailable</option>}{items.map(item => <option key={item.id} value={item.id}>{item.ref || item.id} · {item.description}</option>)}</NativeSelect></FormField>
-          <FormField label="Demo photo" optional error={fieldError('photo')}><NativeSelect {...props('photo')}><option value="">No photo</option>{MANUAL_VO_PHOTOS.map(entry => <option key={entry.value} value={entry.value}>{entry.label}</option>)}</NativeSelect></FormField>
+          <FormField label="Contract item for comparison" optional error={fieldError('relatedItemId')} hint="A comparison link does not confirm a variation."><SelectField {...props('relatedItemId')}><option value="">Unmatched / outside listed items</option>{staleItem && <option value={fields.relatedItemId} disabled>Previous contract item unavailable</option>}{items.map(item => <option key={item.id} value={item.id}>{item.ref || item.id} · {item.description}</option>)}</SelectField></FormField>
+          <FormField label="Demo photo" optional error={fieldError('photo')}><SelectField {...props('photo')}><option value="">No photo</option>{MANUAL_VO_PHOTOS.map(entry => <option key={entry.value} value={entry.value}>{entry.label}</option>)}</SelectField></FormField>
           {photo && <figure className="manual-vo-photo"><img src={photo.value} alt={photo.alt} /><figcaption><ImagePlus size={13} aria-hidden="true" />Generated demo photo · not project evidence<Button className="ghost icon" aria-label="Remove demo photo" onClick={() => update('photo', '')}><X size={14} /></Button></figcaption></figure>}
         </div>
       </details>

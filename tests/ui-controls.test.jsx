@@ -1,8 +1,9 @@
+import { chooseSelect } from './select-helpers.mjs';
 import { createRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Button, Checkbox, FormField, Input, Modal, NativeSelect, Textarea } from '../src/components/ui.jsx';
+import { Button, Checkbox, FormField, Input, Modal, SelectField, Textarea } from '../src/components/ui.jsx';
 import { ProjectDropdown } from '../src/components/ProjectDropdown.jsx';
 import { ReportDrawer } from '../src/components/ReportDrawer.jsx';
 
@@ -61,16 +62,16 @@ describe('shadcn controls preserve the existing form contract', () => {
     const changed = vi.fn();
     function Fields() {
       const [value, setValue] = useState('');
-      return <><FormField label="Work item"><select id="work-item" name="workItemId" ref={selectRef} value={value} onChange={(event) => { changed(event.target.name, event.target.value); setValue(event.target.value); }}><option value="">Choose work</option><option value="0">Zero-value work</option></select></FormField><FormField label="Location"><NativeSelect name="location" defaultValue="B"><option value="A">Block A</option><option value="B">Block B</option></NativeSelect></FormField><FormField label="QS note"><Textarea ref={noteRef} name="note" defaultValue="" /></FormField><FormField label="Reference"><Input name="reference" defaultValue="REF-1" /></FormField></>;
+      return <><FormField label="Work item"><select id="work-item" name="workItemId" ref={selectRef} value={value} onChange={(event) => { changed(event.target.name, event.target.value); setValue(event.target.value); }}><option value="">Choose work</option><option value="0">Zero-value work</option></select></FormField><FormField label="Location"><SelectField name="location" defaultValue="B"><option value="A">Block A</option><option value="B">Block B</option></SelectField></FormField><FormField label="QS note"><Textarea ref={noteRef} name="note" defaultValue="" /></FormField><FormField label="Reference"><Input name="reference" defaultValue="REF-1" /></FormField></>;
     }
     render(<Fields />);
     const work = screen.getByRole('combobox', { name: 'Work item' });
     expect(work).toBe(selectRef.current);
     expect(work.id).toBe('work-item');
-    await user.selectOptions(work, '0');
+    await chooseSelect(user, work, '0');
     expect(changed).toHaveBeenLastCalledWith('workItemId', '0');
-    expect(work.value).toBe('0');
-    expect(screen.getByRole('combobox', { name: 'Location' }).value).toBe('B');
+    expect(work.getAttribute('data-value')).toBe('0');
+    expect(screen.getByRole('combobox', { name: 'Location' }).getAttribute('data-value')).toBe('B');
     const note = screen.getByRole('textbox', { name: 'QS note' });
     await user.type(note, 'Measured on site');
     expect(noteRef.current).toBe(note);
