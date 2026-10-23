@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Plus,
   ShieldCheck,
+  Smartphone,
   X,
 } from 'lucide-react';
 import { Badge, Button, FormActions, FormField, formatNumber, formatTime } from './ui';
@@ -32,7 +33,7 @@ const timeLabel = (value?: string | null) => (
   value && !Number.isNaN(new Date(value).getTime()) ? formatTime(value) : 'Time not recorded'
 );
 
-interface ReportDrawerProps { project?: Project; projectCode?: string; item?: WorkItem | null; report?: SiteReport | null; locked: boolean; onClose?: () => void; onApprove?: (report: SiteReport, completion: string, reason: string) => void; onChange?: (report: SiteReport, action: string, reason: string) => void; onAdd?: (itemId?: string) => void; onReviewVO?: (report: SiteReport) => void }
+interface ReportDrawerProps { project?: Project; projectCode?: string; item?: WorkItem | null; report?: SiteReport | null; locked: boolean; onClose?: () => void; onApprove?: (report: SiteReport, completion: string, reason: string) => void; onChange?: (report: SiteReport, action: string, reason: string) => void; onAdd?: (itemId?: string) => void; onReviewVO?: (report: SiteReport) => void; onMobileReview?: (report: SiteReport) => void }
 
 export function ReportDrawer({
   project,
@@ -45,6 +46,7 @@ export function ReportDrawer({
   onChange,
   onAdd,
   onReviewVO,
+  onMobileReview,
 }: ReportDrawerProps) {
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const noteRef = useRef<HTMLTextAreaElement | null>(null);
@@ -125,6 +127,13 @@ export function ReportDrawer({
       && needReason('Explain the lower verified total before verifying progress.')) return;
     setError('');
     onApprove(report, completion.trim(), reason.trim());
+  }
+
+  function openMobileReview() {
+    if (!report || !onMobileReview) return;
+    restoreOpenerOnClose.current = false;
+    flushSync(() => setSheetOpen(false));
+    onMobileReview(report);
   }
 
   return (
@@ -209,6 +218,7 @@ export function ReportDrawer({
           {isPending && report && !isVo && !legacyScope && (
             <div>
               <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">Check the original update and photo below, then confirm {areaProgress ? 'this area’s verified completion against its allocated quantity' : 'the whole work item’s verified total'}.</p>
+              {onMobileReview && <Button className="ghost" icon={Smartphone} onClick={openMobileReview}>Open mobile review</Button>}
               <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
                   <input
                     id={`${id}-completion`}

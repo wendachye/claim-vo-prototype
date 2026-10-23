@@ -59,6 +59,12 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 - `#claim-preview?draft=…` — preview a saved revision, download CSV or print/save PDF
 - `#claim-status?draft=…` — track mock submission, certification and payment for one prepared revision
 
+## Mobile supervisor demo
+
+In **Site updates → Progress**, review a pending update and choose **Open mobile review**. This focused view shows one report’s original message/photo, work item, area and physical completion. **Confirm** accepts the reported total; **Correct** records a different verified total with a reason; **Can’t verify** records a clarification reason and leaves verified progress unchanged. Return to the same Site progress record to see the decision and updated Needs attention task. Existing desktop review remains available.
+
+This is a browser-local preview, not a shared link or live approval service. It sends no messages. Unfinished review fields stay separate by project/report while browsing; save before refreshing. Completed, superseded or changed reports cannot be reviewed again from a stale view. Original evidence, saved claim versions, exports and claim tracking remain unchanged.
+
 ## Claim item evidence
 
 Use **View evidence** on a work item or VO in Choose work, Enter totals or Review. The read-only panel shows the original message/photo, sender/date and supervisor or VO decision supporting that claim cutoff. Closing with Done, the close button or Escape returns to the same item without changing selections, unfinished inputs or saved claims.

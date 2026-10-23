@@ -37,6 +37,9 @@ import { AttentionNotifications } from './components/AttentionNotifications';
 import { ContractComparison } from './components/ContractComparison';
 import { ContractFilters, ContractRegister } from './components/ContractRegister';
 import { ReportDrawer } from './components/ReportDrawer';
+import { SupervisorReviewRoute } from './components/SupervisorReviewRoute';
+import { applySupervisorReview, type SupervisorReviewSnapshot } from './data/supervisor-review.ts';
+import type { SupervisorDecision, SupervisorDecisionValues } from './components/SupervisorReview';
 import { ProgressFilters, ProgressRegister } from './components/ProgressRegister';
 import { getItemProgressReview, verifyProgressReport, addProgressReport } from './data/progress-review.ts';
 import { getItemAreaAllocation, getItemAreaRollup, syncAreaItemProgress } from './data/area-allocations.ts';
@@ -71,7 +74,8 @@ import './components/layout-system.css';
 
 const SIZE=8;
 const legacyExtraWorkRoute=()=>location.hash.slice(1).split('?')[0]==='completion'&&new URLSearchParams(location.hash.split('?')[1]).get('filter')==='vo';
-const route=()=>legacyExtraWorkRoute()?'vo':['projects','completion','contract','drawing','whatsapp','vo','claims','claim-preview','claim-status'].includes(location.hash.slice(1).split('?')[0])?location.hash.slice(1).split('?')[0]:'projects';
+const route=()=>legacyExtraWorkRoute()?'vo':['projects','completion','contract','drawing','whatsapp','vo','claims','claim-preview','claim-status','supervisor-review'].includes(location.hash.slice(1).split('?')[0])?location.hash.slice(1).split('?')[0]:'projects';
+const routeSupervisorSelection=()=>{const params=new URLSearchParams(location.hash.split('?')[1]);return route()==='supervisor-review'?{projectId:params.get('project'),reportId:params.get('report')}:null;};
 function canonicalizeLegacyExtraWork(){
   if(!legacyExtraWorkRoute())return;
   const original=new URLSearchParams(location.hash.split('?')[1]);const params=new URLSearchParams();
@@ -104,11 +108,13 @@ export function App(){
   const [workspace,setWorkspace]=useState(loadShowcaseWorkspace);
   const showcaseProjectId=getShowcaseProjectId(workspace);
   const project=workspace.projects.find(p=>p.id===workspace.activeProjectId)||workspace.projects[0];
+  const currentProject=useRef(project);currentProject.current=project;
   const s=project;
   const contract=project.contract;
   const attentionTasks=getProjectAttention(project);
   const set=(updater: ProjectUpdater)=>setWorkspace(old=>updateProjectState(old,project.id,updater));
   const [view,setView]=useState(route);
+  const [supervisorSelection,setSupervisorSelection]=useState(routeSupervisorSelection);
   const [manageProjects,setManageProjects]=useState(()=>route()==='projects'&&new URLSearchParams(location.hash.split('?')[1]).get('manage')==='1');
   const [voSelection,setVOSelection]=useState(routeVOCase);
   const [voReturnAreaId,setVOReturnAreaId]=useState(routeVOArea);
@@ -150,7 +156,7 @@ export function App(){
   useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(null),4500);return()=>clearTimeout(t);},[toast]);
   useEffect(()=>{setPage(1);},[search,block,filter]);
   useEffect(()=>{if(view!=='completion')return;const params=new URLSearchParams();if(completionAreaId)params.set('area',completionAreaId);if(completionItemId)params.set('item',completionItemId);if(completionMessageId)params.set('message',completionMessageId);if(completionReportId)params.set('report',completionReportId);if(attentionReturn)params.set('from','overview');const hash=`#completion${params.size?'?'+params.toString():''}`;if(location.hash!==hash)window.history.replaceState(null,'',hash);},[view,filter,completionAreaId,completionItemId,completionMessageId,completionReportId,attentionReturn]);
-  useEffect(()=>{canonicalizeLegacyExtraWork();const h=()=>{canonicalizeLegacyExtraWork();setAttentionOpen(false);setView(route());setManageProjects(route()==='projects'&&new URLSearchParams(location.hash.split('?')[1]).get('manage')==='1');setVOSelection(routeVOCase());setVOReturnAreaId(routeVOArea());setClaimSelection(routeClaimDraft());setClaimPreviewFromStatus(routeClaimPreviewFrom());setClaimVOSelection(routeClaimVO());setClaimRevisionSelection(routeClaimRevision());setClaimEditSelection(routeClaimEditDraft());setAttentionReturn(routeAttentionReturn());setCompletionReportId(routeCompletionReport());setContractReturnVOId(routeContractVO());setContractReturnAreaId(routeContractArea());if(routeContractItem()){select(routeContractItem()!);setTab('review');}setCompletionAreaId(routeCompletionArea());setCompletionItemId(routeCompletionItem());setCompletionMessageId(routeCompletionMessage());setMessageSelection(routeMessage());setMessageReturnAreaId(routeMessageArea());if(route()!=='completion'||!routeCompletionReport())setDrawer(null);setModal(null);setSearch('');setBlock('all');setFilter('all');setPage(1);setMobile(false);};window.addEventListener('hashchange',h);return()=>window.removeEventListener('hashchange',h);},[]);
+  useEffect(()=>{canonicalizeLegacyExtraWork();const h=()=>{canonicalizeLegacyExtraWork();setAttentionOpen(false);setView(route());setSupervisorSelection(routeSupervisorSelection());setManageProjects(route()==='projects'&&new URLSearchParams(location.hash.split('?')[1]).get('manage')==='1');setVOSelection(routeVOCase());setVOReturnAreaId(routeVOArea());setClaimSelection(routeClaimDraft());setClaimPreviewFromStatus(routeClaimPreviewFrom());setClaimVOSelection(routeClaimVO());setClaimRevisionSelection(routeClaimRevision());setClaimEditSelection(routeClaimEditDraft());setAttentionReturn(routeAttentionReturn());setCompletionReportId(routeCompletionReport());setContractReturnVOId(routeContractVO());setContractReturnAreaId(routeContractArea());if(routeContractItem()){select(routeContractItem()!);setTab('review');}setCompletionAreaId(routeCompletionArea());setCompletionItemId(routeCompletionItem());setCompletionMessageId(routeCompletionMessage());setMessageSelection(routeMessage());setMessageReturnAreaId(routeMessageArea());if(route()!=='completion'||!routeCompletionReport())setDrawer(null);setModal(null);setSearch('');setBlock('all');setFilter('all');setPage(1);setMobile(false);};window.addEventListener('hashchange',h);return()=>window.removeEventListener('hashchange',h);},[]);
   const completionReport=completionReportId?project.reports.find(entry=>entry.id===completionReportId&&!entry.vo&&(!completionItemId||entry.itemId===completionItemId)&&(!entry.projectId||entry.projectId===project.id)&&(!entry.projectCode||entry.projectCode===project.code)&&project.items.some(item=>item.id===entry.itemId)&&(!completionAreaId||getDrawingMapping(project).areas.some(area=>area.id===completionAreaId&&area.workItemIds.includes(entry.itemId!)&&(!entry.areaProgress||entry.areaProgress.areaId===area.id)))):null;
   useEffect(()=>{
     if(view!=='completion'||!completionReportId)return;
@@ -299,6 +305,37 @@ export function App(){
     if(report)params.set('report',report.id);else params.delete('report');
     window.history.replaceState(null,'',`#completion${params.size?'?'+params.toString():''}`);
     setDrawer({itemId:item.id,reportId:report?.id});
+  }
+  function openMobileReview(report: SiteReport){
+    if(!isReviewableProgressReport(report)||!s.reports.some(entry=>entry.id===report.id&&entry===report))return;
+    const params=new URLSearchParams({project:project.id,report:report.id});
+    const areaId=completionAreaId||(view==='whatsapp'?messageReturnAreaId:null);
+    const messageId=completionMessageId||(view==='whatsapp'?report.sourceMessageId:null);
+    if(areaId)params.set('area',areaId);
+    if(messageId)params.set('message',messageId);
+    if(attentionReturn)params.set('from','overview');
+    setDrawer(null);setModal(null);setSupervisorSelection({projectId:project.id,reportId:report.id});setView('supervisor-review');
+    location.hash=`supervisor-review?${params.toString()}`;
+  }
+  function returnFromMobileReview(){
+    const original=new URLSearchParams(location.hash.split('?')[1]);
+    const report=original.get('project')===project.id?s.reports.find(entry=>entry.id===original.get('report')&&!entry.vo&&(!entry.projectId||entry.projectId===project.id)&&(!entry.projectCode||entry.projectCode===project.code)):null;
+    const params=new URLSearchParams();
+    if(report){params.set('report',report.id);if(report.itemId)params.set('item',report.itemId);
+      const areaId=report.areaProgress?.areaId||original.get('area');
+      if(areaId&&getDrawingMapping(project).areas.some(area=>area.id===areaId&&area.workItemIds.includes(report.itemId!)))params.set('area',areaId);
+      const messageId=original.get('message');if(messageId&&getWhatsAppMessages(project).some(message=>message.id===messageId))params.set('message',messageId);
+      if(original.get('from')==='overview')params.set('from','overview');
+    }
+    location.hash=`completion${params.size?'?'+params.toString():''}`;
+  }
+  function decideMobileReview(snapshot: SupervisorReviewSnapshot,decision: SupervisorDecision,values: SupervisorDecisionValues){
+    const result=applySupervisorReview(currentProject.current,snapshot,decision,values);
+    if(result.outcome==='updated'){
+      currentProject.current=result.project;
+      setWorkspace(old=>updateProjectState(old,result.project.id,()=>result.project));
+    }
+    return result;
   }
   function followNext(next: { route: string; revisionSourceId?: string; draftId?: string; caseId?: string; messageId?: string }){if(next.route==='claims'&&next.revisionSourceId)return openClaimRevision(next.revisionSourceId);if(next.route==='claim-status')return openClaimStatus(next.draftId);if(next.route==='claim-preview')return openClaimPack(next.draftId);if(next.route==='vo')return openVO(next.caseId);if(next.route==='whatsapp'&&next.messageId)return openInboxMessage(next.messageId);nav(next.route);}
   function openVO(caseId: string | null = null,areaId: string | null = null,fromOverview=false){
@@ -581,6 +618,8 @@ export function App(){
     {label:'Activity',icon:History,onSelect:()=>setModal('history')},
   ]}/>;
 
+  if(view==='supervisor-review')return <div className="app-shell">{storageError&&<div className="notice warning" role="alert">Browser storage is unavailable or full. Edits will not survive a reload.</div>}<SupervisorReviewRoute key={`${project.id}-${supervisorSelection?.projectId}-${supervisorSelection?.reportId}`} project={project} routeProjectId={supervisorSelection?.projectId||null} reportId={supervisorSelection?.reportId||null} onBack={returnFromMobileReview} onDecision={decideMobileReview}/></div>;
+
   return <div className={`app-shell ${collapsed?'sidebar-collapsed':''} ${mobile?'mobile-open':''}`}>
     <aside id="project-sidebar" className="sidebar" aria-label="Main navigation"><div className="brand"><div className="brand-icon"><Building2 size={23}/></div><div className="brand-copy"><strong>Claim & VO</strong><span>Project workspace</span></div></div>
       <div className="nav-caption">YOUR PROJECT</div>
@@ -608,7 +647,7 @@ export function App(){
     {view==='completion'&&s.items.length>0&&<div className="next-module"><div><strong>Next: prepare your monthly claim</strong><p>Use verified progress and extra work cleared for claiming. Review the claim quantities and amounts before saving.</p></div><Button onClick={()=>nav('claims')}>Open monthly claims<ArrowRight size={14}/></Button></div>}
     </main></div>
     {toast&&<div className={`toast ${toast.error?'error':''}`} role="status">{toast.error?<CircleAlert size={17}/>:<CheckCheck size={17}/>}<span>{toast.message}</span><button aria-label="Dismiss notification" onClick={()=>setToast(null)}><X size={15}/></button></div>}
-    {drawer&&<ReportDrawer project={project} key={`${project.id}-${drawer.reportId||drawer.itemId}`} projectCode={project.code} item={s.items.find(i=>i.id===drawer.itemId)} report={s.reports.find(r=>r.id===drawer.reportId)} locked={s.locked} onClose={closeReport} onApprove={approve} onChange={changeReport} onReviewVO={r=>openVO(r.id)} onAdd={itemId=>{setReportItemId(itemId||null);setDrawer(null);setCompletionReportId(null);setModal('report');}}/>}
+    {drawer&&<ReportDrawer project={project} key={`${project.id}-${drawer.reportId||drawer.itemId}`} projectCode={project.code} item={s.items.find(i=>i.id===drawer.itemId)} report={s.reports.find(r=>r.id===drawer.reportId)} locked={s.locked} onClose={closeReport} onApprove={approve} onChange={changeReport} onMobileReview={openMobileReview} onReviewVO={r=>openVO(r.id)} onAdd={itemId=>{setReportItemId(itemId||null);setDrawer(null);setCompletionReportId(null);setModal('report');}}/>}
     {modal==='lock'&&<Modal title="Confirm work list" description={`${project.code} · Version ${s.version}`} onClose={()=>setModal(null)} footer={<><Button onClick={()=>setModal(null)}>Cancel</Button><Button className="primary" icon={contractCheckItems?ArrowRight:LockKeyhole} onClick={lock}>{contractCheckItems?'Review unresolved item':'Confirm work list'}</Button></>}><div className={`notice ${contractCheckItems?'warning':'success'}`}><ShieldCheck size={17}/><span>{contractCheckItems?`${contractCheckItems} item${contractCheckItems===1?' needs':'s need'} checking before the baseline can be confirmed.`:`All ${s.items.length} items have passed the saved-value checks.`}</span></div><dl className="contract-confirm-totals"><div><dt>{contractChecks.partial?'Selected work total':'Work-list total'}</dt><dd>{checkedMoney(contractChecks.totals.recordedTotal)}</dd></div><div><dt>Declared contract value</dt><dd>{checkedMoney(contractChecks.totals.declaredTotal)}</dd></div></dl>{contractChecks.partial?<p className="contract-confirm-note"><strong>Partial schedule.</strong> These {s.items.length} selected rows are part of the contract. Their total is not expected to match the full declared value.</p>:contractChecks.totals.comparison==='difference'?<div className="contract-confirm-note"><p>The work-list total differs from the declared contract value by {checkedMoney(contractChecks.totals.difference)}. Values stay as recorded.</p>{contractTotalReview.status==='reviewed'?<p><strong>QS reason:</strong> {contractTotalReview.review!.reason}</p>:<p>Record the QS reason in Contract checks before confirming.</p>}</div>:null}<p>Confirming locks this version for progress review. Later edits require a new baseline revision.</p></Modal>}
     {modal==='revision'&&<ContractRevisionForm key={`${project.id}-${project.version}`} project={project} onClose={()=>setModal(null)} onCreate={createRevision}/>}
     {modal==='contract-versions'&&<ContractVersionHistory key={project.id} project={project} onClose={()=>setModal(null)}/>}
