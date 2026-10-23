@@ -1,4 +1,5 @@
 import { createDemoProject } from './demo-project.js';
+import { inspectContractRecovery } from './contract-recovery.js';
 
 export const DEMO_CONTRACT_PDF = '/samples/warehouse-contract-demo.pdf';
 export const DEMO_CONTRACT_FILENAME = 'warehouse-contract-demo.pdf';
@@ -54,6 +55,8 @@ export function applyMockContract(workspace, projectId, input, now = new Date())
   if (!current || !text(current.name) || !text(current.code) || !record(current.contract)) return invalid('This project is no longer available. Choose a project and try again.');
   const metadata = importMetadata(input, now);
   if (!metadata) return invalid('Choose a PDF up to 30 MB before continuing.');
+  const recovery = Object.hasOwn(input, 'recovery') ? inspectContractRecovery(input.recovery, projectId, input) : null;
+  if (recovery && recovery.outcome !== 'ready') return invalid(recovery.error);
   const createdNew = !canImportIntoProject(current);
   const suffix = ' - Upload demo';
   const code = createdNew ? nextProjectCode(current, workspace.projects) : current.code;
@@ -67,6 +70,10 @@ export function applyMockContract(workspace, projectId, input, now = new Date())
     }, new Date(now));
   } catch {
     return invalid('The demo work list could not be added. Check the project details and try again.');
+  }
+  if (recovery) {
+    demo.items = clone(recovery.items);
+    demo.seed.items = clone(recovery.items);
   }
   if (!createdNew && demo.id !== current.id) {
     demo.whatsappMessages = demo.whatsappMessages.map((message) => ({
@@ -92,7 +99,7 @@ export function applyMockContract(workspace, projectId, input, now = new Date())
       mainContractor: !createdNew && current.contract.mainContractor ? current.contract.mainContractor : demo.contract.mainContractor,
       sourceSummary: 'Fictional warehouse sample PDF and preset demo work list. The selected PDF was not extracted.',
       demoNotice: 'Mock extraction only. Work-item values come from the fictional demo schedule, not from the selected PDF.',
-      demoImport: metadata,
+      demoImport: recovery ? { ...metadata, recovery: clone(recovery.provenance) } : metadata,
     },
   };
   const projects = createdNew ? [...workspace.projects, project]

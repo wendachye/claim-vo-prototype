@@ -70,6 +70,8 @@ Contract revisions require a short change reason and retain the prior confirmed 
 
 Contract upload stays frontend-only. Users can choose a local PDF up to 30 MB or the bundled fictional warehouse PDF, see cancelable simulated extraction, and review six preset work items with one quantity mismatch. Make it clear that selected-file contents are not parsed. Review uses the matching fictional PDF and source rows; selected filenames are separate input metadata and must never be presented as evidence for the preset values.
 
+The optional failed-page demo simulates two unread rows on the existing Page 1. Keep the four successful rows and their review flags unchanged. Retry restores only missing rows; manual recovery retains entered values, unknown versus zero and provenance, then requires normal source review. Block unresolved recovery at both the UI and import boundary. Keep the original PDF, canonical source rows, selected-file preview and existing saved claims unchanged. Cancellation must not apply results, and importing into a used project still creates an independent demo project. Reset uses that imported project's own recovered seed.
+
 Apply the result to a truly empty project only. If any contract or workflow data exists, create a uniquely named demo project and preserve the existing project, local edits and claim snapshots. Keep file bytes and object URLs out of persistent project storage. A selected PDF preview is session-only; the bundled source remains available after reload. Retain the existing item checks and explicit work-list confirmation before progress verification. Do not connect a backend or live AI, commit, push or deploy without a new user request.
 
 ## Drawing upload and area mapping

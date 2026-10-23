@@ -122,6 +122,8 @@ Generated photo files and prompts are documented in [public/assets/DEMO-PHOTOS.m
 
 The work list uses the bundled fictional warehouse source in SGD. Selected PDF contents are not parsed. File bytes stay out of saved project data; a selected-file preview is available for the current session only. The bundled PDF remains available after reload. Empty projects receive the sample list in place; projects with existing work open the result in a new demo project. Existing edits, baselines and claims are preserved.
 
+For recovery, enable **Try failed-page demo** before extraction. Page 1 keeps four successful items and leaves two unread. **Retry page** restores only those missing items; **Enter manually** records them from the unchanged demo PDF. Canceling manual entry keeps the entered fields while the dialog remains open. Blank quantity/rate stays unknown and zero stays zero. Recover both items before **Review work list**; manual entries still need source review and explicit confirmation. The existing quantity mismatch is retained, and recovery never changes prior saved claims.
+
 ## Drawing and area mapping
 
 Open **Contract → Drawing & areas**, then **Use demo drawing** or select a local PDF/image. Choose an area, link its contract work items and **Save area**. Add your own area codes as needed. Image plans support pins; PDF references use an area name and page. Mapping is manual and does not measure work.

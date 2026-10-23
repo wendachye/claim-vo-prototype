@@ -50,6 +50,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
   const sourceKind = contract?.sourceKind ?? (contract === sampleContract ? 'provided' : 'none');
   const currency = contract?.currency || (contract === sampleContract ? 'SGD' : 'Currency not specified');
   const sourceLabel = contract.demoImport ? 'Demo PDF' : sourceKind === 'illustrative' ? 'Demo schedule' : 'Printed source';
+  const manualRecovery = item.extractionRecovery?.method === 'manual';
   const hasSourceQuantity = printed?.quantity != null && printed.quantity !== '' && Number.isFinite(Number(printed.quantity));
   const sourcePage = printed?.sourcePage ?? contract?.sourcePage;
   const sourceFilename = contract?.sourceFilename ?? contract?.sourceFile;
@@ -124,13 +125,13 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
           <div className='notice warning contract-quantity-warning' role='note'>
             <AlertTriangle size={17} aria-hidden='true' />
             <div>
-              <strong>Check the quantity</strong>
-              <p>
+              <strong>{manualRecovery ? 'Review manual entry' : 'Check the quantity'}</strong>
+              {manualRecovery ? <p>Entered manually after the Page 1 demo failure. Check the description, unit, quantity and rate against the demo PDF, then confirm this item.</p> : <p>
                 Simulated extraction: {formatQuantity(item.rawExtractedQuantity ?? item.quantity)} {item.unit}.
                 {' '}{hasSourceQuantity
                   ? `${sourceKind === 'illustrative' ? 'Illustrative' : 'Printed'} schedule: ${formatQuantity(printed.quantity)} ${printed.unit}.`
                   : 'A source quantity is unavailable. Check this project’s source before confirming.'}
-              </p>
+              </p>}
               {hasSourceQuantity && <Button
                 disabled={locked}
                 onClick={() => changeField('quantity', String(printed.quantity))}
