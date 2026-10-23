@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getMessageReviewStatus, isNewInboxMessage, matchesInboxFilter } from '../src/data/message-inbox.js';
+import { getMessageReviewStatus, isNewInboxMessage, matchesInboxFilter } from '../src/data/message-inbox.ts';
 
 const message = (values = {}) => ({ id: 'M', kind: 'progress', status: 'new', ...values });
 const report = (values = {}) => ({ id: 'R', status: 'pending', vo: false, ...values });

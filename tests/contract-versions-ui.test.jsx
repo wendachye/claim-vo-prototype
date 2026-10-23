@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ContractRevisionForm } from '../src/components/ContractRevisionForm.jsx';
-import { ContractVersionHistory } from '../src/components/ContractVersionHistory.jsx';
-import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.js';
+import { ContractRevisionForm } from '../src/components/ContractRevisionForm';
+import { ContractVersionHistory } from '../src/components/ContractVersionHistory';
+import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.ts';
 
 const versions = vi.hoisted(() => ({ rows: [] }));
-vi.mock('../src/data/contract-versions.js', () => ({ getContractVersions: vi.fn(() => versions.rows) }));
+vi.mock('../src/data/contract-versions.ts', () => ({ getContractVersions: vi.fn(() => versions.rows) }));
 const ids = new Set();
 const project = (id = 'HISTORY-ONE', version = 1) => {
   ids.add(id);

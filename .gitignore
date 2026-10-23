@@ -11,3 +11,5 @@ dist/
 .next-sites/
 out/
 .vercel/
+
+*.tsbuildinfo

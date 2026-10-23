@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaimPack, claimPackFilename, toClaimCSV } from '../src/data/claim-pack.js';
-import { saveClaimDraft, markClaimPrepared, normalizeClaimDrafts } from '../src/data/claims.js';
-import { createProject } from '../src/data/projects.js';
+import { buildClaimPack, claimPackFilename, toClaimCSV } from '../src/data/claim-pack.ts';
+import { saveClaimDraft, markClaimPrepared, normalizeClaimDrafts } from '../src/data/claims.ts';
+import { createProject } from '../src/data/projects.ts';
 
 function project() {
   const base = createProject({ name: 'Example site', code: 'T01', country: 'Singapore' });

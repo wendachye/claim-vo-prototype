@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ClaimEvidencePanel } from '../src/components/ClaimEvidencePanel.jsx';
+import { ClaimEvidencePanel } from '../src/components/ClaimEvidencePanel';
 
 const work = () => ({
   id: 'A', ref: 'A/01', description: 'Example scaffold', verified: 50,

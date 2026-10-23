@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import * as source from '../src/data/sit-contract-source.js';
-import { createProvidedContractDemo, createSITContractDemo, getProvidedContractSample, getSITContractSample } from '../src/data/provided-contract-demo.js';
-import { getDrawingAsset, getDrawingMapping } from '../src/data/drawing-mapping.js';
-import { getDrawingProgress } from '../src/data/drawing-progress.js';
-import { getAreaEvidence } from '../src/data/drawing-evidence.js';
-import { getAreaVOFlags } from '../src/data/drawing-vo.js';
-import { getVOCases } from '../src/data/vo.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.js';
+import * as source from '../src/data/sit-contract-source.ts';
+import { createProvidedContractDemo, createSITContractDemo, getProvidedContractSample, getSITContractSample } from '../src/data/provided-contract-demo.ts';
+import { getDrawingAsset, getDrawingMapping } from '../src/data/drawing-mapping.ts';
+import { getDrawingProgress } from '../src/data/drawing-progress.ts';
+import { getAreaEvidence } from '../src/data/drawing-evidence.ts';
+import { getAreaVOFlags } from '../src/data/drawing-vo.ts';
+import { getVOCases } from '../src/data/vo.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const create = (code = 'SIT-DEMO01', date = now) => createSITContractDemo({

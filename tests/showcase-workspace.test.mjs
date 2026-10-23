@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ensureSITShowcase, loadShowcaseWorkspace } from '../src/data/showcase-workspace.js';
-import { createProject, LEGACY_STORE, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { getDrawingAsset, getDrawingMapping } from '../src/data/drawing-mapping.js';
-import { getVOCases } from '../src/data/vo.js';
+import { ensureSITShowcase, loadShowcaseWorkspace } from '../src/data/showcase-workspace.ts';
+import { createProject, LEGACY_STORE, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { getDrawingAsset, getDrawingMapping } from '../src/data/drawing-mapping.ts';
+import { getVOCases } from '../src/data/vo.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const isOriginal = (project) => project.contract?.sourceKind === 'provided'

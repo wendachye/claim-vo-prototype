@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ClaimBasisSettings } from '../src/components/ClaimBasisSettings.jsx';
-import { defaultClaimBasis } from '../src/data/claim-basis.js';
+import { ClaimBasisSettings } from '../src/components/ClaimBasisSettings';
+import { defaultClaimBasis } from '../src/data/claim-basis.ts';
 
 function Editor({ initial = defaultClaimBasis(), previousGrossValue = 0, onChange = () => {} }) {
   const [value, setValue] = useState(initial);

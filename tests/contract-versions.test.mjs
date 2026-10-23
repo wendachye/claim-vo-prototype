@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createContractRevision, confirmContractBaseline, getContractVersions } from '../src/data/contract-versions.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { resetProject } from '../src/data/projects.js';
+import { createContractRevision, confirmContractBaseline, getContractVersions } from '../src/data/contract-versions.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { resetProject } from '../src/data/projects.ts';
 
 const at = '2026-10-23T02:00:00.000Z';
 const later = '2026-10-23T03:00:00.000Z';

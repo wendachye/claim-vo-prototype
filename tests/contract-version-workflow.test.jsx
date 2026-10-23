@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { App } from '../src/App.jsx';
-import { WORKSPACE_STORE } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.js';
-import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
-import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
+import { App } from '../src/App';
+import { WORKSPACE_STORE } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.ts';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
+import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 
 const now = new Date('2026-10-23T10:00:00+08:00');
 const projectIds = new Set();

@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ClaimPackPreview } from '../src/components/ClaimPackPreview.jsx';
-import { createProject } from '../src/data/projects.js';
-import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.js';
+import { ClaimPackPreview } from '../src/components/ClaimPackPreview';
+import { createProject } from '../src/data/projects.ts';
+import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.ts';
 
 function fixture(code = 'SAVED-EVIDENCE', label = 'Original') {
   const project = createProject({ name: `${label} evidence project`, code, country: 'Singapore' });

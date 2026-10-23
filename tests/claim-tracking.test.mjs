@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getClaimTracking, normalizeClaimTracking, recordClaimStage } from '../src/data/claim-tracking.js';
-import { createProject, loadWorkspace, resetProject, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
+import { getClaimTracking, normalizeClaimTracking, recordClaimStage } from '../src/data/claim-tracking.ts';
+import { createProject, loadWorkspace, resetProject, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 
 function fixture(value = 500, code = 'TRACK') {
   const project = createProject({ name: 'Claim tracker test', code, country: 'Singapore' });

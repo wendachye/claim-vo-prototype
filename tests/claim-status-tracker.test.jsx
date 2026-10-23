@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ClaimStatusTracker } from '../src/components/ClaimStatusTracker.jsx';
-import { getClaimTracking, recordClaimStage } from '../src/data/claim-tracking.js';
-import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.js';
+import { ClaimStatusTracker } from '../src/components/ClaimStatusTracker';
+import { getClaimTracking, recordClaimStage } from '../src/data/claim-tracking.ts';
+import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.ts';
 
 const projectIds = new Set();
 const date = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());

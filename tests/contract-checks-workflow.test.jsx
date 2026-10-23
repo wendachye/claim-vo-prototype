@@ -1,13 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { App } from '../src/App.jsx';
-import { WORKSPACE_STORE } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { createContractRevision } from '../src/data/contract-versions.js';
-import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.js';
-import { clearProjectFormBuffers, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
+import { App } from '../src/App';
+import { WORKSPACE_STORE } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { createContractRevision } from '../src/data/contract-versions.ts';
+import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.ts';
+import { clearProjectFormBuffers, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 
 const now = new Date('2026-10-24T10:00:00+08:00');
 const projectIds = new Set();

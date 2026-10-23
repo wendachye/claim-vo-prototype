@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { seedWorkspace, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { getProjectWorkflow } from '../src/data/workflow.js';
+import { seedWorkspace, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { getProjectWorkflow } from '../src/data/workflow.ts';
 import { isReviewableProgressReport, isUnresolvedProgressReport, needsMessageClarification,
-  needsProgressClarification, requestProgressClarification } from '../src/data/report-status.js';
+  needsProgressClarification, requestProgressClarification } from '../src/data/report-status.ts';
 
 const now = new Date('2026-10-21T12:00:00Z');
 const example = () => {

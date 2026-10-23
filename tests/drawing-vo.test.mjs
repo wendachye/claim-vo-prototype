@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getAreaVOFlags, getDrawingVOFlags } from '../src/data/drawing-vo.js';
-import { getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea } from '../src/data/drawing-mapping.js';
-import { getVOCases, normalizeVOReviews } from '../src/data/vo.js';
+import { getAreaVOFlags, getDrawingVOFlags } from '../src/data/drawing-vo.ts';
+import { getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea } from '../src/data/drawing-mapping.ts';
+import { getVOCases, normalizeVOReviews } from '../src/data/vo.ts';
 
 const now = new Date('2026-10-21T14:00:00Z');
 function project(id = 'DEMO') {

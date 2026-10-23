@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { getDrawingMapping, saveAreaMapping } from '../src/data/drawing-mapping.js';
-import { getAreaEvidence } from '../src/data/drawing-evidence.js';
-import { getProjectAttention } from '../src/data/project-attention.js';
-import { getProjectWorkflow } from '../src/data/workflow.js';
-import { getMessageReviewStatus, matchesInboxFilter } from '../src/data/message-inbox.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { getMessageClarification, saveMessageClarificationRequest, saveMockClarificationReply } from '../src/data/whatsapp-clarification.js';
-import { WORKSPACE_STORE, loadWorkspace, resetProject, updateProjectState } from '../src/data/projects.js';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { getDrawingMapping, saveAreaMapping } from '../src/data/drawing-mapping.ts';
+import { getAreaEvidence } from '../src/data/drawing-evidence.ts';
+import { getProjectAttention } from '../src/data/project-attention.ts';
+import { getProjectWorkflow } from '../src/data/workflow.ts';
+import { getMessageReviewStatus, matchesInboxFilter } from '../src/data/message-inbox.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { getMessageClarification, saveMessageClarificationRequest, saveMockClarificationReply } from '../src/data/whatsapp-clarification.ts';
+import { WORKSPACE_STORE, loadWorkspace, resetProject, updateProjectState } from '../src/data/projects.ts';
 
 const now = new Date('2026-10-21T10:00:00Z');
 const storageFor = workspace => {

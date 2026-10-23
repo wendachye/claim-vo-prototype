@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { NeedsAttentionList } from '../src/components/NeedsAttentionList.jsx';
-import { ProjectOverview } from '../src/components/ProjectWorkflow.jsx';
+import { NeedsAttentionList } from '../src/components/NeedsAttentionList';
+import { ProjectOverview } from '../src/components/ProjectWorkflow';
 
-vi.mock('../src/data/project-attention.js', () => ({ getProjectAttention: vi.fn((project) => project.attention || []) }));
+vi.mock('../src/data/project-attention.ts', () => ({ getProjectAttention: vi.fn((project) => project.attention || []) }));
 
 const project = (id = 'TASK-UI') => ({ id, code: id, name: 'Overview UI demo', items: [{ id: 'A' }],
   reports: [], whatsappMessages: [], voReviews: [], claimDrafts: [], contract: {} });

@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SavedClaimsList } from '../src/components/SavedClaimsList.jsx';
-import { createProject } from '../src/data/projects.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { recordClaimStage } from '../src/data/claim-tracking.js';
-import { saveClaimRevision } from '../src/data/claim-revisions.js';
+import { SavedClaimsList } from '../src/components/SavedClaimsList';
+import { createProject } from '../src/data/projects.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { recordClaimStage } from '../src/data/claim-tracking.ts';
+import { saveClaimRevision } from '../src/data/claim-revisions.ts';
 
 function queriedProject() {
   const project = createProject({ name: 'Claim query guidance', code: 'QUERY-LIST' });

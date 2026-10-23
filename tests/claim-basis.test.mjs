@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaimReview, saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { defaultClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum } from '../src/data/claim-basis.js';
-import { createProject } from '../src/data/projects.js';
+import { buildClaimReview, saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { defaultClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum } from '../src/data/claim-basis.ts';
+import { createProject } from '../src/data/projects.ts';
 
 function fixture() {
   const base = createProject({ name: 'Claim basis examples', code: 'BASIS', country: 'Singapore' });

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyMockContract, canImportIntoProject, DEMO_CONTRACT_FILENAME, DEMO_CONTRACT_PDF, MAX_CONTRACT_FILE_SIZE, validateContractFile } from '../src/data/contract-import.js';
-import { createProject, loadWorkspace, resetProject, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
-import { buildClaimReview } from '../src/data/claims.js';
+import { applyMockContract, canImportIntoProject, DEMO_CONTRACT_FILENAME, DEMO_CONTRACT_PDF, MAX_CONTRACT_FILE_SIZE, validateContractFile } from '../src/data/contract-import.ts';
+import { createProject, loadWorkspace, resetProject, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { buildClaimReview } from '../src/data/claims.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const input = { inputKind: 'upload', fileName: 'Selected contract.pdf', fileSize: 2500 };

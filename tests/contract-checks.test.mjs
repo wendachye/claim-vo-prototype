@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getContractChecks } from '../src/data/contract-checks.js';
-import { getSITContractSample } from '../src/data/provided-contract-demo.js';
+import { getContractChecks } from '../src/data/contract-checks.ts';
+import { getSITContractSample } from '../src/data/provided-contract-demo.ts';
 
 const row = (values = {}) => ({ id: 'WI-1', ref: 'A.1', description: 'Fictional measured work',
   unit: 'm²', quantity: 10, rate: 2, amount: 20, pricingType: 'measured', needsReview: false, ...values });

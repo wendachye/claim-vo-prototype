@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { ContractUploadFlow } from '../src/components/ContractUploadFlow.jsx';
-import { createProject } from '../src/data/projects.js';
-import { DEMO_CONTRACT_PDF } from '../src/data/contract-import.js';
-import { createContractRecovery } from '../src/data/contract-recovery.js';
+import { ContractUploadFlow } from '../src/components/ContractUploadFlow';
+import { createProject } from '../src/data/projects.ts';
+import { DEMO_CONTRACT_PDF } from '../src/data/contract-import.ts';
+import { createContractRecovery } from '../src/data/contract-recovery.ts';
 
 const objectUrl = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
 const revokeUrl = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');

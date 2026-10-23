@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getProjectOverview } from '../src/data/project-overview.js';
-import { createProject } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { recordClaimStage } from '../src/data/claim-tracking.js';
-import { saveMessageClarificationRequest } from '../src/data/whatsapp-clarification.js';
+import { getProjectOverview } from '../src/data/project-overview.ts';
+import { createProject } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { recordClaimStage } from '../src/data/claim-tracking.ts';
+import { saveMessageClarificationRequest } from '../src/data/whatsapp-clarification.ts';
 
 const now = new Date('2026-10-22T10:00:00+08:00');
 function fixture() {

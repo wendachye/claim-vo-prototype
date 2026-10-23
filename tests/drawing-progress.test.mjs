@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getAreaProgress, getDrawingProgress } from '../src/data/drawing-progress.js';
-import { getDrawingMapping, installDrawing, saveAreaMapping, removeMappedArea } from '../src/data/drawing-mapping.js';
+import { getAreaProgress, getDrawingProgress } from '../src/data/drawing-progress.ts';
+import { getDrawingMapping, installDrawing, saveAreaMapping, removeMappedArea } from '../src/data/drawing-mapping.ts';
 
 const now = new Date('2026-10-21T14:00:00Z');
 function project(id = 'WAREHOUSE-DEMO') {

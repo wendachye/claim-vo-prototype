@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createManualVO, MANUAL_VO_PHOTOS } from '../src/data/manual-vo.js';
-import { getVOCases, getVOClaimEligibility, updateVOReview } from '../src/data/vo.js';
-import { getDrawingMapping, installDrawing, saveAreaMapping, removeMappedArea } from '../src/data/drawing-mapping.js';
-import { getAreaVOFlags } from '../src/data/drawing-vo.js';
-import { seedWorkspace, loadWorkspace, updateProjectState, WORKSPACE_STORE, createProject } from '../src/data/projects.js';
+import { createManualVO, MANUAL_VO_PHOTOS } from '../src/data/manual-vo.ts';
+import { getVOCases, getVOClaimEligibility, updateVOReview } from '../src/data/vo.ts';
+import { getDrawingMapping, installDrawing, saveAreaMapping, removeMappedArea } from '../src/data/drawing-mapping.ts';
+import { getAreaVOFlags } from '../src/data/drawing-vo.ts';
+import { seedWorkspace, loadWorkspace, updateProjectState, WORKSPACE_STORE, createProject } from '../src/data/projects.ts';
 
 const at = '2026-10-23T02:00:00.000Z';
 const entry = (changes = {}) => ({ submissionId: 'manual-test-0001', title: 'Additional temporary access',

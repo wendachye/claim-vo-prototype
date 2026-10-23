@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createProject, loadWorkspace, resetProject, WORKSPACE_STORE } from '../src/data/projects.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { getClaimTracking, normalizeClaimTracking, recordClaimStage } from '../src/data/claim-tracking.js';
-import { getClaimRevisionContext, saveClaimRevision } from '../src/data/claim-revisions.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
+import { createProject, loadWorkspace, resetProject, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { getClaimTracking, normalizeClaimTracking, recordClaimStage } from '../src/data/claim-tracking.ts';
+import { getClaimRevisionContext, saveClaimRevision } from '../src/data/claim-revisions.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 
 function fixture(code = 'QUERY') {
   const project = createProject({ code, name: 'Mock claim query test', country: 'Singapore' });

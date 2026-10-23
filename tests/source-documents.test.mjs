@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getSourceDocuments } from '../src/data/source-documents.js';
-import { seedWorkspace } from '../src/data/projects.js';
+import { getSourceDocuments } from '../src/data/source-documents.ts';
+import { seedWorkspace } from '../src/data/projects.ts';
 
 const provided = () => ({
   id: 'SOURCE-DEMO', sourceKind: 'provided', sourceProfile: 'sit-loa-2021',

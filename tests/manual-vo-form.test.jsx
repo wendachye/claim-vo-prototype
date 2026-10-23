@@ -2,11 +2,11 @@ import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ManualVOForm } from '../src/components/ManualVOForm.jsx';
-import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.js';
-import { createProject } from '../src/data/projects.js';
-import { getDrawingMapping, installDrawing } from '../src/data/drawing-mapping.js';
-import { MANUAL_VO_PHOTOS } from '../src/data/manual-vo.js';
+import { ManualVOForm } from '../src/components/ManualVOForm';
+import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.ts';
+import { createProject } from '../src/data/projects.ts';
+import { getDrawingMapping, installDrawing } from '../src/data/drawing-mapping.ts';
+import { MANUAL_VO_PHOTOS } from '../src/data/manual-vo.ts';
 
 const ids = new Set();
 afterEach(() => { for (const id of ids) clearProjectFormBuffers(id); ids.clear(); });

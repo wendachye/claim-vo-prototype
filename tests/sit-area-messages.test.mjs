@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { addSITAreaMessages, getSITAreaMessageUpdate } from '../src/data/sit-area-messages.js';
-import { getDrawingMapping, installDrawing } from '../src/data/drawing-mapping.js';
-import { getAreaEvidence } from '../src/data/drawing-evidence.js';
-import { getAreaVOFlags } from '../src/data/drawing-vo.js';
-import { getAreaProgress } from '../src/data/drawing-progress.js';
-import { getVOCases } from '../src/data/vo.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
+import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { addSITAreaMessages, getSITAreaMessageUpdate } from '../src/data/sit-area-messages.ts';
+import { getDrawingMapping, installDrawing } from '../src/data/drawing-mapping.ts';
+import { getAreaEvidence } from '../src/data/drawing-evidence.ts';
+import { getAreaVOFlags } from '../src/data/drawing-vo.ts';
+import { getAreaProgress } from '../src/data/drawing-progress.ts';
+import { getVOCases } from '../src/data/vo.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const marker = '-SIT-AREA-';

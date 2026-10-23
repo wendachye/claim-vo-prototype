@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaimReview, countPendingClaimVOs, saveClaimDraft, markClaimPrepared, normalizeClaimDrafts } from '../src/data/claims.js';
-import { createProject, loadWorkspace, resetProject, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
+import { buildClaimReview, countPendingClaimVOs, saveClaimDraft, markClaimPrepared, normalizeClaimDrafts } from '../src/data/claims.ts';
+import { createProject, loadWorkspace, resetProject, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
 
 function project() {
   const base = createProject({ name: 'Test site', code: 'T01', country: 'Singapore' });

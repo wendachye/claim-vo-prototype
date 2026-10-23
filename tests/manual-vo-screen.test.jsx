@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { VOReviewView } from '../src/components/VOReviewView.jsx';
-import { createProject } from '../src/data/projects.js';
-import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
-import { createManualVO, MANUAL_VO_PHOTOS } from '../src/data/manual-vo.js';
-import { getVOCases, updateVOReview } from '../src/data/vo.js';
+import { VOReviewView } from '../src/components/VOReviewView';
+import { createProject } from '../src/data/projects.ts';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
+import { createManualVO, MANUAL_VO_PHOTOS } from '../src/data/manual-vo.ts';
+import { getVOCases, updateVOReview } from '../src/data/vo.ts';
 
 const ids = new Set();
 beforeEach(() => vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false }))));

@@ -3,12 +3,12 @@ import test from 'node:test';
 import {
   getMessageClarificationEligibility, saveMessageClarificationRequest, saveMockClarificationReply,
   getMessageClarification, normalizeMessageClarifications,
-} from '../src/data/whatsapp-clarification.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { getDrawingMapping, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { buildClaimPack } from '../src/data/claim-pack.js';
-import { loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
+} from '../src/data/whatsapp-clarification.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { getDrawingMapping, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { buildClaimPack } from '../src/data/claim-pack.ts';
+import { loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
 
 const requestDate = new Date('2026-10-21T10:00:00Z');
 const replyDate = new Date('2026-10-21T11:00:00Z');

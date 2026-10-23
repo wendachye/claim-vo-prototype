@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createClaimExamplesDemo } from '../src/data/claim-examples-demo.js';
-import { buildClaimReview, markClaimPrepared, saveClaimDraft } from '../src/data/claims.js';
-import { getClaimTracking } from '../src/data/claim-tracking.js';
-import { loadWorkspace, resetProject, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
+import { createClaimExamplesDemo } from '../src/data/claim-examples-demo.ts';
+import { buildClaimReview, markClaimPrepared, saveClaimDraft } from '../src/data/claims.ts';
+import { getClaimTracking } from '../src/data/claim-tracking.ts';
+import { loadWorkspace, resetProject, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
 
 const now = new Date('2026-10-22T05:00:00Z');
 const example = (code = 'EXAMPLES01') => createClaimExamplesDemo({ name: 'Claim examples (Demo)', code, country: 'Singapore' }, now);

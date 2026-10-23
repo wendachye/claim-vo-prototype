@@ -1,6 +1,6 @@
 # Claim & VO prototype
 
-A frontend-only construction workflow demo built with Next.js and React. It includes project workspaces, contract review, completion tracking, mock WhatsApp processing, QS variation review and monthly claim preparation with saved assessment preview/export.
+A frontend-only construction workflow demo built with Next.js, React and TypeScript. It includes project workspaces, contract review, completion tracking, mock WhatsApp processing, QS variation review and monthly claim preparation with saved assessment preview/export.
 
 The default campus and warehouse projects are fictional. A separate, explicitly requested **Original S.I.T. contract** scenario uses the supplied contract metadata, 18 reviewed schedule rows and two source-page images. All site activity, people, progress, generated photos, VO decisions and claim assessments remain simulated. The complete original PDF is not bundled.
 
@@ -27,11 +27,21 @@ Expand **Contract checks** above the work list to see missing values, unreviewed
 
 ## UI conventions
 
-Page headers, destination-labelled back links, form fields and action rows use shared components in `src/components/ui.jsx` and the common sizing/spacing rules in `layout-system.css`. Return links sit above detail titles; wizard step-back actions stay at the lower left. Inputs, labels, optional/unit markers, hints, validation errors and attachment buttons share one control scale. Modal close controls and the printed claim document retain their existing behavior.
+Page headers, destination-labelled back links, form fields and action rows use shared components in `src/components/ui.tsx` and the common sizing/spacing rules in `layout-system.css`. Return links sit above detail titles; wizard step-back actions stay at the lower left. Inputs, labels, optional/unit markers, hints, validation errors and attachment buttons share one control scale. Modal close controls and the printed claim document retain their existing behavior.
+
+## Move drawing pins
+
+On image drawings, drag an existing area pin to preview a new location. A short click still selects the area. Dragging opens its area editor after the drop; choose **Save area links** to confirm. Moving a pin preserves the other unfinished area fields and never changes reported/verified progress, VO decisions or saved claims. Escape cancels an active drag, and unsaved positions stay separate by project/drawing/area while browsing. The original click-to-place and manual percentage fields remain available; PDF areas continue to use names and pages.
+
+For keyboard use, focus the pin, press Space, move with the arrow keys, then press Space to drop or Escape to cancel. Positions remain relative to the drawing when zooming or scrolling.
+
+## TypeScript
+
+All application screens, shared components, form buffers, mock state and business logic under `src/` use strict TypeScript. Shared domain models describe projects, work items, drawing areas, messages, VO reviews and frozen claim snapshots. Run `npm run typecheck` before the normal production build; type errors are not ignored. Tests and build/hosting scripts retain their existing JavaScript tooling.
 
 ## Run
 
-Use Node.js **22.12+** and npm.
+Use Node.js **22.18+** (or Node.js 24) and npm. The native state tests use Node’s built-in TypeScript support.
 
 ```bash
 npm install
@@ -89,6 +99,7 @@ The PDF uses a compact A4 print layout with a white page background, repeating t
 ## Checks
 
 ```bash
+npm run typecheck
 npm run build
 npm run test:projects
 npm run test:whatsapp

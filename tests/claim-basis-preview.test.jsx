@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ClaimPackPreview } from '../src/components/ClaimPackPreview.jsx';
-import { saveClaimDraft } from '../src/data/claims.js';
-import { createProject } from '../src/data/projects.js';
+import { ClaimPackPreview } from '../src/components/ClaimPackPreview';
+import { saveClaimDraft } from '../src/data/claims.ts';
+import { createProject } from '../src/data/projects.ts';
 
 function fixture(basis = { version: 1, billingMethod: 'quantityRate', retentionMode: 'rateCap', retentionRate: 5, retentionCap: 1000, previousNetValue: 0, priorReference: '' }, confirmed = true) {
   const project = createProject({ name: 'Saved basis example', code: 'BASIS-PREVIEW', country: 'Singapore' });

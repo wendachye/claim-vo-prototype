@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MonthlyClaimView } from '../src/components/MonthlyClaimView.jsx';
-import { createProject } from '../src/data/projects.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { getVOCases } from '../src/data/vo.js';
-import { clearProjectFormBuffers, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.js';
+import { MonthlyClaimView } from '../src/components/MonthlyClaimView';
+import { createProject } from '../src/data/projects.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { getVOCases } from '../src/data/vo.ts';
+import { clearProjectFormBuffers, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.ts';
 
 const projects = new Set();
 afterEach(() => { for (const id of projects) clearProjectFormBuffers(id); projects.clear(); vi.restoreAllMocks(); });

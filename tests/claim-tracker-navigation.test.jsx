@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { App } from '../src/App.jsx';
-import { WORKSPACE_STORE } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.js';
-import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.js';
-import { getClaimTracking } from '../src/data/claim-tracking.js';
-import { buildClaimPack } from '../src/data/claim-pack.js';
-import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
+import { App } from '../src/App';
+import { WORKSPACE_STORE } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.ts';
+import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.ts';
+import { getClaimTracking } from '../src/data/claim-tracking.ts';
+import { buildClaimPack } from '../src/data/claim-pack.ts';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
 
 const now = new Date('2026-10-21T10:00:00+08:00');
 const elementScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTo');

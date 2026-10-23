@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getProjectAttention } from '../src/data/project-attention.js';
-import { updateVOReview } from '../src/data/vo.js';
-import { createProject } from '../src/data/projects.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { recordClaimStage } from '../src/data/claim-tracking.js';
-import { saveClaimRevision } from '../src/data/claim-revisions.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
+import { getProjectAttention } from '../src/data/project-attention.ts';
+import { updateVOReview } from '../src/data/vo.ts';
+import { createProject } from '../src/data/projects.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { recordClaimStage } from '../src/data/claim-tracking.ts';
+import { saveClaimRevision } from '../src/data/claim-revisions.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 
 function fixture(code = 'ATTN') {
   const project = createProject({ code, name: 'Needs attention demo', country: 'Singapore' });

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { ContractChecks } from '../src/components/ContractChecks.jsx';
-import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.js';
+import { ContractChecks } from '../src/components/ContractChecks';
+import { clearProjectFormBuffers, readFormBuffer } from '../src/data/form-buffer.ts';
 
 const project = (overrides = {}) => ({ id: 'TOTAL-REVIEW-ONE', name: 'Warehouse demo', locked: false, version: 1, contract: { representativeSubset: false }, items: [{ id: 'WI-001' }], ...overrides });
 const checks = (overrides = {}) => ({ issues: [], itemIssueCount: 0, canConfirm: true, partial: false, totals: { currency: 'SGD', recordedTotal: 90, calculatedTotal: 90, declaredTotal: 100, difference: -10, complete: true, partial: false, comparison: 'difference' }, ...overrides });

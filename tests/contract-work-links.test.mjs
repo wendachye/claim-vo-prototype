@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getWorkItemMessageSample, getWorkItemSiteMessage } from '../src/data/contract-work-links.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { getDrawingMapping, saveAreaMapping } from '../src/data/drawing-mapping.js';
+import { getWorkItemMessageSample, getWorkItemSiteMessage } from '../src/data/contract-work-links.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { getDrawingMapping, saveAreaMapping } from '../src/data/drawing-mapping.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const create = () => createSITContractDemo({ code: 'SIT-LINK01', name: 'S.I.T. linked workflow' }, now);

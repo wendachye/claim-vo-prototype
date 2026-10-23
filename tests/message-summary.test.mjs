@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getMessageSummary } from '../src/data/message-summary.js';
+import { getMessageSummary } from '../src/data/message-summary.ts';
 
 const progress = (values = {}) => ({
   projectCode: 'SIT-DEMO01', location: 'W3', area: 'Area W3-COLUMNS', itemId: 'WI-008',

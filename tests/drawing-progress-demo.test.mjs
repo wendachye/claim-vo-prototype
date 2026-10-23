@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDrawingProgressDemo } from '../src/data/drawing-progress-demo.js';
-import { getDrawingMapping } from '../src/data/drawing-mapping.js';
-import { getDrawingProgress } from '../src/data/drawing-progress.js';
-import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.js';
-import { buildClaimReview } from '../src/data/claims.js';
-import { getWhatsAppMessages, processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { getVOCases } from '../src/data/vo.js';
+import { createDrawingProgressDemo } from '../src/data/drawing-progress-demo.ts';
+import { getDrawingMapping } from '../src/data/drawing-mapping.ts';
+import { getDrawingProgress } from '../src/data/drawing-progress.ts';
+import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { buildClaimReview } from '../src/data/claims.ts';
+import { getWhatsAppMessages, processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { getVOCases } from '../src/data/vo.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const statusByCode = (project, basis) => Object.fromEntries(getDrawingProgress(project, basis).map((area) => [area.code, area.status]));

@@ -4,8 +4,8 @@ import {
   DEMO_AREAS, DEMO_DRAWING_ASSET, DEMO_DRAWING_FILENAME, MAX_DRAWING_FILE_SIZE,
   getDrawingMapping, getDrawingAsset, getProvidedDrawingSource, installDrawing, saveAreaMapping, removeMappedArea,
   getAreasForItem, getAreaForMessage, getAreaLinkStatus, snapshotMappedArea, validateDrawingFile,
-} from '../src/data/drawing-mapping.js';
-import { seedWorkspace, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
+} from '../src/data/drawing-mapping.ts';
+import { seedWorkspace, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
 
 const now = new Date('2026-10-21T14:00:00Z');
 const sample = { inputKind: 'sample' };

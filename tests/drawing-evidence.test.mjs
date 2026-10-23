@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getAreaEvidence, resolveAreaEvidenceSource } from '../src/data/drawing-evidence.js';
-import { getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea } from '../src/data/drawing-mapping.js';
-import { getMessageReport, seedWhatsAppMessages } from '../src/data/whatsapp.js';
+import { getAreaEvidence, resolveAreaEvidenceSource } from '../src/data/drawing-evidence.ts';
+import { getDrawingMapping, installDrawing, saveAreaMapping, snapshotMappedArea } from '../src/data/drawing-mapping.ts';
+import { getMessageReport, seedWhatsAppMessages } from '../src/data/whatsapp.ts';
 
 const now = new Date('2026-10-21T14:00:00Z');
 function project(id = 'DEMO') {

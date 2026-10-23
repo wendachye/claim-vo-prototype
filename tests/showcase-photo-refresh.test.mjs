@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadShowcaseWorkspace } from '../src/data/showcase-workspace.js';
-import { loadWorkspace, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
-import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { buildClaimReview, markClaimPrepared, saveClaimDraft } from '../src/data/claims.js';
+import { loadShowcaseWorkspace } from '../src/data/showcase-workspace.ts';
+import { loadWorkspace, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { buildClaimReview, markClaimPrepared, saveClaimDraft } from '../src/data/claims.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const genericAlt = 'Generated construction illustration used as a demo site photo; not project evidence.';

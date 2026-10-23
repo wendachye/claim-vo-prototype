@@ -3,9 +3,9 @@ import { createRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Button, Checkbox, FormField, Input, Modal, SelectField, Textarea } from '../src/components/ui.jsx';
-import { ProjectDropdown } from '../src/components/ProjectDropdown.jsx';
-import { ReportDrawer } from '../src/components/ReportDrawer.jsx';
+import { Button, Checkbox, FormField, Input, Modal, SelectField, Textarea } from '../src/components/ui';
+import { ProjectDropdown } from '../src/components/ProjectDropdown';
+import { ReportDrawer } from '../src/components/ReportDrawer';
 
 const projects = [
   { id: 'campus', name: 'Campus project', code: 'CAMPUS', country: 'Singapore' },

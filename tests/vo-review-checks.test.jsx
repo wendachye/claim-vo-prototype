@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { VOCaseReview } from '../src/components/VOCaseReview.jsx';
-import { createProject } from '../src/data/projects.js';
-import { getVOCases, getVOClaimEligibility, updateVOReview } from '../src/data/vo.js';
-import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
+import { VOCaseReview } from '../src/components/VOCaseReview';
+import { createProject } from '../src/data/projects.ts';
+import { getVOCases, getVOClaimEligibility, updateVOReview } from '../src/data/vo.ts';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
 
 const projectIds = new Set();
 afterEach(() => { for (const id of projectIds) clearProjectFormBuffers(id); projectIds.clear(); });

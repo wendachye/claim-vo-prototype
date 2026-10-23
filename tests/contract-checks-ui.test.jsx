@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
-import { ContractChecks } from '../src/components/ContractChecks.jsx';
+import { ContractChecks } from '../src/components/ContractChecks';
 
 const project = (overrides = {}) => ({ id: 'CHECKS-ONE', items: [{ id: 'WI-001' }, { id: 'WI-002' }], locked: false, ...overrides });
 const checks = (overrides = {}) => ({

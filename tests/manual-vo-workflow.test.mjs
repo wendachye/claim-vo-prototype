@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createManualVO, MANUAL_VO_PHOTOS } from '../src/data/manual-vo.js';
-import { createProject, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
-import { getVOCases, getVOClaimEligibility, updateVOReview } from '../src/data/vo.js';
-import { getDrawingMapping, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.js';
-import { getAreaEvidence, resolveAreaEvidenceSource } from '../src/data/drawing-evidence.js';
-import { getAreaVOFlags } from '../src/data/drawing-vo.js';
-import { getProjectAttention } from '../src/data/project-attention.js';
-import { buildClaimReview, saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
+import { createManualVO, MANUAL_VO_PHOTOS } from '../src/data/manual-vo.ts';
+import { createProject, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { getVOCases, getVOClaimEligibility, updateVOReview } from '../src/data/vo.ts';
+import { getDrawingMapping, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.ts';
+import { getAreaEvidence, resolveAreaEvidenceSource } from '../src/data/drawing-evidence.ts';
+import { getAreaVOFlags } from '../src/data/drawing-vo.ts';
+import { getProjectAttention } from '../src/data/project-attention.ts';
+import { buildClaimReview, saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 
 const now = new Date('2026-10-23T10:00:00Z');
 function fixture(code = 'MANUAL-WORKFLOW') {

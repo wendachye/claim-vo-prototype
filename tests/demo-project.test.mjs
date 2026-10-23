@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createDemoProject } from '../src/data/demo-project.js';
-import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.js';
-import { buildClaimReview } from '../src/data/claims.js';
-import { getWhatsAppMessages, processWhatsAppMessage } from '../src/data/whatsapp.js';
+import { createDemoProject } from '../src/data/demo-project.ts';
+import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { buildClaimReview } from '../src/data/claims.ts';
+import { getWhatsAppMessages, processWhatsAppMessage } from '../src/data/whatsapp.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const mock = (code = 'DEMO01') => createDemoProject({ name: 'Workflow walkthrough (Demo)', code, country: 'Singapore' }, now);

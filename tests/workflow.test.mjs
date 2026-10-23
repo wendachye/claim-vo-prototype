@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getProjectWorkflow } from '../src/data/workflow.js';
-import { recordClaimStage } from '../src/data/claim-tracking.js';
-import { saveClaimRevision } from '../src/data/claim-revisions.js';
-import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.js';
+import { getProjectWorkflow } from '../src/data/workflow.ts';
+import { recordClaimStage } from '../src/data/claim-tracking.ts';
+import { saveClaimRevision } from '../src/data/claim-revisions.ts';
+import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
 
 function project() {
   return { id: 'TEST', code: 'TEST', contract: { sourceKind: 'illustrative' }, version: 1,

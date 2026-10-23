@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.js';
-import { getWhatsAppMessages, processWhatsAppMessage } from '../src/data/whatsapp.js';
+import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.ts';
+import { getWhatsAppMessages, processWhatsAppMessage } from '../src/data/whatsapp.ts';
 
 const sit = () => seedWorkspace().projects[0];
 const store = (values = {}) => {

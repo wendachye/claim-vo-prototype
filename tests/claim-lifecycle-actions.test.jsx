@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MonthlyClaimView } from '../src/components/MonthlyClaimView.jsx';
-import { ClaimStatusTracker } from '../src/components/ClaimStatusTracker.jsx';
-import { createClaimExamplesDemo } from '../src/data/claim-examples-demo.js';
-import { getClaimTracking, recordClaimStage } from '../src/data/claim-tracking.js';
-import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.js';
-import { saveClaimRevision } from '../src/data/claim-revisions.js';
-import { clearProjectFormBuffers, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.js';
+import { MonthlyClaimView } from '../src/components/MonthlyClaimView';
+import { ClaimStatusTracker } from '../src/components/ClaimStatusTracker';
+import { createClaimExamplesDemo } from '../src/data/claim-examples-demo.ts';
+import { getClaimTracking, recordClaimStage } from '../src/data/claim-tracking.ts';
+import { markClaimPrepared, saveClaimDraft } from '../src/data/claims.ts';
+import { saveClaimRevision } from '../src/data/claim-revisions.ts';
+import { clearProjectFormBuffers, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.ts';
 
 const now = new Date('2026-10-22T10:00:00+08:00');
 const ids = new Set();

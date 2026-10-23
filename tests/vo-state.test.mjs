@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getVOCases, getVOClaimEligibility, updateVOReview, VO_STATUS_LABELS } from '../src/data/vo.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.js';
+import { getVOCases, getVOClaimEligibility, updateVOReview, VO_STATUS_LABELS } from '../src/data/vo.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { createProject, loadWorkspace, resetProject, seedWorkspace, updateProjectState, WORKSPACE_STORE, LEGACY_STORE } from '../src/data/projects.ts';
 
 const sit = () => seedWorkspace().projects[0];
 const id = 'DEMO-REPORT-003';

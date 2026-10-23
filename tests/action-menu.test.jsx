@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ActionMenu } from '../src/components/ActionMenu.jsx';
-import { Modal } from '../src/components/ui.jsx';
+import { ActionMenu } from '../src/components/ActionMenu';
+import { Modal } from '../src/components/ui';
 
 describe('shared shadcn action dropdown', () => {
   it('supports keyboard selection, skips disabled actions and closes on selection', async () => {

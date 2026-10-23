@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { getSITDemoPhoto, getSITDemoPhotoUpdate, refreshSITDemoPhotos } from '../src/data/sit-demo-photos.js';
-import { processWhatsAppMessage } from '../src/data/whatsapp.js';
-import { getAreaEvidence, resolveAreaEvidenceSource } from '../src/data/drawing-evidence.js';
-import { getDrawingMapping } from '../src/data/drawing-mapping.js';
+import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { getSITDemoPhoto, getSITDemoPhotoUpdate, refreshSITDemoPhotos } from '../src/data/sit-demo-photos.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { getAreaEvidence, resolveAreaEvidenceSource } from '../src/data/drawing-evidence.ts';
+import { getDrawingMapping } from '../src/data/drawing-mapping.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const create = (code = 'SIT-PHOTO01') => createSITContractDemo({ code, name: 'S.I.T. photo showcase' }, now);

@@ -8,8 +8,8 @@ import {
   resetProject,
   seedWorkspace,
   updateProjectState,
-} from '../src/data/projects.js';
-import { initialItems, initialReports } from '../src/data/contract.js';
+} from '../src/data/projects.ts';
+import { initialItems, initialReports } from '../src/data/contract.ts';
 
 function memoryStorage(values = {}) {
   const entries = new Map(Object.entries(values));

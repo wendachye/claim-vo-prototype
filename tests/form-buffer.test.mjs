@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clearFormBuffer, clearProjectFormBuffers, contractFormScope, contractFormValues, findUnfinishedContractItem, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.js';
+import { clearFormBuffer, clearProjectFormBuffers, contractFormScope, contractFormValues, findUnfinishedContractItem, readFormBuffer, writeFormBuffer } from '../src/data/form-buffer.ts';
 
 test('unfinished forms survive view remount reads without mutating saved records', () => {
   const saved = { work: { 'WI-001': { assessedQuantity: 200 } } };

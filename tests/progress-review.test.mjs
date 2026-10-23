@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getItemProgressReview } from '../src/data/progress-review.js';
+import { getItemProgressReview } from '../src/data/progress-review.ts';
 
 const item = (values = {}) => ({ id: 'A', reported: 0, verified: 0, ...values });
 const project = (reports = []) => ({ id: 'P', code: 'P01', reports });

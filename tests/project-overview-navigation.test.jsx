@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { App } from '../src/App.jsx';
-import { createProject, WORKSPACE_STORE } from '../src/data/projects.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.js';
-import { getProjectOverview } from '../src/data/project-overview.js';
-import { getVOCases } from '../src/data/vo.js';
-import { markClaimPrepared } from '../src/data/claims.js';
-import { recordClaimStage } from '../src/data/claim-tracking.js';
-import { buildClaimPack } from '../src/data/claim-pack.js';
-import { clearProjectFormBuffers } from '../src/data/form-buffer.js';
+import { App } from '../src/App';
+import { createProject, WORKSPACE_STORE } from '../src/data/projects.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.ts';
+import { getProjectOverview } from '../src/data/project-overview.ts';
+import { getVOCases } from '../src/data/vo.ts';
+import { markClaimPrepared } from '../src/data/claims.ts';
+import { recordClaimStage } from '../src/data/claim-tracking.ts';
+import { buildClaimPack } from '../src/data/claim-pack.ts';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
 
 const now = new Date('2026-10-22T10:00:00+08:00');
 const projectIds = new Set();

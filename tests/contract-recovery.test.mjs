@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyMockContract, DEMO_CONTRACT_PDF } from '../src/data/contract-import.js';
-import { contractRecoveryMissingRows, createContractRecovery, inspectContractRecovery, retryContractPage, saveManualContractPage } from '../src/data/contract-recovery.js';
-import { createProject, loadWorkspace, resetProject, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
+import { applyMockContract, DEMO_CONTRACT_PDF } from '../src/data/contract-import.ts';
+import { contractRecoveryMissingRows, createContractRecovery, inspectContractRecovery, retryContractPage, saveManualContractPage } from '../src/data/contract-recovery.ts';
+import { createProject, loadWorkspace, resetProject, seedWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
 
 const now = new Date('2026-10-23T04:30:00.000Z');
 const input = { inputKind: 'sample', fileName: 'warehouse-contract-demo.pdf', fileSize: 0 };

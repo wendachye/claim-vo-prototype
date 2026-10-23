@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { applySITAreaUpdate, getSITAreaUpdate } from '../src/data/sit-area-update.js';
-import { getDrawingMapping, getAreasForItem, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.js';
-import { getAreaEvidence } from '../src/data/drawing-evidence.js';
-import { resetProject } from '../src/data/projects.js';
+import { createProvidedContractDemo, createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { applySITAreaUpdate, getSITAreaUpdate } from '../src/data/sit-area-update.ts';
+import { getDrawingMapping, getAreasForItem, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.ts';
+import { getAreaEvidence } from '../src/data/drawing-evidence.ts';
+import { resetProject } from '../src/data/projects.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const create = () => createSITContractDemo({ code: 'SIT-AREA01', name: 'Original S.I.T. area review' }, now);

@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
-import { saveClaimDraft } from '../src/data/claims.js';
-import { createProject } from '../src/data/projects.js';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
+import { saveClaimDraft } from '../src/data/claims.ts';
+import { createProject } from '../src/data/projects.ts';
 
 function fixture() {
   const base = createProject({ name: 'Mock retention example', code: 'BASIS-PACK', country: 'Singapore' });

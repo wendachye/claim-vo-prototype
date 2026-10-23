@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getContractTotalReview, getContractVersionTotalReview, saveContractTotalReview } from '../src/data/contract-total-review.js';
-import { confirmContractBaseline, createContractRevision, getContractVersions } from '../src/data/contract-versions.js';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { createClaimExamplesDemo } from '../src/data/claim-examples-demo.js';
-import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.js';
-import { resetProject, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.js';
+import { getContractTotalReview, getContractVersionTotalReview, saveContractTotalReview } from '../src/data/contract-total-review.ts';
+import { confirmContractBaseline, createContractRevision, getContractVersions } from '../src/data/contract-versions.ts';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { createClaimExamplesDemo } from '../src/data/claim-examples-demo.ts';
+import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
+import { resetProject, loadWorkspace, WORKSPACE_STORE } from '../src/data/projects.ts';
 
 const at = '2026-10-24T01:00:00.000Z';
 const later = '2026-10-24T02:00:00.000Z';

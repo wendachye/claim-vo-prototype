@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { WhatsAppView } from '../src/components/WhatsAppView.jsx';
-import { createSITContractDemo } from '../src/data/provided-contract-demo.js';
-import { getVOCases, getVOClaimEligibility } from '../src/data/vo.js';
-import { getWhatsAppMessages } from '../src/data/whatsapp.js';
+import { WhatsAppView } from '../src/components/WhatsAppView';
+import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
+import { getVOCases, getVOClaimEligibility } from '../src/data/vo.ts';
+import { getWhatsAppMessages } from '../src/data/whatsapp.ts';
 
 const now = new Date('2026-10-22T10:00:00+08:00');
 const footer = () => within(document.querySelector('.wa-review-footer'));

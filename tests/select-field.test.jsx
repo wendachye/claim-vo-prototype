@@ -2,7 +2,7 @@ import { createRef, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SelectField } from '../src/components/SelectField.jsx';
+import { SelectField } from '../src/components/SelectField';
 
 function ControlledSelect({ onChange, ...props }) {
   const [value, setValue] = useState('');
