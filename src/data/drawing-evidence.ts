@@ -1,13 +1,13 @@
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
 // Read-only links to original site evidence. A drawing never changes a report.
-import { getDrawingMapping } from './drawing-mapping.ts';
+import { getAreaMatchForMessage, getDrawingMapping } from './drawing-mapping.ts';
 import { getWhatsAppMessages } from './whatsapp.ts';
 import { needsProgressClarification } from './report-status.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
 import { getMessageReviewStatus } from './message-inbox.ts';
 
 type EvidenceSource = SiteReport | WhatsAppMessage;
-export interface DrawingEvidenceEntry { id: string; messageId: string | null; reportId: string | null; sourceLabel: string; kind: string; status: string; label: string; tone: string; sender: string; date: string; text: string; photo: string | null; photoAlt: string; itemId: string | null; matchKind: 'saved-area' | 'area-code' | 'work-item'; matchLabel: string }
+export interface DrawingEvidenceEntry { id: string; messageId: string | null; reportId: string | null; sourceLabel: string; kind: string; status: string; label: string; tone: string; sender: string; date: string; text: string; photo: string | null; photoAlt: string; itemId: string | null; matchKind: 'saved-area' | 'area-code' | 'area-alias' | 'work-item'; matchLabel: string }
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
@@ -15,6 +15,8 @@ const originalText = (value: unknown, fallback = '') => typeof value === 'string
 const areaCode = (value: unknown) => text(value).replace(/^area\s+/i, '').toUpperCase();
 const identifier = (value: unknown) => text(value) || null;
 const hasArea = (entry: EvidenceSource) => entry.area != null && (typeof entry.area !== 'string' || Boolean(entry.area.trim()));
+const hasAreaReference = (entry: EvidenceSource) => hasArea(entry) || Boolean(entry.areaId)
+  || (record(entry.areaProgress) && Object.hasOwn(entry.areaProgress, 'areaId'));
 
 function inProject(project: Project, entry: unknown) {
   return record(entry)
@@ -46,12 +48,17 @@ function safePhoto(value: unknown) {
   return null;
 }
 
-function matchArea(area: DrawingArea, entry: EvidenceSource, message: WhatsAppMessage | null = null) {
+function matchArea(project: Project, area: DrawingArea, entry: EvidenceSource, message: WhatsAppMessage | null = null) {
   if (record(entry.areaMapping) && Object.hasOwn(entry.areaMapping, 'areaId')) {
     return entry.areaMapping.areaId === area.id ? 'saved-area' : null;
   }
-  const explicit = hasArea(entry) ? entry : message && hasArea(message) ? message : null;
-  if (explicit) return areaCode(explicit.area) === area.code ? 'area-code' : null;
+  const explicit = hasAreaReference(entry) ? entry : message && hasAreaReference(message) ? message : null;
+  if (explicit) {
+    const match = getAreaMatchForMessage(project, explicit);
+    if (match.area?.id !== area.id) return null;
+    if (explicit.areaId || explicit.areaProgress) return 'saved-area';
+    return areaCode(explicit.area) === area.code ? 'area-code' : 'area-alias';
+  }
   return area.workItemIds.includes(entry.itemId || '') ? 'work-item' : null;
 }
 
@@ -74,6 +81,7 @@ const voStates: Record<string, { label: string; tone: string }> = {
 const matchLabels = {
   'saved-area': 'Saved area reference',
   'area-code': 'Matching area code',
+  'area-alias': 'Matching alternate name',
   'work-item': 'Linked work item; area not stated',
 };
 
@@ -102,7 +110,7 @@ function stateFor(project: Project, report: SiteReport | null, message: WhatsApp
 function evidenceEntry(project: Project, area: DrawingArea, report: SiteReport | null, message: WhatsAppMessage | null | undefined): DrawingEvidenceEntry | null {
   const source = report || message;
   if (!source) return null;
-  const matchKind = matchArea(area, source, report ? message || null : null);
+  const matchKind = matchArea(project, area, source, report ? message || null : null);
   if (!matchKind) return null;
   const kind = report ? report.vo || report.kind === 'vo' ? 'vo'
     : report.kind === 'clarification' || needsProgressClarification(report) ? 'clarification' : 'progress'

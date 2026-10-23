@@ -13,11 +13,13 @@ export interface DrawingPosition { x: number; y: number }
 export interface DrawingArea {
   id: string; projectId: string; drawingId: string; code: string; name: string;
   page: number; position: DrawingPosition | null; workItemIds: string[]; updatedAt?: string;
+  aliases?: string[];
   workItemQuantities?: Record<string, number>;
 }
 export interface AreaMappingSnapshot {
   areaId: string | null; code?: string; name?: string; drawingId?: string; page?: number;
   position?: DrawingPosition | null; workItemIds?: string[]; workItemQuantities?: Record<string, number>;
+  aliases?: string[];
 }
 export interface DrawingMetadata {
   id: string; projectId: string; inputKind: 'sample' | 'upload' | 'provided'; kind: 'sample' | 'image' | 'pdf';

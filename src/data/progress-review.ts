@@ -117,7 +117,9 @@ export function addProgressReport(project: Project, values: unknown, now: DateIn
   const pct = typeof values.completion === 'number' ? values.completion : text(values.completion) ? Number(values.completion) : NaN;
   if (!item || completionValue(pct) === null || !text(values.message)) return invalid('Select an item, enter 0–100% and include the source message.');
   const area = text(values.area) || item.demoArea || item.location;
-  const areaLink = getAreaLinkStatus(project, { projectId: project.id, itemId: item.id, area, kind: 'progress' });
+  const areaLink = getAreaLinkStatus(project, { projectId: project.id, itemId: item.id, area, ...(values.areaId ? { areaId: values.areaId } : {}), kind: 'progress' });
+  if (areaLink.ambiguous) return invalid(`The area name matches ${areaLink.candidates.map(entry => entry.code).join(' and ')}. Confirm one area code before adding this report.`);
+  if (areaLink.blocked) return invalid('The saved area names or reference need review. Confirm the site area before adding this report.');
   if (areaLink.conflict) return invalid(`Area ${areaLink.area?.code} is linked to ${areaLink.area?.workItemIds.join(', ')}, not ${item.id}. Check the area or work item before adding this report.`);
   const allocation = getItemAreaAllocation(project, item.id);
   const areaProgress = allocation.split && areaLink.area ? getAreaAllocationSnapshot(project, areaLink.area.id, item.id) : null;

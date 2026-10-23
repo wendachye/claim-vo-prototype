@@ -27,7 +27,8 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
   const originalId = context?.sourceMessageId || original.id;
   const requestScope = `whatsapp-clarification:${JSON.stringify([originalId, 'request'])}`;
   const replyScope = `whatsapp-clarification:${JSON.stringify([originalId, 'reply'])}`;
-  const questionDefault = () => ({ question: 'Please confirm the contract work item, site area and total percentage completed so far.' });
+  const ambiguousArea = getAreaLinkStatus(project, original).ambiguous;
+  const questionDefault = () => ({ question: ambiguousArea ? `The area name “${original.area}” matches more than one area. Please confirm the area code, contract work item and total percentage completed so far.` : 'Please confirm the contract work item, site area and total percentage completed so far.' });
   const [question, setQuestion] = useBufferedState(project.id, requestScope, questionDefault);
   const [fields, setFields] = useBufferedState(project.id, replyScope, emptyReply);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -50,6 +51,7 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
   const done = stage === 'verified';
 
   useEffect(() => { setErrors({}); setFeedback(null); }, [project.id, originalId]);
+  useEffect(() => { if (report || stage === 'superseded') setFeedback(null); }, [stage, report?.id]);
   useEffect(() => { if (feedback) feedbackRef.current?.focus(); }, [feedback]);
 
   function update(name: keyof ReturnType<typeof emptyReply>, value: string) {
@@ -93,16 +95,16 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
     if (!item) return;
     const allocation=getItemAreaAllocation(project,item.id);
     const linked = mapping.areas.filter((area) => area.workItemIds.includes(item.id) && (!allocation.split || allocation.areas.some(entry=>entry.areaId===area.id)));
-    const area = linked.find((entry) => entry.id === link.area?.id) || linked[0];
+    const area = link.ambiguous ? null : linked.find((entry) => entry.id === link.area?.id) || linked[0];
     const namedArea = area ? `Area ${area.code}` : text(original.area) || text(item.demoArea) || text(item.location) || 'Demo work area';
     const totals = allocation.split ? [area ? getAreaItemProgress(project,area.id,item.id,'reported').completion : null,area ? getAreaItemProgress(project,area.id,item.id,'verified').completion : null].filter(knownCompletion) : [item.reported, item.verified, original.completion,
       ...(project.reports || []).filter((entry) => entry.itemId === item.id && !entry.vo
         && (!entry.projectId || entry.projectId === project.id) && (!entry.projectCode || entry.projectCode === project.code)
         && !['rejected', 'superseded'].includes(entry.status)).map((entry) => entry.completion)].filter(knownCompletion);
-    const completion = Math.min(100, Math.max(0, ...totals) + 10);
+    const completion = link.ambiguous && knownCompletion(original.completion) ? original.completion : Math.min(100, Math.max(0, ...totals) + 10);
     setFields({ itemId: item.id, areaId: area?.id || '', area: area ? '' : namedArea, completion: String(completion),
-      text: `Confirmed: ${item.ref || item.id} — ${item.description}. ${namedArea} is ${completion}% complete in total to date. This is cumulative progress, not an additional percentage. Simulated worker reply for this demo.` });
-    setErrors({}); setFeedback(null);
+      text: link.ambiguous ? '' : `Confirmed: ${item.ref || item.id} — ${item.description}. ${namedArea} is ${completion}% complete in total to date. This is cumulative progress, not an additional percentage. Simulated worker reply for this demo.` });
+    setErrors({}); setFeedback(link.ambiguous ? { message: 'Choose the area confirmed by the worker and enter the reply. No area was selected automatically.' } : null);
   }
 
   if (!context && !eligibility.eligible) return null;

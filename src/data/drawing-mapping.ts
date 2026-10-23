@@ -6,6 +6,8 @@ import { areaQuantityUnits } from './area-allocations.ts';
 export const DEMO_DRAWING_ASSET = '/samples/warehouse-area-plan.svg';
 export const DEMO_DRAWING_FILENAME = 'warehouse-area-plan.svg';
 export const MAX_DRAWING_FILE_SIZE = 15_000_000;
+export const MAX_AREA_ALIASES = 8;
+export const MAX_AREA_ALIAS_LENGTH = 100;
 export const DEMO_AREAS = Object.freeze([
   { code: 'A1', name: 'Block A - external wall', x: 0.23, y: 0.41 },
   { code: 'A2', name: 'Block A - roof', x: 0.38, y: 0.29 },
@@ -20,6 +22,27 @@ const validId = (value: unknown): value is string => typeof value === 'string' &
 const cleanCode = (value: unknown) => text(value).toUpperCase();
 const validCode = (value: string) => value.length <= 20 && /^[A-Z0-9][A-Z0-9_-]*$/.test(value);
 const validName = (value: string) => Boolean(value) && value.length <= 100 && !/[\u0000-\u001f\u007f]/.test(value);
+const areaMatchName = (value: unknown) => text(value).normalize('NFKC').replace(/\s+/gu, ' ').replace(/^area\s+/i, '').toLocaleLowerCase('en');
+
+function normalizedAliases(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length > MAX_AREA_ALIASES) return null;
+  const aliases: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of value) {
+    if (typeof entry !== 'string' || /[\u0000-\u001f\u007f]/.test(entry)) return null;
+    const alias = entry.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+    const match = areaMatchName(alias);
+    if (!alias || alias.length > MAX_AREA_ALIAS_LENGTH || !match) return null;
+    if (!seen.has(match)) { aliases.push(alias); seen.add(match); }
+  }
+  return aliases;
+}
+
+function invalidStoredAliases(project: Project, areas: DrawingArea[], repairingAreaId = '') {
+  const rawAreas = Array.isArray(project.drawingMapping?.areas) ? project.drawingMapping.areas : [];
+  return areas.some(area => area.id !== repairingAreaId && rawAreas.some(raw => raw?.id === area.id
+    && Object.hasOwn(raw, 'aliases') && normalizedAliases(raw.aliases) === null));
+}
 const validPage = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 999;
 const validPosition = (value: unknown): value is DrawingPosition | null => value === null || (record(value) && ['x', 'y'].every((key) => typeof value[key] === 'number' && Number.isFinite(value[key]) && value[key] >= 0 && value[key] <= 1));
 const fileTypes: Record<string, string> = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' };
@@ -102,9 +125,11 @@ export function getDrawingMapping(project: Project): DrawingMapping {
       || !validPosition(area.position) || (drawing.kind === 'pdf' && area.position !== null)
       || !Array.isArray(area.workItemIds) || seenIds.has(area.id) || seenCodes.has(cleanCode(area.code))) return [];
     seenIds.add(area.id); seenCodes.add(cleanCode(area.code));
+    const aliases = normalizedAliases(area.aliases);
     return [{ id: area.id, projectId: project.id, drawingId: drawing.id, code: cleanCode(area.code),
       name: text(area.name), page: area.page, position: clone(area.position),
       workItemIds: [...new Set(area.workItemIds.filter((id) => itemIds.has(id)))].sort(), updatedAt: area.updatedAt || drawing.uploadedAt,
+      ...(aliases?.length ? { aliases } : {}),
       ...(record(area.workItemQuantities) ? { workItemQuantities: Object.fromEntries(Object.entries(area.workItemQuantities).filter(([id, value]) => itemIds.has(id) && typeof value === 'number' && areaQuantityUnits(value) !== null)) } : {}) }];
   });
   return { projectId: project.id, drawing, areas, history: clone(Array.isArray(saved.history) ? saved.history : []) };
@@ -140,6 +165,7 @@ export function installDrawing(project: Project, input: unknown, now: DateInput 
   const invalid = (error: string) => ({ project, outcome: 'invalid' as const, error });
   if (!record(project) || !validId(project.id) || !Array.isArray(project.items)) return invalid('Choose a project before adding a drawing.');
   const current = getDrawingMapping(project);
+  if (invalidStoredAliases(project, current.areas)) return invalid('Review the saved alternate area names before replacing the drawing.');
   const drawing = drawingMetadata(project, input, now, current);
   if (!drawing) return invalid('Choose a PDF, PNG, JPEG or WebP drawing up to 15 MB.');
   const areas = current.drawing ? current.areas.map((area) => ({ ...area, drawingId: drawing.id, page: 1, position: null, updatedAt: drawing.uploadedAt }))
@@ -158,6 +184,9 @@ export function saveAreaMapping(project: Project, values: unknown, now: DateInpu
   const areaId = text(values.areaId);
   const previous = areaId ? current.areas.find((area) => area.id === areaId) : null;
   if (areaId && !previous) return invalid('Choose an area from the selected project.');
+  if (invalidStoredAliases(project, current.areas, values.aliases === undefined ? '' : areaId)) return invalid('Review the saved alternate area names before saving area links.');
+  const aliases = values.aliases === undefined ? previous?.aliases || [] : normalizedAliases(values.aliases);
+  if (!aliases) return invalid('Enter up to 8 alternate area names, each up to 100 characters.');
   const code = cleanCode(values.code);
   const name = text(values.name);
   const page = typeof values.page === 'string' && values.page.trim() ? Number(values.page) : values.page;
@@ -222,8 +251,9 @@ export function saveAreaMapping(project: Project, values: unknown, now: DateInpu
     if (total > contractUnits) return invalid(`${item?.ref || itemId}: area quantities exceed the contract quantity. Reduce this area’s quantity before saving.`);
   }
   const quantityFields = Object.keys(workItemQuantities).length || previous?.workItemQuantities ? { workItemQuantities } : {};
-  const comparable = { code, name, page, position: position === null ? null : { x: position.x, y: position.y }, workItemIds, ...quantityFields };
-  if (previous && JSON.stringify(comparable) === JSON.stringify({ code: previous.code, name: previous.name, page: previous.page, position: previous.position, workItemIds: previous.workItemIds, ...(previous.workItemQuantities ? { workItemQuantities: previous.workItemQuantities } : {}) })) return { project, area: clone(previous), outcome: 'unchanged' as const };
+  const comparable = { code, name, page, position: position === null ? null : { x: position.x, y: position.y }, workItemIds, ...quantityFields, ...(aliases.length ? { aliases } : {}) };
+  const repairingAliases = previous && invalidStoredAliases(project, [previous]);
+  if (previous && !repairingAliases && JSON.stringify(comparable) === JSON.stringify({ code: previous.code, name: previous.name, page: previous.page, position: previous.position, workItemIds: previous.workItemIds, ...(previous.workItemQuantities ? { workItemQuantities: previous.workItemQuantities } : {}), ...(previous.aliases?.length ? { aliases: previous.aliases } : {}) })) return { project, area: clone(previous), outcome: 'unchanged' as const };
   const area = { id: previous?.id || newId(`AREA-${project.id}`, date, [...current.areas.map((entry) => entry.id), ...current.history.map((event) => event.areaId)]), projectId: project.id, drawingId: current.drawing.id, ...comparable, updatedAt: date };
   const mapping = { ...current, areas: previous ? current.areas.map((entry) => entry.id === area.id ? area : entry) : [...current.areas, area],
     history: [...current.history, { id: newId(`MAP-${project.id}`, date, current.history.map((event) => event.id)), action: previous ? 'updateArea' : 'addArea', date, drawingId: current.drawing.id, areaId: area.id, previousArea: clone(previous), area: clone(area) }] };
@@ -249,17 +279,55 @@ export function getAreasForItem(project: Project, itemId: string) {
   return getDrawingMapping(project).areas.filter((area) => area.workItemIds.includes(itemId));
 }
 
-export function getAreaForMessage(project: Project, message: unknown) {
-  if (!record(message) || (message.projectId && message.projectId !== project?.id)) return null;
-  const code = cleanCode(text(message.area).replace(/^area\s+/i, ''));
-  if (!code) return null;
-  return getDrawingMapping(project).areas.find((area) => area.code === code) || null;
+export function getAreaMatchForMessage(project: Project, message: unknown): { status: 'matched' | 'ambiguous' | 'unmatched'; area: DrawingArea | null; candidates: DrawingArea[]; blocked?: true } {
+  const unmatched = { status: 'unmatched' as const, area: null, candidates: [] };
+  const blocked = { ...unmatched, blocked: true as const };
+  if (!record(message) || (message.projectId && message.projectId !== project?.id)
+    || (message.projectCode && cleanCode(message.projectCode) !== cleanCode(project?.code))) return unmatched;
+  const areas = getDrawingMapping(project).areas;
+  // Frozen references are deliberate identities, not extra names to rematch.
+  // A removed/foreign or contradictory reference must never drift to a namesake.
+  const references: unknown[] = [];
+  if (message.areaId != null && message.areaId !== '') references.push(message.areaId);
+  for (const field of ['areaProgress', 'areaMapping']) {
+    const source = message[field];
+    if (record(source) && Object.hasOwn(source, 'areaId') && source.areaId != null && source.areaId !== '') references.push(source.areaId);
+  }
+  const frozenUnmapped = record(message.areaMapping) && Object.hasOwn(message.areaMapping, 'areaId')
+    && (message.areaMapping.areaId === null || message.areaMapping.areaId === '');
+  if (frozenUnmapped) return references.length ? blocked : unmatched;
+  if (references.length) {
+    if (references.some(id => !validId(id) || id !== references[0])) return blocked;
+    const area = areas.find(candidate => candidate.id === references[0]);
+    if (!area) return blocked;
+    const frozenIdentity = ['areaProgress', 'areaMapping'].some(field => record(message[field]) && validId(message[field].areaId));
+    // A plain incoming ID can be stale form metadata. Its stated name must
+    // include the selected area, even when that name has multiple candidates.
+    // Saved evidence identities retain priority after names are changed.
+    const statedName = areaMatchName(message.area);
+    if (!frozenIdentity && (!statedName || ![area.code, ...(area.aliases || [])].some(value => areaMatchName(value) === statedName))) return blocked;
+    return { status: 'matched', area, candidates: [area] };
+  }
+  // Do not erase malformed stored aliases and thereby turn an ambiguous name
+  // into a unique match. Explicit identities above can still be reviewed safely.
+  if (invalidStoredAliases(project, areas)) return blocked;
+  const name = areaMatchName(message.area);
+  if (!name) return unmatched;
+  const candidates = areas.filter(area => [area.code, ...(area.aliases || [])].some(value => areaMatchName(value) === name));
+  if (candidates.length === 1) return { status: 'matched', area: candidates[0], candidates };
+  return candidates.length > 1 ? { status: 'ambiguous', area: null, candidates } : unmatched;
 }
 
-export function getAreaLinkStatus(project: Project, message: { projectId?: string; area?: string | null; itemId?: string | null; kind?: string; vo?: boolean } | null | undefined) {
-  const area = getAreaForMessage(project, message);
+export function getAreaForMessage(project: Project, message: unknown) {
+  return getAreaMatchForMessage(project, message).area;
+}
+
+export function getAreaLinkStatus(project: Project, message: unknown) {
+  const match = getAreaMatchForMessage(project, message);
+  const area = match.area;
   const linkedItems = area ? (project.items || []).filter((item) => area.workItemIds.includes(item.id)).map(clone) : [];
-  return { area, linkedItems, conflict: Boolean(area && linkedItems.length && message?.itemId && message.kind !== 'vo' && !message.vo && !area.workItemIds.includes(message.itemId)) };
+  return { area, linkedItems, ambiguous: match.status === 'ambiguous', blocked: Boolean(match.blocked), candidates: match.candidates,
+    conflict: Boolean(area && linkedItems.length && record(message) && typeof message.itemId === 'string' && message.itemId && message.kind !== 'vo' && !message.vo && !area.workItemIds.includes(message.itemId)) };
 }
 
 export function snapshotMappedArea(area: Partial<DrawingArea> | null | undefined): AreaMappingSnapshot | null {
@@ -268,6 +336,7 @@ export function snapshotMappedArea(area: Partial<DrawingArea> | null | undefined
     areaId: area.id, code: area.code, name: area.name, drawingId: area.drawingId,
     page: area.page, position: clone(area.position ?? null),
     workItemIds: clone(Array.isArray(area.workItemIds) ? area.workItemIds : []),
+    ...(area.aliases?.length && normalizedAliases(area.aliases) ? { aliases: clone(area.aliases) } : {}),
     ...(record(area.workItemQuantities) ? { workItemQuantities: clone(area.workItemQuantities) } : {}),
   };
 }

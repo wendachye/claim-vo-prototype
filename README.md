@@ -145,6 +145,16 @@ Saved links appear in the contract work list, site-message review and Progress. 
 
 Drawing metadata and saved areas stay in browser storage. Custom file previews last for the current session; choose the same file again to restore a preview without replacing links. The bundled fictional plan remains available after reload. Replacing a drawing retains area names/links but clears pin positions for review. Reset clears only the selected project's drawing and mappings.
 
+## Alternate area names
+
+In **Drawing & areas → Edit area mapping**, use optional **Also known as** for comma-separated names such as `West wall, West façade`. Save with **Save area links**. Up to eight names of 100 characters each are supported; leave blank to use the code only. Names match exactly after case, spacing and Unicode normalization, with an optional `Area` prefix; there is no fuzzy matching or AI interpretation.
+
+A unique code or alternate name matches the saved area and its quantity allocation. If a name matches multiple areas, WhatsApp shows the candidate codes and **Needs clarification**. No progress or VO is created. Record a clarification request and a separate mock worker reply with an explicitly chosen area before processing and supervisor verification. **Use demo reply** leaves an ambiguous area blank for review. Possible extra-work ambiguities retain their separate QS follow-up; clarify the area outside the demo and use **Add extra work** for the confirmed manual record.
+
+Original text, photo, sender and date remain unchanged. New reports retain their chosen area and alternate names; later alias edits cannot move saved evidence, progress or claim snapshots. Existing projects are not migrated. Codes that overlap another area's alternate name also require clarification unless an existing frozen source explicitly identifies the area.
+
+Use **Drawing & areas → Try another demo → Try area name demo** for a separate project with `West façade` and `East wall` matches, plus an ambiguous `Wall frontage` message. It does not copy or reset existing projects, and no message is sent.
+
 ## Completion on the drawing
 
 Open **Contract → Drawing & areas** to see Not started, In progress and Completed colours from linked work items. **Verified** shows supervisor-checked totals; **Reported** shows worker updates. Select an area and choose **View in Progress** to open just its linked items. Verify a pending report there and return to the drawing to see the status change.

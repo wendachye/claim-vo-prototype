@@ -123,8 +123,15 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
         || !Array.isArray(saved.workItemIds) || !saved.workItemIds.includes(item!.id)) return invalid;
       // The reply already captured its selected area. Renaming or reusing an
       // area code must not move that original evidence to another saved area.
-      areaLink = { ...areaLink, area: { ...clone(saved), id: saved.areaId }, conflict: false };
+      areaLink = { ...areaLink, area: { ...clone(saved), id: saved.areaId }, conflict: false, ambiguous: false, blocked: false, candidates: [] };
     }
+  }
+  if (areaLink.ambiguous) {
+    return needsClarification(`The area name “${message.area}” matches ${areaLink.candidates.map(area => area.code).join(' and ')}. Ask the worker to confirm one area code before updating progress or flagging extra work.`);
+  }
+  if (areaLink.blocked) return needsClarification('The saved area names or reference need review. Confirm the site area before processing this message.');
+  if ((message.areaId || message.areaMapping?.areaId || message.areaProgress?.areaId) && !areaLink.area) {
+    return needsClarification('The saved area reference is unavailable or conflicts with this message. Confirm the site area before processing.');
   }
   if (message.kind === 'progress' && areaLink.conflict) {
     return needsClarification(`Area ${areaLink.area?.code} is mapped to ${areaLink.area?.workItemIds?.join(', ')}, but this message names ${message.itemId}. Check the area or work item before updating progress.`);

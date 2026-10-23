@@ -1,0 +1,52 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { cleanup, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { WhatsAppView } from '../src/components/WhatsAppView';
+import { createAreaAliasDemo } from '../src/data/area-alias-demo.ts';
+import { seedWorkspace } from '../src/data/projects.ts';
+import { processWhatsAppMessage } from '../src/data/whatsapp.ts';
+import { saveMessageClarificationRequest } from '../src/data/whatsapp-clarification.ts';
+import { getDrawingMapping, saveAreaMapping } from '../src/data/drawing-mapping.ts';
+import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
+const fixture=()=>createAreaAliasDemo(seedWorkspace(),new Date('2026-10-10T10:00:00Z')).project;
+beforeEach(()=>{vi.stubGlobal('matchMedia',vi.fn(query=>({matches:false,media:query,addListener:vi.fn(),removeListener:vi.fn(),addEventListener:vi.fn(),removeEventListener:vi.fn(),dispatchEvent:vi.fn()})));clearProjectFormBuffers('AREA-SPLIT01');});
+afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+it('shows the unique matched area beside the unchanged source before explicit processing',async()=>{
+  const user=userEvent.setup(),project=fixture(),source=project.whatsappMessages[0],onProcess=vi.fn(),onOpenDrawing=vi.fn(),before=structuredClone(project);
+  render(<WhatsAppView project={project} messages={project.whatsappMessages} initialMessageId={source.id} onProcess={onProcess} onOpenDrawing={onOpenDrawing}/>);
+  expect(screen.getByText('Matched site area')).toBeTruthy();expect(screen.getByText('WEST · Block A — west wall')).toBeTruthy();
+  await user.click(screen.getByRole('button',{name:'View area',exact:true}));expect(onOpenDrawing).toHaveBeenCalledWith(project.drawingMapping.areas[0].id);
+  await user.click(screen.getByRole('button',{name:'Add progress update',exact:true}));expect(onProcess).toHaveBeenCalledWith(source);
+  expect(project).toEqual(before);
+});
+it('shows ambiguity and the clarification action instead of a progress/VO action',async()=>{
+  const user=userEvent.setup(),project=fixture(),source=project.whatsappMessages[2],onProcess=vi.fn();
+  const view=render(<WhatsAppView project={project} messages={project.whatsappMessages} initialMessageId={source.id} onProcess={onProcess}/>);
+  expect(screen.getByText(/“Wall frontage” matches WEST and EAST/)).toBeTruthy();
+  expect(screen.queryByRole('button',{name:'Add progress update',exact:true})).toBeNull();
+  await user.click(screen.getByRole('button',{name:'Needs clarification',exact:true}));expect(onProcess).toHaveBeenCalledWith(source);
+  const vo={...source,kind:'vo'},voProject={...project,whatsappMessages:[vo]};
+  view.rerender(<WhatsAppView project={voProject} messages={[vo]} initialMessageId={vo.id} onProcess={onProcess}/>);
+  expect(screen.queryByRole('button',{name:'Flag extra work',exact:true})).toBeNull();
+  expect(screen.getByRole('button',{name:'Needs clarification',exact:true})).toBeTruthy();
+});
+it('keeps the area blank in an ambiguous demo reply until the worker choice is recorded',async()=>{
+  const user=userEvent.setup();let project=fixture();const source=project.whatsappMessages[2];
+  project=processWhatsAppMessage(project,source.id).project;
+  project=saveMessageClarificationRequest(project,source.id,{question:'Which area code do you mean?'},'2026-10-11T10:00:00Z').project;
+  const onSaveReply=vi.fn();render(<WhatsAppView project={project} messages={project.whatsappMessages} initialMessageId={source.id} onSaveClarificationReply={onSaveReply}/>);
+  await user.click(screen.getByRole('button',{name:'Use demo reply',exact:true}));
+  expect(screen.getByRole('combobox',{name:'Site area'}).textContent).toContain('Choose linked area');
+  expect(screen.getByRole('textbox',{name:'Worker reply'}).value).toBe('');
+  expect(screen.getByText(/No area was selected automatically/)).toBeTruthy();
+  await user.click(screen.getByRole('button',{name:'Save mock reply',exact:true}));
+  expect(onSaveReply).not.toHaveBeenCalled();expect(screen.getByText('Choose an area linked to this work item.')).toBeTruthy();
+});
+it('processed sources use frozen area links even if the alternate name is reused elsewhere',async()=>{
+  const user=userEvent.setup();let project=fixture();const source=project.whatsappMessages[0];project=processWhatsAppMessage(project,source.id).project;
+  const west=getDrawingMapping(project).areas[0],east=getDrawingMapping(project).areas[1];
+  project=saveAreaMapping(project,{...west,areaId:west.id,aliases:['Old west']},'2026-10-11T10:00:00Z').project;
+  project=saveAreaMapping(project,{...east,areaId:east.id,aliases:['West façade']},'2026-10-11T10:01:00Z').project;
+  const onOpenDrawing=vi.fn(),onOpenCompletion=vi.fn();render(<WhatsAppView project={project} messages={project.whatsappMessages} initialMessageId={source.id} onOpenDrawing={onOpenDrawing} onOpenCompletion={onOpenCompletion}/>);
+  await user.click(screen.getByRole('link',{name:'View area map',exact:true}));expect(onOpenDrawing).toHaveBeenCalledWith(west.id);
+});
