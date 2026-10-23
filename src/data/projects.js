@@ -361,6 +361,7 @@ export function resetProject(project) {
   claimTracking: project.claimExamplesDemo === true ? normalizeClaimTracking({ ...project, ...seed, claimTracking: seed.claimTracking }) : [], messageClarifications: [] };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   if (project.claimExamplesDemo !== true) delete next.lockedAt;
+  if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;
   delete next.drawingMapping;
   return next;
 }

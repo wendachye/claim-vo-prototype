@@ -1,0 +1,36 @@
+.contract-version-history,.contract-revision-form { display:grid; gap:18px; }
+.contract-version-note { margin:0; color:#64748b; font-size:12px; line-height:1.8; }
+.contract-version-list { display:grid; gap:14px; margin:0; padding:0; list-style:none; }
+.contract-version-list > li { min-width:0; border:1px solid var(--border); border-radius:8px; padding:15px; }
+.contract-version-list > li.is-current { border-color:#bfdbfe; }
+.contract-version-heading { display:flex; align-items:center; flex-wrap:wrap; gap:7px; }
+.contract-version-heading h3 { margin:0 auto 0 0; color:#334155; font-size:14px; font-weight:600; line-height:1.8; }
+.contract-version-meta { margin:7px 0 0; color:#64748b; font-size:11px; line-height:1.8; }
+.contract-version-reason { display:grid; gap:3px; margin:12px 0; color:#334155; font-size:13px; line-height:1.8; overflow-wrap:anywhere; white-space:pre-wrap; }
+.contract-version-reason > span { color:#64748b; font-size:11px; }
+.contract-version-changes { margin-top:12px; border-top:1px solid var(--border); }
+.contract-version-changes > summary { display:flex; align-items:center; gap:8px; padding-top:12px; color:#475569; font-size:12px; line-height:1.8; list-style:none; cursor:pointer; }
+.contract-version-changes > summary::-webkit-details-marker { display:none; }
+.contract-version-changes > summary > span { margin-left:auto; color:#64748b; font-size:11px; }
+.contract-version-changes[open] > summary > svg { transform:rotate(180deg); }
+.contract-version-changes > summary:focus-visible { outline:2px solid #2563eb; outline-offset:4px; border-radius:3px; }
+.contract-version-change-list { display:grid; gap:16px; margin-top:14px; }
+.contract-version-item h4 { color:#334155; font-size:12px; font-weight:550; line-height:1.8; overflow-wrap:anywhere; }
+.contract-version-item h4 > .badge { margin-left:6px; }
+.contract-version-item dl { display:grid; gap:11px; margin:10px 0 0; }
+.contract-version-value dt { color:#64748b; font-size:11px; line-height:1.8; }
+.contract-version-value dd { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:3px 0 0; }
+.contract-version-value dd > div { min-width:0; border-left:2px solid #e2e8f0; padding-left:8px; }
+.contract-version-value dd > div:last-child { border-color:#93c5fd; }
+.contract-version-value dd span { color:#94a3b8; font-size:10px; }
+.contract-version-value dd p { margin-top:3px; color:#334155; font-size:12px; line-height:1.8; overflow-wrap:anywhere; white-space:pre-wrap; font-variant-numeric:tabular-nums; }
+.contract-revision-step { display:flex; align-items:center; flex-wrap:wrap; gap:9px; border-bottom:1px solid var(--border); padding-bottom:15px; color:#64748b; font-size:13px; line-height:1.8; }
+.contract-revision-step strong { color:#334155; font-weight:550; }
+.contract-revision-step .contract-revision-draft { margin-left:auto; color:#92400e; font-size:12px; }
+.modal-footer .contract-revision-actions { width:100%; margin:0; padding:0; border:0; }
+@media screen and (max-width:420px) {
+  .contract-version-list > li { padding:12px; }
+  .contract-version-heading h3 { width:100%; }
+  .contract-version-value dd { gap:8px; }
+  .contract-version-meta { overflow-wrap:anywhere; }
+}

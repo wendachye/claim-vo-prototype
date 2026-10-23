@@ -64,6 +64,8 @@ Keep the next step clear after confirming contract items, confirming the work li
 
 Unfinished contract, VO and claim forms remain in session memory while browsing between modules or projects. Saving remains explicit; tell users to save before refreshing. Buffers must be isolated by project and record/version, clear on project reset or successful save, and never silently update financial records. Block work-list confirmation if current contract edits are still unfinished.
 
+Contract revisions require a short change reason and retain the prior confirmed baseline. Keep current-version creation and confirmation metadata separate from missing legacy details; do not invent historic reviewers/reasons or rewrite existing snapshots. Contract versions stays under More options, with read-only old/new comparison of contract fields by stable item ID, excluding physical progress and review timestamps. Only compare adjacent known versions; identify missing or ambiguous history honestly. Preserve original source rows, project isolation, saved claim assessments/evidence/exports and status tracking. Reconfirmation remains explicit; reset removes current revision metadata unless present in the selected project's seed.
+
 ## Mock contract upload and extraction
 
 Contract upload stays frontend-only. Users can choose a local PDF up to 30 MB or the bundled fictional warehouse PDF, see cancelable simulated extraction, and review six preset work items with one quantity mismatch. Make it clear that selected-file contents are not parsed. Review uses the matching fictional PDF and source rows; selected filenames are separate input metadata and must never be presented as evidence for the preset values.
