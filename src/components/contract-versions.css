@@ -14,6 +14,11 @@
 .contract-version-changes > summary > span { margin-left:auto; color:#64748b; font-size:11px; }
 .contract-version-changes[open] > summary > svg { transform:rotate(180deg); }
 .contract-version-changes > summary:focus-visible { outline:2px solid #2563eb; outline-offset:4px; border-radius:3px; }
+.contract-version-total-review { margin:12px 0; border-top:1px solid var(--border); }
+.contract-version-total-review > summary { display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:12px; color:#475569; font-size:12px; line-height:1.8; list-style:none; cursor:pointer; }
+.contract-version-total-review > summary::-webkit-details-marker { display:none; }
+.contract-version-total-review[open] > summary > svg { transform:rotate(180deg); }
+.contract-version-total-review > summary:focus-visible { outline:2px solid #2563eb; outline-offset:4px; border-radius:3px; }
 .contract-version-change-list { display:grid; gap:16px; margin-top:14px; }
 .contract-version-item h4 { color:#334155; font-size:12px; font-weight:550; line-height:1.8; overflow-wrap:anywhere; }
 .contract-version-item h4 > .badge { margin-left:6px; }

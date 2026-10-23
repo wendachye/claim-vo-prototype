@@ -1,4 +1,5 @@
 import { getContractChecks } from './contract-checks.js';
+import { getContractTotalReview, getContractVersionTotalReview } from './contract-total-review.js';
 
 // Contract revisions are local review records. They never revise a saved claim.
 const clone = value => structuredClone(value);
@@ -121,6 +122,8 @@ export function getContractVersions(project) {
       confirmedAt: current ? (project.locked ? meta?.confirmedAt || (timestamp(project.lockedAt) ? project.lockedAt : null) : null) : meta?.confirmedAt || null,
       confirmedBy: meta?.confirmedBy || null,
       legacy: !meta?.createdAt && !meta?.createdBy && !meta?.reason,
+      totalReview: current ? getContractTotalReview(project).review
+        : getContractVersionTotalReview(project, version, entry.items, entry.projectSnapshot?.contract || null),
       changesAvailable: !!previous,
       changes: previous ? diffItems(previous.items, entry.items) : [],
     };
@@ -175,8 +178,11 @@ export function confirmContractBaseline(project, now = new Date()) {
   if (!project.items.length) return invalid('Add contract items before confirming the work list.');
   if (project.items.some(item => item.needsReview)) return invalid('Check the unresolved items before confirming the work list.');
   if (!getContractChecks(project).canConfirm) return invalid('Resolve missing values and item calculation differences before confirming the work list.');
+  const totalReview = getContractTotalReview(project);
+  if (totalReview.required && totalReview.status !== 'reviewed') return invalid('Review the total difference and record a reason before confirming the work list.');
   const date = timestamp(now);
   if (!date) return invalid('Use a valid confirmation date.');
+  if (totalReview.review && date < totalReview.review.reviewedAt) return invalid('Confirm this version on or after the total-difference review date.');
   const meta = project.contractVersion == null ? null : metadata(project.contractVersion, project.version, project.id);
   if (project.contractVersion != null && !meta) return invalid('The current contract version metadata does not belong to this work list.');
   if (meta?.createdAt && new Date(date).getTime() < new Date(meta.createdAt).getTime()) return invalid('Confirm this version on or after its creation date.');
