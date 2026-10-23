@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { AlertTriangle, ArrowRight, Check, FileText, Lock } from 'lucide-react';
 import { contract as sampleContract, initialItems } from '../data/contract.js';
 import { contractFormValues as formFor, contractFormScope } from '../data/form-buffer.js';
+import { claimBasisProduct } from '../data/claim-basis.js';
 import { Badge, Button, FormActions, FormField } from './ui.jsx';
 import { useBufferedState } from './useFormBuffer.js';
 import './contract-editor.css';
@@ -30,7 +31,7 @@ function formatMonth(value) {
   return MONTHS[Number(month) - 1] ? `${MONTHS[Number(month) - 1]} ${year}` : value;
 }
 
-export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel, contract = sampleContract, sourceItems, projectId, revision = 1 }) {
+export function ContractEditor({ item, checkIssue, locked = false, onSave, onNext, nextLabel, contract = sampleContract, sourceItems, projectId, revision = 1 }) {
   const inputId = useId();
   const formScope = contractFormScope(item, revision, locked);
   const [form, setForm] = useBufferedState(projectId || contract.id || contract.reference || 'sample-contract', formScope, () => formFor(item));
@@ -51,6 +52,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
   const currency = contract?.currency || (contract === sampleContract ? 'SGD' : 'Currency not specified');
   const sourceLabel = contract.demoImport ? 'Demo PDF' : sourceKind === 'illustrative' ? 'Demo schedule' : 'Printed source';
   const manualRecovery = item.extractionRecovery?.method === 'manual';
+  const requiresReview = item.needsReview || Boolean(checkIssue);
   const hasSourceQuantity = printed?.quantity != null && printed.quantity !== '' && Number.isFinite(Number(printed.quantity));
   const sourcePage = printed?.sourcePage ?? contract?.sourcePage;
   const sourceFilename = contract?.sourceFilename ?? contract?.sourceFile;
@@ -62,7 +64,7 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
     && Number.isFinite(Number(form.quantity))
     && Number.isFinite(Number(form.rate))
     && !included && !rateOnly
-    ? Number(form.quantity) * Number(form.rate)
+    ? claimBasisProduct(form.quantity, form.rate)
     : null;
   const matchesPrintedAmount = calculatedAmount != null && printed?.amount != null
     && Math.abs(Math.round((calculatedAmount + Number.EPSILON) * 100) / 100 - printed.amount) < 0.005;
@@ -112,8 +114,8 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
           <h2>{locked ? 'Work item details' : 'Review work item'}</h2>
           <p>{item.ref} <span aria-hidden='true'>·</span> {sourceContext}</p>
         </div>
-        <Badge tone={locked ? 'green' : item.needsReview ? 'amber' : 'green'}>
-          {locked ? 'Contract confirmed' : item.needsReview ? 'Needs review' : 'Reviewed'}
+        <Badge tone={locked ? 'green' : requiresReview ? 'amber' : 'green'}>
+          {locked ? 'Contract confirmed' : requiresReview ? 'Needs review' : 'Reviewed'}
         </Badge>
       </div>
 
@@ -140,6 +142,8 @@ export function ContractEditor({ item, locked = false, onSave, onNext, nextLabel
             </div>
           </div>
         )}
+
+        {!item.needsReview && checkIssue && <div className='notice warning contract-quantity-warning' role='note'><AlertTriangle size={17} aria-hidden='true' /><div><strong>Check saved values</strong>{checkIssue.messages.map((message,index)=><p key={`${index}-${message}`}>{message}</p>)}</div></div>}
 
         {locked ? <>
           <div className='contract-readonly-work'><h3>{form.description}</h3><p>{item.subsection ?? item.section}</p></div>

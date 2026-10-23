@@ -1,3 +1,5 @@
+import { getContractChecks } from './contract-checks.js';
+
 // Contract revisions are local review records. They never revise a saved claim.
 const clone = value => structuredClone(value);
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -172,6 +174,7 @@ export function confirmContractBaseline(project, now = new Date()) {
   if (project.locked) return { project, outcome: 'unchanged' };
   if (!project.items.length) return invalid('Add contract items before confirming the work list.');
   if (project.items.some(item => item.needsReview)) return invalid('Check the unresolved items before confirming the work list.');
+  if (!getContractChecks(project).canConfirm) return invalid('Resolve missing values and item calculation differences before confirming the work list.');
   const date = timestamp(now);
   if (!date) return invalid('Use a valid confirmation date.');
   const meta = project.contractVersion == null ? null : metadata(project.contractVersion, project.version, project.id);

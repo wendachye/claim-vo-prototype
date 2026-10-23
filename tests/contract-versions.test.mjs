@@ -93,6 +93,20 @@ test('confirmation records reviewer and date once without changing old versions 
   assert.deepEqual(getContractVersions(confirmed.project)[0].changes.map(row => row.fields.map(field => field.field)), [['quantity', 'amount']]);
 });
 
+test('confirmation rejects missing values and calculation differences even without extraction flags', () => {
+  const before = createContractRevision(project(), 'Check saved contract values', at).project;
+  const original = structuredClone(before);
+  const missing = { ...before, items: [item({ quantity: null, amount: null, needsReview: false })] };
+  assert.equal(confirmContractBaseline(missing, later).outcome, 'invalid');
+  const mismatch = { ...before, items: [item({ amount: 999, needsReview: false })] };
+  assert.equal(confirmContractBaseline(mismatch, later).outcome, 'invalid');
+  assert.equal(confirmContractBaseline(before, later).outcome, 'updated');
+  assert.deepEqual(before, original);
+  // Existing confirmed versions remain intact; checks do not retroactively unlock them.
+  const historical = project({ items: missing.items });
+  assert.equal(confirmContractBaseline(historical, later).outcome, 'unchanged');
+});
+
 test('only stable item IDs and whitelisted contract fields are compared', () => {
   const opened = createContractRevision(project(), 'Mock commercial correction', at).project;
   const edited = { ...opened, items: [item({ quantity: 120, amount: 1200, reported: 100, verified: 80,
