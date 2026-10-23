@@ -2,6 +2,7 @@ import type { Project, ProjectWorkflow, ProjectValues, Workspace, WorkItem, Site
 import { contract, initialItems, initialReports } from './contract.ts';
 import { getWhatsAppMessages, seedWhatsAppMessages } from './whatsapp.ts';
 import { normalizeVOReviews } from './vo.ts';
+import { normalizeVOConfirmationRequests } from './vo-confirmation.ts';
 import { normalizeClaimDrafts } from './claims.ts';
 import { normalizeClaimTracking } from './claim-tracking.ts';
 import { normalizeMessageClarifications } from './whatsapp-clarification.ts';
@@ -274,6 +275,7 @@ function normalizeProject(project: Project): Project {
     ...base, ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   }));
   seed.voReviews = normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews });
+  if (seed.voConfirmationRequests !== undefined) seed.voConfirmationRequests = normalizeVOConfirmationRequests({ ...project, ...seed, voConfirmationRequests: seed.voConfirmationRequests });
   seed.claimDrafts = normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts });
   seed.messageClarifications = normalizeMessageClarifications({ ...project, ...seed, messageClarifications: seed.messageClarifications });
   return {
@@ -288,6 +290,7 @@ function normalizeProject(project: Project): Project {
     whatsappMessages: clone(getWhatsAppMessages(project)),
     messageClarifications: normalizeMessageClarifications(project),
     voReviews: normalizeVOReviews(project),
+    ...(project.voConfirmationRequests !== undefined ? { voConfirmationRequests: normalizeVOConfirmationRequests(project) } : {}),
     claimDrafts: normalizeClaimDrafts(project),
     claimTracking: normalizeClaimTracking(project),
     seed,
@@ -360,7 +363,8 @@ export function resetProject(project: Project): Project {
     ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   })), voReviews: normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews }),
   claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }),
-  claimTracking: project.claimExamplesDemo === true ? normalizeClaimTracking({ ...project, ...seed, claimTracking: seed.claimTracking }) : [], messageClarifications: [] };
+  claimTracking: project.claimExamplesDemo === true ? normalizeClaimTracking({ ...project, ...seed, claimTracking: seed.claimTracking }) : [], messageClarifications: [],
+  ...(project.voConfirmationRequests !== undefined || seed.voConfirmationRequests !== undefined ? { voConfirmationRequests: [] } : {}) };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   if (project.claimExamplesDemo !== true && project.areaSplitDemo !== true) delete next.lockedAt;
   if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;

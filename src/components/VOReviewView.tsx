@@ -11,9 +11,9 @@ import './vo-review.css';
 
 const reviewStatusLabel = (status: string) => status === 'approved' ? 'Price approved' : (VO_STATUS_LABELS as Readonly<Record<string, string>>)[status];
 
-interface VOReviewViewProps { project: Project; cases?: VOCase[]; initialCaseId?: string | null; onSelect?: (id: string) => void; onAction?: VOCaseReviewProps['onAction']; onCreate?: ComponentProps<typeof ManualVOForm>['onSave']; onOpenWhatsApp?: () => void; onOpenContract?: VOCaseReviewProps['onOpenContract']; onReviewContract?: () => void; onOpenClaims?: (caseId: string) => void; onBackToDrawing?: () => void; onBackToOverview?: () => void; onClearCaseSelection?: () => void }
+interface VOReviewViewProps { project: Project; cases?: VOCase[]; initialCaseId?: string | null; onSelect?: (id: string) => void; onAction?: VOCaseReviewProps['onAction']; onCreateConfirmation?: VOCaseReviewProps['onCreateConfirmation']; onConfirmationReply?: VOCaseReviewProps['onConfirmationReply']; onCreate?: ComponentProps<typeof ManualVOForm>['onSave']; onOpenWhatsApp?: () => void; onOpenContract?: VOCaseReviewProps['onOpenContract']; onReviewContract?: () => void; onOpenClaims?: (caseId: string) => void; onBackToDrawing?: () => void; onBackToOverview?: () => void; onClearCaseSelection?: () => void }
 
-export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }: VOReviewViewProps) {
+export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onCreateConfirmation, onConfirmationReply, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }: VOReviewViewProps) {
   const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -112,7 +112,7 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
         <p className="vo-register-note">Demo review · decisions stay in this browser. Nothing is submitted or paid.</p>
       </section>
 
-      <div ref={reviewRef} className="vo-review-anchor">{selected ? <VOCaseReview key={`${selected.id}-${selected.status}-${selected.history.length}`} entry={selected} project={project} currency={currency} headingRef={headingRef} onAction={reviewAction} onPhoto={setPhoto} onOpenContract={onOpenContract} onOpenClaims={onOpenClaims} onBack={backToRegister} backLabel="Back to extra work" /> : <section className="vo-detail vo-list-empty"><Flag size={28} /><h3>Select extra work</h3><p>Its message, photo and review will appear here.</p></section>}</div>
+      <div ref={reviewRef} className="vo-review-anchor">{selected ? <VOCaseReview key={`${selected.id}-${selected.status}-${selected.history.length}`} entry={selected} project={project} currency={currency} headingRef={headingRef} onAction={reviewAction} onCreateConfirmation={onCreateConfirmation} onConfirmationReply={onConfirmationReply} onPhoto={setPhoto} onOpenContract={onOpenContract} onOpenClaims={onOpenClaims} onBack={backToRegister} backLabel="Back to extra work" /> : <section className="vo-detail vo-list-empty"><Flag size={28} /><h3>Select extra work</h3><p>Its message, photo and review will appear here.</p></section>}</div>
     </div></>}
     {photo && <div className="vo-photo-modal"><Modal title="Extra-work photo" description="Demo attachment · review alongside the original message" onClose={() => setPhoto(null)} footer={<Button onClick={() => setPhoto(null)}>Done</Button>}><img src={photo.src} alt={photo.alt || 'Photo attached to the demo variation report'} /></Modal></div>}
   </div>;

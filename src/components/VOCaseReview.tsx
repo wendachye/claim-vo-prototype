@@ -6,6 +6,8 @@ import { clearFormBuffer } from '../data/form-buffer';
 import { useBufferedState } from './useFormBuffer';
 import { BackButton, Badge, Button, FormActions, FormField, SelectField, formatMoney, formatTime } from './ui';
 import './vo-case-review.css';
+import { VOConfirmationPanel, type VOConfirmationPanelProps } from './VOConfirmationPanel';
+import { getVOConfirmationApprovalValues } from '../data/vo-confirmation';
 
 const tone = (status: string) => status === 'approved' ? 'green' : status === 'pendingApproval' ? 'blue' : status === 'rejected' ? 'slate' : 'amber';
 const dateLabel = (value?: string | null) => value && !Number.isNaN(new Date(value).getTime()) ? formatTime(value) : 'Date not recorded';
@@ -18,7 +20,7 @@ type VOFields = ReturnType<typeof fieldsFor>;
 export type VOActionValues = Omit<VOFields, 'reviewNote'> & { reviewNote?: string };
 export interface VOPhoto { src: string; alt?: string | null }
 export interface VOActionResult { outcome: string; error?: string }
-export interface VOCaseReviewProps { entry: VOCase; project: Project; currency: string; onAction?: (caseId: string, action: string, values: VOActionValues) => VOActionResult | undefined; onPhoto?: (photo: VOPhoto) => void; onOpenContract?: (itemId: string, caseId: string) => void; onOpenClaims?: (caseId: string) => void; onBack?: () => void; backLabel?: string; headingRef?: RefObject<HTMLHeadingElement | null> }
+export interface VOCaseReviewProps { entry: VOCase; project: Project; currency: string; onAction?: (caseId: string, action: string, values: VOActionValues) => VOActionResult | undefined; onPhoto?: (photo: VOPhoto) => void; onOpenContract?: (itemId: string, caseId: string) => void; onOpenClaims?: (caseId: string) => void; onBack?: () => void; backLabel?: string; headingRef?: RefObject<HTMLHeadingElement | null>; onCreateConfirmation?: VOConfirmationPanelProps['onCreate']; onConfirmationReply?: VOConfirmationPanelProps['onReply'] }
 const labelFor = (labels: Readonly<Record<string, string>>, key?: string) => key ? labels[key] : undefined;
 
 function EvidencePhoto({ report, onOpen }: { report: SiteReport; onOpen?: (photo: VOPhoto) => void }) {
@@ -32,7 +34,7 @@ function CheckSection({ number, title, status, children }: { number: string; tit
   return <section className="vo-check-section" aria-label={title}><header><h3><span aria-hidden="true">{number}</span>{title}</h3><span className="vo-check-state">{status}</span></header>{children}</section>;
 }
 
-export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContract, onOpenClaims, onBack, backLabel, headingRef }: VOCaseReviewProps) {
+export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContract, onOpenClaims, onBack, backLabel, headingRef, onCreateConfirmation, onConfirmationReply }: VOCaseReviewProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const formScope = `vo:${JSON.stringify([entry.id, entry.status, entry.history.length])}`;
   const [buffer, setFields] = useBufferedState(project.id, formScope, () => fieldsFor(entry));
@@ -55,6 +57,8 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
   const contractItem = project.items.find(item => item.id === fields.relatedItemId);
   const eligibility = getVOClaimEligibility(entry);
   const sourceChecksChanged = (['scopeDisposition', 'scopeAssessment', 'instructionStatus', 'instructionReference'] as const).some(key => fields[key] !== fieldsFor(entry)[key]);
+  const confirmationSourceEdits = (['title', 'relatedItemId', 'scopeAssessment', 'scopeDisposition', 'instructionStatus', 'instructionReference', 'proposedValue'] as const).some(key => String(fields[key] ?? '') !== String(fieldsFor(entry)[key] ?? ''));
+  const hasApprovalEdits = (['approvedValue', 'approvalReference', 'approver'] as const).some(key => String(fields[key] ?? '') !== String(fieldsFor(entry)[key] ?? ''));
   const setField = (name: keyof VOFields, value: string) => { setFields(prior => ({ ...fieldsFor(entry), ...prior, [name]: value })); setError(''); setErrorField(''); setSaved(''); };
   function problem(message: string, name?: string) {
     setError(message); setErrorField(name || '');
@@ -105,6 +109,20 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
   const scopeStatus = labelFor(VO_SCOPE_LABELS, entry.scopeDisposition || 'unassessed');
   const claimStatus = rejected ? 'Excluded' : approved ? eligibility.eligible ? 'Eligible for assessment' : entry.claimEligibility === 'excluded' ? 'Excluded' : 'Checks needed' : 'Price approval needed';
 
+  function useConfirmationApproval(requestId: string) {
+    if (!pendingApproval || hasApprovalEdits || confirmationSourceEdits) return;
+    const values = getVOConfirmationApprovalValues(project, entry.id, requestId);
+    if (!values) return problem('This reply does not approve the current quoted price. Review the latest customer request.');
+    setFields(previous => ({ ...fieldsFor(entry), ...previous, ...values }));
+    setError('');setErrorField('');setSaved('Reply copied into the approval form. Check the details, then Record approval.');
+  }
+
+  function resetApprovalFields() {
+    const savedFields=fieldsFor(entry);
+    setFields(previous => ({ ...fieldsFor(entry), ...previous, approvedValue:savedFields.approvedValue, approvalReference:savedFields.approvalReference, approver:savedFields.approver }));
+    setError('');setErrorField('');setSaved('Approval fields reset. Your review note is retained.');
+  }
+
   return <section className="vo-detail vo-case-review" aria-labelledby="vo-detail-heading">
     <div className="vo-panel-back vo-back-register"><BackButton onClick={onBack}>{backLabel || 'Back to extra work'}</BackButton></div>
     <header className="vo-panel-header"><div><span className="vo-reference">{entry.reference}</span><h2 id="vo-detail-heading" ref={headingRef} tabIndex={-1}>{entry.title || 'Flagged extra work'}</h2></div><Badge tone={tone(entry.status)}>{approved ? 'Price approved' : labelFor(VO_STATUS_LABELS, entry.status)}</Badge></header>
@@ -121,8 +139,10 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
           {canReviewChecks ? <div className="vo-check-fields"><FormField label="Instruction evidence" error={fieldError('instructionStatus')}><SelectField {...inputProps('instructionStatus')}>{Object.entries(VO_INSTRUCTION_LABELS).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</SelectField></FormField><FormField label="Instruction or drawing reference" optional={fields.instructionStatus !== 'documented'} required={fields.instructionStatus === 'documented'} error={fieldError('instructionReference')}><input {...inputProps('instructionReference')} placeholder="Site instruction, drawing revision or reported source"/></FormField></div> : <p className="vo-saved-check">{entry.instructionReference || 'No instruction reference recorded.'}</p>}<p className="vo-check-hint">A worker’s report is not a documented instruction. Record the evidence separately.</p>
         </CheckSection>
         <CheckSection number="3" title="Price approval" status={approved ? 'Recorded' : pendingApproval ? 'Awaiting approval' : rejected ? 'Closed' : 'Not approved'}>
+          {(onCreateConfirmation || onConfirmationReply) && <VOConfirmationPanel project={project} caseId={entry.id} hasUnsavedChanges={confirmationSourceEdits} hasApprovalEdits={hasApprovalEdits} onCreate={onCreateConfirmation} onReply={onConfirmationReply} onUseApproval={pendingApproval?useConfirmationApproval:undefined}/>}
           {editable ? <FormField label="Proposed value" suffix={currency} optional hint="Unknown stays blank. This is not an approved amount." error={fieldError('proposedValue')}><input {...inputProps('proposedValue')} type="number" min="0" step="0.01" inputMode="decimal" placeholder="Unknown"/></FormField> : approved ? <dl className="vo-price-summary"><div><dt>Approved value</dt><dd className="vo-price-amount">{amountLabel(entry.approvedValue,currency)}</dd></div><div><dt>Approval reference</dt><dd>{entry.approvalReference || 'Not recorded'}</dd></div><div><dt>Approved by</dt><dd>{entry.approver || 'Not recorded'}</dd></div></dl> : pendingApproval ? <><p className="vo-check-hint">Proposed value: {amountLabel(entry.proposedValue,currency)}</p><div className="vo-check-fields"><FormField label="Approved value" suffix={currency} required error={fieldError('approvedValue')}><input {...inputProps('approvedValue')} type="number" min="0" step="0.01" inputMode="decimal" placeholder="Enter approved value"/></FormField><FormField label="Approval reference" required error={fieldError('approvalReference')}><input {...inputProps('approvalReference')}/></FormField><FormField label="Approved by" required error={fieldError('approver')}><input {...inputProps('approver')}/></FormField></div></> : <p className="vo-check-hint">No current price approval. Proposed value: {amountLabel(entry.proposedValue,currency)}</p>}
           <p className="vo-check-hint">Price approval does not verify the work or include it in a claim.</p>
+          {pendingApproval && hasApprovalEdits && <Button className="ghost" icon={RotateCcw} onClick={resetApprovalFields}>Reset approval fields</Button>}
         </CheckSection>
         <CheckSection number="4" title="Claim eligibility" status={claimStatus}>
           {approved ? <>{editingEligibility ? <div className="vo-check-fields"><FormField label="Extra-work verification" error={fieldError('executionStatus')}><SelectField {...inputProps('executionStatus')}>{Object.entries(VO_EXECUTION_LABELS).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</SelectField></FormField><FormField label="Verification reference" required={fields.executionStatus === 'verified'} error={fieldError('executionReference')}><input {...inputProps('executionReference')} placeholder="Inspection, measurement or verified VO work record"/></FormField><FormField label="Claim decision" error={fieldError('claimEligibility')}><SelectField {...inputProps('claimEligibility')}>{Object.entries(VO_ELIGIBILITY_LABELS).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</SelectField></FormField><FormField label="Eligibility note" required={fields.claimEligibility !== 'needsReview'} error={fieldError('eligibilityNote')}><textarea {...inputProps('eligibilityNote')} rows={2} placeholder="What work can be assessed, or why is it excluded?"/></FormField></div> : <><p className="vo-saved-check">Verified work · {entry.executionReference}</p><p className="vo-saved-check">{entry.eligibilityNote}</p><Button className="ghost" onClick={() => setEditingChecks(true)}>Edit claim checks</Button></>}<p className="vo-check-hint">The QS still selects the claim month, quantity/value and previous amounts in Monthly claims. A related contract item’s completion does not verify this extra work.</p>{!eligibility.eligible && entry.claimEligibility !== 'excluded' && <details className="vo-eligibility-issues"><summary>Saved checks remaining ({eligibility.issues.length})</summary><ul>{eligibility.issues.map(issue => <li key={issue}>{issue}</li>)}</ul></details>}{entry.eligibilityReviewedAt && <p className="vo-check-hint">Last recorded {dateLabel(entry.eligibilityReviewedAt)}. Saved claim versions keep their original assessment.</p>}</> : <p className="vo-check-hint">{rejected ? 'This review is closed and excluded from new claims.' : 'Excluded until scope, instruction, price approval and verified work are checked. Record price approval first, then assess eligibility.'}</p>}

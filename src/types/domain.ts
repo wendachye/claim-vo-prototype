@@ -116,6 +116,22 @@ export interface VOReview {
   [key: string]: unknown;
 }
 export interface VOCase extends VOReview { report: SiteReport }
+export type VOConfirmationReplyKind = 'scopeAcknowledged' | 'priceApproved' | 'changesRequested';
+export interface VOConfirmationSnapshot {
+  projectId: string; projectCode: string; projectName: string; caseId: string; reference: string;
+  title: string; scopeAssessment: string; instructionReference: string; proposedValue: number | null;
+  currency: string; reviewCycle: string; scopeDisposition: string; instructionStatus: string;
+  relatedItemId: string | null; baselineVersion: number;
+}
+export interface VOConfirmationReply {
+  kind: VOConfirmationReplyKind; message: string; repliedAt: string; respondent: string; channel: 'demo';
+}
+export interface VOConfirmationRequest {
+  id: string; projectId: string; caseId: string; reference: string; version: number; sourceKey: string;
+  requestedAt: string; requestedBy: string; recipient: string; authority: string; channel: 'demo';
+  snapshot: VOConfirmationSnapshot; reply?: VOConfirmationReply;
+  historyInvalid?: true;
+}
 export interface ContractVersionMetadata {
   projectId?: string; version: number; createdAt?: string | null; createdBy?: string | null;
   reason?: string | null; confirmedAt?: string | null; confirmedBy?: string | null;
@@ -139,6 +155,7 @@ export interface ProjectWorkflow {
   baselines: ContractBaseline[]; locked: boolean; version: number; lockedAt?: string;
   voReviews: VOReview[]; claimDrafts: ClaimDraft[]; claimTracking?: ClaimTracking[]; messageClarifications?: MessageClarification[];
   messageMatchReviews?: MessageMatchReview[];
+  voConfirmationRequests?: VOConfirmationRequest[];
   whatsappMessages?: WhatsAppMessage[]; drawingMapping?: DrawingMapping; contractVersion?: ContractVersionMetadata; contractTotalReviews?: ContractTotalReview[];
 }
 export interface Project extends ProjectWorkflow {

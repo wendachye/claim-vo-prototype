@@ -2,6 +2,7 @@ import type { Project, SiteReport, AttentionTask, ClaimDraft, WorkItem, WhatsApp
 import { getWhatsAppMessages, getMessageReport } from './whatsapp.ts';
 import { getLatestProgressReports }  from './progress-review.ts';
 import { getVOCases, getVOClaimEligibility } from './vo.ts';
+import { getVOConfirmationContext } from './vo-confirmation.ts';
 import { normalizeClaimDrafts } from './claims.ts';
 import { getClaimTracking } from './claim-tracking.ts';
 import { getClaimRevisionContext } from './claim-revisions.ts';
@@ -63,9 +64,16 @@ export function getProjectAttention(project: Project): AttentionTask[] {
   for (const entry of getVOCases(scoped)) {
     const claimCheck = entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible;
     if (!claimCheck && !['flagged', 'clarification', 'pendingApproval'].includes(entry.status)) continue;
+    const confirmation=entry.status==='pendingApproval'?getVOConfirmationContext(scoped,entry.id):null;
+    const reply=confirmation?.currentRequest?.reply;
+    const confirmationStatus=confirmation?.latestRequest&&!confirmation.currentRequest?'Request needs updating'
+      :confirmation?.currentRequest&&!reply?'Awaiting customer reply'
+      :reply?.kind==='scopeAcknowledged'?'Price still unconfirmed'
+      :reply?.kind==='changesRequested'?'Customer requested changes'
+      :reply?.kind==='priceApproved'?'Reply needs QS review':null;
     add({ id: `vo:${entry.id}`, category: 'vo', kind: claimCheck ? 'vo-eligibility' : 'vo', title: claimCheck ? 'Check VO claim eligibility' : entry.title || 'Review extra work',
       detail: [entry.report.location, entry.report.area].filter(Boolean).join(' · ') || 'Extra work flagged for QS review',
-      reference: entry.reference, statusLabel: claimCheck ? 'Claim checks pending' : entry.status === 'pendingApproval' ? 'Awaiting approval' : entry.status === 'clarification' ? 'Needs information' : 'Needs review',
+      reference: entry.reference, statusLabel: claimCheck ? 'Claim checks pending' : confirmationStatus || (entry.status === 'pendingApproval' ? 'Awaiting approval' : entry.status === 'clarification' ? 'Needs information' : 'Needs review'),
       actionLabel: claimCheck ? 'Review claim eligibility' : entry.status === 'pendingApproval' ? 'Review approval' : 'Review extra work',
       date: entry.history.at(-1)?.date || entry.report.date, priority: claimCheck ? 28 : entry.status === 'pendingApproval' ? 25 : 30,
       target: { route: 'vo', caseId: entry.id } });
