@@ -16,11 +16,14 @@ function ProgressTotal({ value, verified = false }: { value?: number | null; ver
   return <div className="progress-cell"><span className="progress-number">{formatNumber(value)}<small>%</small></span><div className="progress-track" aria-hidden="true"><div className={`progress-fill ${verified ? 'verified' : 'reported'}`} style={{ width: `${value}%` }}/></div></div>;
 }
 
-interface ProgressFiltersProps { project: Project; items: WorkItem[]; search: string; block: string; filter: string; blocks: string[]; onSearch: (value: string) => void; onBlock: (value: string) => void; onFilter: (value: string) => void; onClear: () => void; onActivity: () => void; onExtraWork: () => void; onAdd?: () => void; extraWorkCount: number }
+interface ProgressFiltersProps { areaId?: string | null; project: Project; items: WorkItem[]; search: string; block: string; filter: string; blocks: string[]; onSearch: (value: string) => void; onBlock: (value: string) => void; onFilter: (value: string) => void; onClear: () => void; onActivity: () => void; onExtraWork: () => void; onAdd?: () => void; extraWorkCount: number }
 
-export function ProgressFilters({ project, items, search, block, filter, blocks, onSearch, onBlock, onFilter, onClear, onActivity, onExtraWork, onAdd, extraWorkCount }: ProgressFiltersProps) {
+export function ProgressFilters({ project, items, areaId, search, block, filter, blocks, onSearch, onBlock, onFilter, onClear, onActivity, onExtraWork, onAdd, extraWorkCount }: ProgressFiltersProps) {
   const searchId = useId();
-  const reviews = items.map((item) => getItemProgressReview(project, item));
+  const scoped = (item: WorkItem) => Boolean(areaId && getItemAreaAllocation(project, item.id).split);
+  const reviews = items.map((item) => getItemProgressReview(project, item, scoped(item) ? areaId! : undefined));
+  const hasAreaTotals = items.some(scoped);
+  const mixedTotals = hasAreaTotals && items.some(item => !scoped(item));
   const count = (key: string) => reviews.filter((review) => review.key === key).length;
   const options: [string, string, number][] = [
     ['all', 'All work items', items.length],
@@ -36,7 +39,7 @@ export function ProgressFilters({ project, items, search, block, filter, blocks,
       <FormField label="Review status"><SelectField value={filter} onChange={(event) => onFilter(event.target.value)}>{options.map(([key, label, total]) => <option key={key} value={key}>{label} ({total})</option>)}</SelectField></FormField>
     </div>
     <div className="progress-list-tools">
-      <span>Whole-item totals · claim assessment stays separate.</span>
+      <span>{mixedTotals ? 'Assigned areas show area totals; other links show whole-item totals.' : hasAreaTotals ? 'Area totals · claim assessment stays separate.' : 'Whole-item totals · claim assessment stays separate.'}</span>
       <div>{(search || block !== 'all' || filter !== 'all') && <Button className="ghost" onClick={onClear}>Clear filters</Button>}<ActionMenu items={[onAdd && {label:'Add demo update',icon:Plus,onSelect:onAdd},{label:`Extra work (${extraWorkCount})`,icon:Flag,onSelect:onExtraWork},{label:'Activity',icon:History,onSelect:onActivity}]} /></div>
     </div>
   </div>;

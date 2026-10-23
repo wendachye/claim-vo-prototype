@@ -1,6 +1,6 @@
 import type { Project, DrawingArea } from '../types/domain';
 import { useId, useState } from 'react';
-import { ArrowUpRight, ChevronDown, ChevronUp, Expand, ImageOff, MessageSquare } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, ChevronUp, Expand, ImageOff, MessageSquare, Mic } from 'lucide-react';
 import { getAreaEvidence } from '../data/drawing-evidence';
 import { Badge, Button, Modal, formatTime } from './ui';
 
@@ -25,7 +25,7 @@ export function AreaEvidencePanel({ project, area, onOpenEvidence }: { project: 
         <header><div><strong>{entry.sender || 'Sender not recorded'}</strong><small>{entry.sourceLabel ? `${entry.sourceLabel} · ` : ''}<time dateTime={entry.date && Number.isFinite(new Date(entry.date).getTime()) ? new Date(entry.date).toISOString() : undefined}>{updateTime(entry.date)}</time></small></div><Badge tone={entry.tone}>{entry.label}</Badge></header>
         <p className="drawing-evidence-message">{entry.text || 'Message text not recorded.'}</p>
         {entry.matchKind === 'work-item' && entry.matchLabel && !visible.slice(0, index).some((previous) => previous.matchKind === 'work-item' && previous.matchLabel === entry.matchLabel) && <p className="drawing-evidence-match">{entry.matchLabel}</p>}
-        {entry.photo ? <EvidencePhoto key={`${entry.id}:${entry.photo}`} entry={entry} onOpen={() => setPhotoEntryId(entry.id)} /> : <p className="drawing-evidence-no-photo"><ImageOff size={13} />No photo attached</p>}
+        {entry.photo ? <EvidencePhoto key={`${entry.id}:${entry.photo}`} entry={entry} onOpen={() => setPhotoEntryId(entry.id)} /> : <p className="drawing-evidence-no-photo">{entry.hasVoiceNote ? <><Mic size={13} />Voice recording attached. Open original update to listen.</> : <><ImageOff size={13} />No photo attached</>}</p>}
         {onOpenEvidence && (entry.messageId || entry.reportId) && <Button className="ghost" icon={ArrowUpRight} onClick={() => onOpenEvidence(entry, area.id)}>{entry.messageId ? 'Open original update' : entry.kind === 'vo' ? 'Review extra work' : 'Review site report'}</Button>}
       </article>)}</div>
       {entries.length > 3 && <Button className="ghost drawing-evidence-history" icon={showAll ? ChevronUp : ChevronDown} aria-expanded={showAll} aria-controls={listId} onClick={() => setShowAll((current) => !current)}>{showAll ? 'Show latest 3 updates' : `Show all ${entries.length} updates`}</Button>}

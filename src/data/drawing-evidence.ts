@@ -6,9 +6,10 @@ import { needsProgressClarification } from './report-status.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
 import { getMessageReviewStatus } from './message-inbox.ts';
 import { getMessageMatchContext } from './message-match.ts';
+import { getVoiceNoteContext, isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 
 type EvidenceSource = SiteReport | WhatsAppMessage;
-export interface DrawingEvidenceEntry { id: string; messageId: string | null; reportId: string | null; sourceLabel: string; kind: string; status: string; label: string; tone: string; sender: string; date: string; text: string; photo: string | null; photoAlt: string; itemId: string | null; matchKind: 'saved-area' | 'area-code' | 'area-alias' | 'work-item'; matchLabel: string }
+export interface DrawingEvidenceEntry { id: string; messageId: string | null; reportId: string | null; sourceLabel: string; kind: string; status: string; label: string; tone: string; sender: string; date: string; text: string; photo: string | null; photoAlt: string; hasVoiceNote?: boolean; itemId: string | null; matchKind: 'saved-area' | 'area-code' | 'area-alias' | 'work-item'; matchLabel: string }
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
@@ -115,23 +116,34 @@ function evidenceEntry(project: Project, area: DrawingArea, report: SiteReport |
   // A suggestion is not an area assignment. Only an explicitly saved current
   // review may route an inbox-only suggestion; content still comes from the
   // original below. Once processed, the report's frozen area takes precedence.
-  if (!report && message && Object.hasOwn(message, 'matchSuggestion')) {
+  if (!report && message && ['matchSuggestion', 'audio', 'originalTranscript'].some(field => Object.hasOwn(message, field))) {
     const match = getMessageMatchContext(project, message.id);
     if (!match.review || !match.effectiveMessage) return null;
     routingSource = match.effectiveMessage;
   }
   const matchKind = matchArea(project, area, routingSource, report ? message || null : null);
   if (!matchKind) return null;
+  // A report owns its frozen recording evidence. Never infer saved audio from
+  // the current inbox; a separate clarification reply retains its source note.
+  const voice = report ? report.voiceNote : message && (Object.hasOwn(message, 'audio') || Object.hasOwn(message, 'originalTranscript'))
+    ? getVoiceNoteContext(project, message.id).evidence : message?.originalVoiceNote
+      ? getMessageClarification(project, message.id)?.reply?.originalVoiceNote : null;
+  const hasVoiceNote = isVoiceNoteEvidenceSnapshot(voice) && voice.projectId === project.id;
+  const voiceReply = hasVoiceNote && Boolean(report ? report.sourceMessageId && report.sourceMessageId !== voice.messageId
+    : message?.replyToMessageId === voice.messageId);
   const kind = report ? report.vo || report.kind === 'vo' ? 'vo'
     : report.kind === 'clarification' || needsProgressClarification(report) ? 'clarification' : 'progress'
     : message?.kind === 'vo' ? 'vo' : message?.kind === 'clarification' || message?.status === 'clarification' ? 'clarification' : 'progress';
   return {
     id: `${report ? 'report' : 'message'}:${source.id}`, messageId: message?.id || null, reportId: report?.id || null,
-    sourceLabel: report?.channel === 'manual-vo-mock' ? 'Manual entry' : message || report?.channel === 'whatsapp-mock' ? 'WhatsApp message' : 'Site update',
+    sourceLabel: report?.channel === 'manual-vo-mock' ? 'Manual entry' : hasVoiceNote
+      ? voiceReply ? 'WhatsApp reply · original voice note retained' : 'WhatsApp voice note'
+      : message || report?.channel === 'whatsapp-mock' ? 'WhatsApp message' : 'Site update',
     kind, ...stateFor(project, report, message, kind),
     sender: originalText(source.sender, 'Site worker'), date: originalText(source.date),
     text: originalText(report ? report.message : message?.text), photo: safePhoto(source.photo),
     photoAlt: originalText(source.photoAlt, 'Site photo attached to this update'), itemId: identifier(routingSource.itemId),
+    ...(hasVoiceNote ? { hasVoiceNote: true } : {}),
     matchKind, matchLabel: matchLabels[matchKind],
   };
 }
