@@ -43,6 +43,12 @@ Open the address printed by Next.js (normally http://localhost:3000). The projec
 - `#claim-preview?draft=…` — preview a saved revision, download CSV or print/save PDF
 - `#claim-status?draft=…` — track mock submission, certification and payment for one prepared revision
 
+## Claim item evidence
+
+Use **View evidence** on a work item or VO in Choose work, Enter totals or Review. The read-only panel shows the original message/photo, sender/date and supervisor or VO decision supporting that claim cutoff. Closing with Done, the close button or Escape returns to the same item without changing selections, unfinished inputs or saved claims.
+
+In **Preview & export**, each saved schedule item opens evidence captured with that exact version. New site updates, changed reviews or missing live records never replace its saved evidence. Missing attachments are shown explicitly. These controls stay out of the printed claim; its existing evidence appendix remains available.
+
 ## Mock clarification replies
 
 Open an unclear WhatsApp message and **Save clarification request**. Use **Use demo reply** or enter a measured work item, compatible site area, cumulative total and worker reply, then **Save mock reply**. The original message and photo stay in the thread; the reply is a separate saved message and reuses the original attachment with an explicit label. No progress changes until **Add clarified progress update**. Use **Verify clarified progress** for the supervisor's review. Needs attention follows the reply and then its pending report, clearing that action after verification. Threads survive reload, while unfinished forms remain in session memory by project/message. This is a local demonstration; no WhatsApp message is sent.

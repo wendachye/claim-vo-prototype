@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SavedClaimsList } from '../src/components/SavedClaimsList.jsx';
@@ -26,7 +26,12 @@ function queriedProject() {
 }
 const groupsFor = (project) => [{ period: '2026-10', drafts: [...project.claimDrafts].sort((a, b) => b.revision - a.revision) }];
 const show = (project, props = {}) => render(<SavedClaimsList project={project} groups={groupsFor(project)} currency="SGD" dirtyPeriods={{}} onContinue={vi.fn()} onPrepare={vi.fn()} onPreview={vi.fn()} onTrack={vi.fn()} {...props} />);
-afterEach(() => vi.restoreAllMocks());
+// Keep preparation on the fixture's submission day as real time advances.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-22T10:00:00+08:00'));
+});
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe('saved claim query and revision guidance', () => {
   it('opens the exact latest query and prevents a generic new-version action', async () => {

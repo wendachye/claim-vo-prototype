@@ -1,0 +1,33 @@
+.claim-evidence-layer { display:contents; }
+.claim-evidence-panel[data-slot='sheet-content'] { gap:0; padding:0; border:0; border-radius:0; color:#334155; }
+.claim-evidence-header { gap:16px; }
+.claim-evidence-header > div { min-width:0; }
+.claim-evidence-header h2 { overflow-wrap:anywhere; }
+.claim-evidence-header p { overflow-wrap:anywhere; }
+.claim-evidence-header > .button { flex-shrink:0; }
+.claim-evidence-body { min-width:0; }
+.claim-evidence-context { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; }
+.claim-evidence-context > span:not(.badge) { color:#64748b; font-size:12px; line-height:1.8; }
+.claim-evidence-context-note { margin:9px 0 0; color:#64748b; font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
+.claim-evidence-section { margin-top:22px; padding-top:20px; border-top:1px solid var(--border); }
+.claim-evidence-section h3 { color:#334155; font-size:13px; font-weight:600; line-height:1.7; }
+.claim-evidence-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 18px; margin:13px 0 0; }
+.claim-evidence-fields > div { min-width:0; }
+.claim-evidence-fields dt { color:#64748b; font-size:12px; line-height:1.7; }
+.claim-evidence-fields dd { margin:3px 0 0; color:#334155; font-size:13px; line-height:1.8; overflow-wrap:anywhere; white-space:pre-wrap; }
+.claim-evidence-reference { display:block; color:#64748b; font-size:12px; }
+.claim-evidence-section blockquote { margin:15px 0; padding:12px 14px; border-left:2px solid #cbd5e1; background:#f8fafc; color:#475569; font-size:13px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
+.claim-evidence-photo { margin:16px 0 0; }
+.claim-evidence-photo img { display:block; width:100%; max-height:340px; object-fit:contain; border-radius:7px; background:#f8fafc; }
+.claim-evidence-photo figcaption { margin-top:8px; color:#64748b; font-size:11px; line-height:1.8; }
+.claim-evidence-photo-empty { display:flex; align-items:flex-start; gap:10px; margin-top:15px; padding:15px; color:#64748b; background:#f8fafc; border:1px dashed #dce3ec; border-radius:7px; font-size:12px; line-height:1.8; }
+.claim-evidence-photo-empty svg { flex-shrink:0; margin-top:2px; }
+.claim-evidence-empty,.claim-evidence-review-note { margin-top:12px; color:#475569; font-size:13px; line-height:1.8; overflow-wrap:anywhere; white-space:pre-wrap; }
+.claim-evidence-scope,.claim-evidence-details { margin-top:18px; color:#64748b; font-size:12px; line-height:1.8; }
+.claim-evidence-details { padding-top:17px; border-top:1px solid var(--border); }
+.claim-evidence-scope > summary,.claim-evidence-details > summary { width:fit-content; min-height:32px; color:#475569; cursor:pointer; }
+.claim-evidence-scope > summary:focus-visible,.claim-evidence-details > summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
+.claim-evidence-scope > p { margin-top:6px; color:#475569; white-space:pre-wrap; overflow-wrap:anywhere; }
+.claim-evidence-footer { justify-content:flex-end; }
+@media screen and (max-width:480px) { .claim-evidence-fields { grid-template-columns:minmax(0,1fr); } }
+@media print { .claim-evidence-layer,.claim-evidence-panel,.claim-evidence-backdrop { display:none!important; } }

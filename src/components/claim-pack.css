@@ -195,3 +195,6 @@
   .claim-pack-document-short .claim-pack-evidence-meta > span { min-width:0; overflow-wrap:anywhere; }
   .claim-pack-document-short .claim-pack-document-footer { margin-top:1mm; padding-top:1mm; }
 }
+
+.claim-pack-view .claim-evidence-action { margin-top:8px; }
+@media print { .claim-pack-view .claim-evidence-action { display:none !important; } }
