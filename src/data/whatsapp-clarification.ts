@@ -3,6 +3,7 @@ import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, 
 // mock reply. Progress changes only when the ordinary inbox action processes it.
 import { getMessageReport, getWhatsAppMessages } from './whatsapp.ts';
 import { getDrawingMapping, snapshotMappedArea } from './drawing-mapping.ts';
+import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope } from './area-allocations.ts';
 
 export interface ClarificationMutation { project: Project; outcome: string; error?: string; thread?: MessageClarification }
 export interface ClarificationContext { thread: MessageClarification; original: WhatsAppMessage; request: MessageClarification['request']; reply: WhatsAppMessage | null; report: SiteReport | null; latestReport: SiteReport | null; stage: string; sourceMessageId: string; replyMessageId: string | null }
@@ -66,7 +67,7 @@ function childReport(project: Project, reply: WhatsAppMessage) {
 function newerItemReport(project: Project, reply: WhatsAppMessage) {
   const reports = list(project.reports);
   return reports.map((entry, index) => ({ entry, index }))
-    .filter(({ entry }) => optionalLocal(project, entry) && validId(entry.id) && !entry.vo && entry.itemId === reply.itemId
+    .filter(({ entry }) => optionalLocal(project, entry) && validId(entry.id) && !entry.vo && sameProgressScope(entry, reply)
       && !['rejected', 'superseded'].includes(entry.status) && time(entry.date) !== null && time(entry.date)! > time(reply.date)!
       && reports.filter((candidate) => candidate?.id === entry.id).length === 1)
     .sort((a, b) => time(b.entry.date)! - time(a.entry.date)! || b.index - a.index)[0]?.entry || null;
@@ -194,9 +195,13 @@ export function saveMockClarificationReply(project: Project, messageId: string, 
   }
   if (mappedArea && text(values.area) && text(values.area) !== mappedArea.code) return invalid('The reply area must match the selected saved site area.');
   if (!mapping.areas.length && (areaId || !text(values.area))) return invalid('Enter the site area for this reply.');
+  const allocation = getItemAreaAllocation(project, item.id);
+  const areaProgress = allocation.split && mappedArea ? getAreaAllocationSnapshot(project, mappedArea.id, item.id) : null;
+  if (allocation.split && !areaProgress) return invalid('Choose an area with a saved quantity allocation for this contract item.');
   const date = atDate(now);
   if (!date || time(date)! < time(thread.request.date)!) return invalid('The reply date cannot be earlier than the clarification request.');
-  if (list(project.reports).some((entry) => optionalLocal(project, entry) && !entry.vo && entry.itemId === item.id
+  if (list(project.reports).some((entry) => optionalLocal(project, entry) && !entry.vo
+    && sameProgressScope(entry, { itemId: item.id, areaProgress: areaProgress || undefined })
     && !['rejected', 'superseded'].includes(entry.status) && time(entry.date) !== null && time(entry.date)! > time(date)!)) {
     return invalid('A newer site report already exists. Review the chronology before saving this cumulative reply.');
   }
@@ -211,6 +216,7 @@ export function saveMockClarificationReply(project: Project, messageId: string, 
     photo: original.photo, photoAlt: original.photoAlt, itemId: item.id,
     area: mappedArea?.code || text(values.area), areaId: mappedArea?.id || null,
     areaMapping: snapshotMappedArea(mappedArea), location: item.location || mappedArea?.name || '',
+    ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),
     completion: values.completion, completionBasis: 'cumulative', demo: true, origin: 'simulated', channel: 'whatsapp-mock',
     processingNote: 'Saved mock clarification reply. Review and process it before supervisor verification; no AI or WhatsApp service is connected.' };
   const saved = { ...thread, replyMessageId: replyId };

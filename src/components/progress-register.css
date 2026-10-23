@@ -65,3 +65,10 @@
   .site-progress-table .progress-action { align-items:flex-start; }
   .progress-latest { max-width:none; flex-basis:100%; }
 }
+
+.progress-area-details { padding: 2px 0; color: var(--muted, #64748b); font-size: 12px; }
+.progress-area-details > summary { cursor: pointer; width: fit-content; padding: 6px 0; }
+.progress-area-details > summary:focus-visible { outline: 2px solid var(--primary, #2563eb); outline-offset: 3px; border-radius: 3px; }
+.progress-area-details .area-mapping-reference { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 0; border-top: 1px solid #e8edf4; }
+.progress-area-details p { margin: 4px 0; }
+@media (max-width: 600px) { .progress-area-details .area-mapping-reference { align-items: flex-start; flex-wrap: wrap; gap: 8px; } }

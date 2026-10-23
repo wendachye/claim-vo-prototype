@@ -13,10 +13,11 @@ export interface DrawingPosition { x: number; y: number }
 export interface DrawingArea {
   id: string; projectId: string; drawingId: string; code: string; name: string;
   page: number; position: DrawingPosition | null; workItemIds: string[]; updatedAt?: string;
+  workItemQuantities?: Record<string, number>;
 }
 export interface AreaMappingSnapshot {
   areaId: string | null; code?: string; name?: string; drawingId?: string; page?: number;
-  position?: DrawingPosition | null; workItemIds?: string[];
+  position?: DrawingPosition | null; workItemIds?: string[]; workItemQuantities?: Record<string, number>;
 }
 export interface DrawingMetadata {
   id: string; projectId: string; inputKind: 'sample' | 'upload' | 'provided'; kind: 'sample' | 'image' | 'pdf';
@@ -57,6 +58,9 @@ export interface WorkItem {
   reviewedAt?: string; reviewedBy?: string; projectId?: string;
   [key: string]: unknown;
 }
+export interface AreaProgressSnapshot {
+  areaId: string; itemId: string; allocatedQuantity: number; contractQuantity: number;
+}
 export interface SiteReport {
   id: string; itemId?: string | null; projectId?: string; projectCode?: string; sourceMessageId?: string;
   kind?: string; vo?: boolean; channel?: string; status: string; sender?: string; senderRole?: string;
@@ -65,7 +69,7 @@ export interface SiteReport {
   note?: string; demo?: boolean; origin?: string; verifiedBy?: string; verifiedAt?: string;
   reviewReason?: string; clarificationRequestedAt?: string; clarificationRequestedBy?: string;
   reportedInstructionReference?: string; approvedCompletion?: number | null;
-  areaMapping?: AreaMappingSnapshot | null; scopeLabel?: string;
+  areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; scopeLabel?: string;
   manualEntry?: { version: number; submissionId: string; input: Record<string, string> };
   supersededByReportId?: string; supersededAt?: string; supersededBy?: string; supersededReason?: string;
   [key: string]: unknown;
@@ -75,7 +79,7 @@ export interface WhatsAppMessage {
   sender: string; senderRole?: string; date: string; itemId?: string | null;
   area?: string | null; areaId?: string | null; location?: string | null; completion?: number | null; completionBasis?: string;
   photo?: string | null; photoAlt?: string | null; processingNote?: string; processedAt?: string; reportId?: string;
-  areaMapping?: AreaMappingSnapshot | null; replyToMessageId?: string; clarificationThreadId?: string;
+  areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; replyToMessageId?: string; clarificationThreadId?: string;
   clarificationReplyMessageId?: string; clarificationRequestedAt?: string; clarificationRequestedBy?: string;
   demoPhotoHistory?: { photo: string; photoAlt?: string }[]; vo?: boolean; demo?: boolean; origin?: string; channel?: string;
   [key: string]: unknown;
@@ -117,11 +121,11 @@ export interface ProjectWorkflow {
   sourceItems: WorkItem[]; items: WorkItem[]; reports: SiteReport[]; history: HistoryEntry[];
   baselines: ContractBaseline[]; locked: boolean; version: number; lockedAt?: string;
   voReviews: VOReview[]; claimDrafts: ClaimDraft[]; claimTracking?: ClaimTracking[]; messageClarifications?: MessageClarification[];
-  whatsappMessages?: WhatsAppMessage[]; contractVersion?: ContractVersionMetadata; contractTotalReviews?: ContractTotalReview[];
+  whatsappMessages?: WhatsAppMessage[]; drawingMapping?: DrawingMapping; contractVersion?: ContractVersionMetadata; contractTotalReviews?: ContractTotalReview[];
 }
 export interface Project extends ProjectWorkflow {
   id: string; code: string; name: string; country: string; description: string; contract: ContractDetails; whatsappMessages: WhatsAppMessage[];
-  seed: ProjectWorkflow; drawingMapping?: DrawingMapping; demoTemplate?: string; claimExamplesDemo?: boolean; providedContractDemo?: boolean;
+  seed: ProjectWorkflow; drawingMapping?: DrawingMapping; demoTemplate?: string; claimExamplesDemo?: boolean; providedContractDemo?: boolean; areaSplitDemo?: boolean;
   [key: string]: unknown;
 }
 export interface Workspace { schemaVersion: number; activeProjectId: string; projects: Project[]; sitShowcase?: { version: number; projectId: string }; [key: string]: unknown }

@@ -1,3 +1,4 @@
+import { getItemAreaAllocation, getAreaItemProgress } from '../data/area-allocations';
 import type { Project, WorkItem, WhatsAppMessage, SiteReport, DrawingMapping } from '../types/domain';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, Check, CheckCheck, MessageSquare, Save, ShieldCheck } from 'lucide-react';
@@ -90,10 +91,11 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
       || choices.find((entry) => link.linkedItems?.some((linked: WorkItem) => linked.id === entry.id))
       || choices.find((entry) => text(original.location) && text(entry.location) === text(original.location)) || choices[0];
     if (!item) return;
-    const linked = mapping.areas.filter((area) => area.workItemIds.includes(item.id));
+    const allocation=getItemAreaAllocation(project,item.id);
+    const linked = mapping.areas.filter((area) => area.workItemIds.includes(item.id) && (!allocation.split || allocation.areas.some(entry=>entry.areaId===area.id)));
     const area = linked.find((entry) => entry.id === link.area?.id) || linked[0];
     const namedArea = area ? `Area ${area.code}` : text(original.area) || text(item.demoArea) || text(item.location) || 'Demo work area';
-    const totals = [item.reported, item.verified, original.completion,
+    const totals = allocation.split ? [area ? getAreaItemProgress(project,area.id,item.id,'reported').completion : null,area ? getAreaItemProgress(project,area.id,item.id,'verified').completion : null].filter(knownCompletion) : [item.reported, item.verified, original.completion,
       ...(project.reports || []).filter((entry) => entry.itemId === item.id && !entry.vo
         && (!entry.projectId || entry.projectId === project.id) && (!entry.projectCode || entry.projectCode === project.code)
         && !['rejected', 'superseded'].includes(entry.status)).map((entry) => entry.completion)].filter(knownCompletion);

@@ -1,5 +1,6 @@
 import type { AreaMappingSnapshot, DrawingPosition, DrawingMetadata, DrawingMapping, SourceDescriptor } from '../types/domain';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
+import { areaQuantityUnits } from './area-allocations.ts';
 // Drawing references and area links are manual, browser-local demo metadata.
 // Saving a map never changes a contract baseline, physical progress or a claim.
 export const DEMO_DRAWING_ASSET = '/samples/warehouse-area-plan.svg';
@@ -103,7 +104,8 @@ export function getDrawingMapping(project: Project): DrawingMapping {
     seenIds.add(area.id); seenCodes.add(cleanCode(area.code));
     return [{ id: area.id, projectId: project.id, drawingId: drawing.id, code: cleanCode(area.code),
       name: text(area.name), page: area.page, position: clone(area.position),
-      workItemIds: [...new Set(area.workItemIds.filter((id) => itemIds.has(id)))].sort(), updatedAt: area.updatedAt || drawing.uploadedAt }];
+      workItemIds: [...new Set(area.workItemIds.filter((id) => itemIds.has(id)))].sort(), updatedAt: area.updatedAt || drawing.uploadedAt,
+      ...(record(area.workItemQuantities) ? { workItemQuantities: Object.fromEntries(Object.entries(area.workItemQuantities).filter(([id, value]) => itemIds.has(id) && typeof value === 'number' && areaQuantityUnits(value) !== null)) } : {}) }];
   });
   return { projectId: project.id, drawing, areas, history: clone(Array.isArray(saved.history) ? saved.history : []) };
 }
@@ -168,8 +170,60 @@ export function saveAreaMapping(project: Project, values: unknown, now: DateInpu
   if (!validPosition(position) || (current.drawing.kind === 'pdf' && position !== null)) return invalid('Choose a valid pin position on an image drawing. PDF areas are linked by name and page.');
   if (!Array.isArray(values.workItemIds) || values.workItemIds.some((id) => typeof id !== 'string' || !itemIds.has(id))) return invalid('Choose contract work items from this project.');
   const workItemIds = [...new Set(values.workItemIds)].sort();
-  const comparable = { code, name, page, position: position === null ? null : { x: position.x, y: position.y }, workItemIds };
-  if (previous && JSON.stringify(comparable) === JSON.stringify({ code: previous.code, name: previous.name, page: previous.page, position: previous.position, workItemIds: previous.workItemIds })) return { project, area: clone(previous), outcome: 'unchanged' as const };
+  // Invalid stored quantities must be reviewed explicitly, never disappear as
+  // a side effect of moving a pin or saving a different area's name.
+  for (const savedArea of current.areas) {
+    if (savedArea.id === areaId && values.workItemQuantities !== undefined) continue;
+    const rawArea = project.drawingMapping?.areas?.find(entry => entry?.id === savedArea.id);
+    if (!rawArea || !Object.hasOwn(rawArea, 'workItemQuantities')) continue;
+    if (!record(rawArea.workItemQuantities) || Object.entries(rawArea.workItemQuantities).some(([itemId, value]) => {
+      const item = project.items.find(entry => entry.id === itemId);
+      return !savedArea.workItemIds.includes(itemId) || typeof value !== 'number' || areaQuantityUnits(value) === null
+        || item?.pricingType !== 'measured' || areaQuantityUnits(item.quantity) === null;
+    })) return invalid(`Review the saved quantities for Area ${savedArea.code} before saving area links.`);
+  }
+  const rawQuantities = values.workItemQuantities === undefined ? previous?.workItemQuantities : values.workItemQuantities;
+  if (rawQuantities !== undefined && !record(rawQuantities)) return invalid('Enter valid quantities for the selected contract items.');
+  const workItemQuantities: Record<string, number> = {};
+  for (const [itemId, value] of Object.entries(rawQuantities || {})) {
+    if (!workItemIds.includes(itemId)) {
+      // An omitted quantity field preserves a legacy pin/name save while an
+      // explicitly edited quantity map must match its selected work links.
+      if (values.workItemQuantities === undefined) continue;
+      return invalid('Assign quantities only to contract items linked to this area.');
+    }
+    const item = project.items.find(entry => entry.id === itemId);
+    const units = areaQuantityUnits(value);
+    if (item?.pricingType !== 'measured' || areaQuantityUnits(item.quantity) === null) return invalid('Only measured items with a known positive contract quantity can be split across areas.');
+    if (units === null) return invalid('Enter a positive area quantity with up to 4 decimal places.');
+    workItemQuantities[itemId] = Number(units) / 10000;
+  }
+  const scopedReports = (project.reports || []).filter(report => (!report.projectId || report.projectId === project.id)
+    && (!report.projectCode || report.projectCode === project.code) && report.areaProgress?.areaId === areaId);
+  for (const report of scopedReports) {
+    const saved = report.areaProgress!;
+    if (!workItemIds.includes(saved.itemId) || workItemQuantities[saved.itemId] !== saved.allocatedQuantity) {
+      return invalid('This area has recorded progress. Keep its quantity and work link; pin positions and area names can still change.');
+    }
+  }
+  const allocationAreas = [...current.areas.filter(entry => entry.id !== areaId), { workItemIds, workItemQuantities }];
+  const allocatedItems = new Set(allocationAreas.flatMap(entry => Object.keys(entry.workItemQuantities || {})));
+  for (const itemId of allocatedItems) {
+    const item = project.items.find(entry => entry.id === itemId);
+    const contractUnits = item?.pricingType === 'measured' ? areaQuantityUnits(item.quantity) : null;
+    if (contractUnits === null) return invalid('Check the contract quantity before saving this item’s area quantities.');
+    let total = 0n;
+    for (const entry of allocationAreas) {
+      if (!Object.hasOwn(entry.workItemQuantities || {}, itemId)) continue;
+      const units = areaQuantityUnits(entry.workItemQuantities?.[itemId]);
+      if (units === null || !entry.workItemIds.includes(itemId)) return invalid('Check the saved area quantities before saving these links.');
+      total += units;
+    }
+    if (total > contractUnits) return invalid(`${item?.ref || itemId}: area quantities exceed the contract quantity. Reduce this area’s quantity before saving.`);
+  }
+  const quantityFields = Object.keys(workItemQuantities).length || previous?.workItemQuantities ? { workItemQuantities } : {};
+  const comparable = { code, name, page, position: position === null ? null : { x: position.x, y: position.y }, workItemIds, ...quantityFields };
+  if (previous && JSON.stringify(comparable) === JSON.stringify({ code: previous.code, name: previous.name, page: previous.page, position: previous.position, workItemIds: previous.workItemIds, ...(previous.workItemQuantities ? { workItemQuantities: previous.workItemQuantities } : {}) })) return { project, area: clone(previous), outcome: 'unchanged' as const };
   const area = { id: previous?.id || newId(`AREA-${project.id}`, date, [...current.areas.map((entry) => entry.id), ...current.history.map((event) => event.areaId)]), projectId: project.id, drawingId: current.drawing.id, ...comparable, updatedAt: date };
   const mapping = { ...current, areas: previous ? current.areas.map((entry) => entry.id === area.id ? area : entry) : [...current.areas, area],
     history: [...current.history, { id: newId(`MAP-${project.id}`, date, current.history.map((event) => event.id)), action: previous ? 'updateArea' : 'addArea', date, drawingId: current.drawing.id, areaId: area.id, previousArea: clone(previous), area: clone(area) }] };
@@ -181,6 +235,10 @@ export function removeMappedArea(project: Project, areaId: string, now: DateInpu
   const previous = current.areas.find((area) => area.id === areaId);
   const date = atDate(now);
   if (!previous || !date) return { project, outcome: 'invalid' as const, error: 'Choose an area from the selected project.' };
+  if ((project.reports || []).some(report => (!report.projectId || report.projectId === project.id)
+    && (!report.projectCode || report.projectCode === project.code) && report.areaProgress?.areaId === areaId)) {
+    return { project, outcome: 'invalid' as const, error: 'This area has recorded progress. Keep the area and its quantities; its name and pin can still change.' };
+  }
   const mapping = { ...current, areas: current.areas.filter((area) => area.id !== areaId),
     history: [...current.history, { id: newId(`MAP-${project.id}`, date, current.history.map((event) => event.id)), action: 'removeArea', date, drawingId: current.drawing!.id, areaId, previousArea: clone(previous) }] };
   return { project: updatedProject(project, mapping), outcome: 'updated' as const };
@@ -210,6 +268,7 @@ export function snapshotMappedArea(area: Partial<DrawingArea> | null | undefined
     areaId: area.id, code: area.code, name: area.name, drawingId: area.drawingId,
     page: area.page, position: clone(area.position ?? null),
     workItemIds: clone(Array.isArray(area.workItemIds) ? area.workItemIds : []),
+    ...(record(area.workItemQuantities) ? { workItemQuantities: clone(area.workItemQuantities) } : {}),
   };
 }
 

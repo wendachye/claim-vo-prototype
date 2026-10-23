@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import type { ClaimRow } from '../types/claims';
+import type { SiteReport } from '../types/domain';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ImageOff, X } from 'lucide-react';
-import { Badge, Button, formatNumber } from './ui';
+import { Badge, Button, FormField, SelectField, formatNumber } from './ui';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
 import { VO_EXECUTION_LABELS, VO_INSTRUCTION_LABELS, VO_SCOPE_LABELS, VO_STATUS_LABELS } from '../data/vo.ts';
 import './claim-evidence.css';
@@ -19,6 +20,8 @@ const date = (value: string | null | undefined) => value && !Number.isNaN(new Da
 const month = (value: string | null | undefined) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value || '')
   ? new Date(`${value}-01T12:00:00+08:00`).toLocaleDateString('en-SG', { month: 'long', year: 'numeric', timeZone: 'Asia/Singapore' })
   : 'Month not recorded';
+const quantity = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value) ? value.toLocaleString('en-SG', { maximumFractionDigits: 4 }) : 'Not recorded';
+const areaLabel = (report: SiteReport) => report.areaMapping?.code || report.area || report.location || 'Area';
 const percent = (value: unknown) => known(value) && Number.isFinite(Number(value)) ? `${formatNumber(Number(value))}%` : 'Not recorded';
 
 function Field({ label, children }: {label: string; children: ReactNode}) {
@@ -32,11 +35,15 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
   const id = useId();
-  const evidence = record(row?.evidence) ? row.evidence : null;
+  const hasAreaEvidence = kind === 'work' && Array.isArray(row?.areaEvidence) && row.areaEvidence.length > 0;
+  const areaEvidence = hasAreaEvidence ? row!.areaEvidence!.filter((report) => record(report) && (!report.projectId || report.projectId === projectId) && report.itemId === row!.id && report.areaProgress?.itemId === row!.id) : [];
+  const selectionContext = JSON.stringify([projectId, period, revision, row?.id]);
+  const [selection, setSelection] = useState<{ context: string; reportId: string } | null>(null);
+  const evidence = hasAreaEvidence ? areaEvidence.find((report) => selection?.context === selectionContext && report.id === selection.reportId) || areaEvidence[0] || null : record(row?.evidence) ? row.evidence : null;
   const manual = evidence?.channel === 'manual-vo-mock';
   const unavailable = !record(row) || !['work', 'vo'].includes(kind)
     || (row.projectId && row.projectId !== projectId)
-    || (evidence?.projectId && evidence.projectId !== projectId);
+    || (evidence?.projectId && evidence.projectId !== projectId) || (hasAreaEvidence && !areaEvidence.length);
   const photoData: unknown = evidence?.photo;
   const photoValue = typeof photoData === 'string' ? photoData : record(photoData) ? photoData.url || photoData.src : null;
   const photo = typeof photoValue === 'string' ? photoValue : null;
@@ -63,6 +70,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
             <p className="claim-evidence-context-note">{saved ? 'Evidence captured with this saved claim version.' : 'Evidence supporting this assessment at its cutoff.'}</p>
             <section className="claim-evidence-section" aria-label="Original update">
               <h3>{manual ? 'Manual entry' : 'Original update'}</h3>
+              {hasAreaEvidence && evidence && <><FormField label="Area evidence"><SelectField aria-label="Area evidence" value={evidence.id} onChange={(event) => setSelection({ context: selectionContext, reportId: event.target.value })}>{areaEvidence.map((report) => <option key={report.id} value={report.id}>{areaLabel(report)} · {quantity(report.areaProgress?.allocatedQuantity)} {row.unit || ''}</option>)}</SelectField></FormField><p className="claim-evidence-context-note">Assigned {quantity(evidence.areaProgress?.allocatedQuantity)} {row.unit || ''} of {quantity(evidence.areaProgress?.contractQuantity)} {row.unit || ''} in the contract. Each area contributes once to the item total.</p></>}
               {evidence ? <>
                 <dl className="claim-evidence-fields"><Field label={manual ? 'Entered by' : 'Sender'}>{text(evidence.sender)}</Field><Field label={manual ? 'Recorded' : 'Reported'}>{dateTime(evidence.date)}</Field><Field label="Area / location">{[evidence.area, evidence.location].filter(Boolean).join(' · ') || 'Not recorded'}</Field>{manual && <Field label="Reported instruction / reference">{text(evidence.reportedInstructionReference)}</Field>}</dl>
                 <blockquote>{text(evidence.message, 'No original message was saved with this report.')}</blockquote>
@@ -71,7 +79,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
             </section>
             {kind === 'work' ? <section className="claim-evidence-section" aria-label="Supervisor review">
               <h3>Supervisor review</h3>
-              <dl className="claim-evidence-fields"><Field label="Verified total">{percent(row.verified)}</Field><Field label="Reviewer">{text(evidence?.verifiedBy)}</Field><Field label="Verified">{dateTime(row.verifiedAt)}</Field></dl>
+              <dl className="claim-evidence-fields"><Field label={hasAreaEvidence ? 'Verified area completion' : 'Verified total'}>{percent(hasAreaEvidence ? evidence?.approvedCompletion ?? evidence?.completion : row.verified)}</Field><Field label="Reviewer">{text(evidence?.verifiedBy)}</Field><Field label="Verified">{dateTime(hasAreaEvidence ? evidence?.verifiedAt : row.verifiedAt)}</Field>{hasAreaEvidence && <Field label="Weighted contract item total">{percent(row.verified)}</Field>}</dl>
               {evidence?.reviewReason && <p className="claim-evidence-review-note">{evidence.reviewReason}</p>}
               {row.evidenceDateConfirmation?.confirmed && <p className="claim-evidence-review-note">QS confirmed this undated progress applied as of {date(row.evidenceDateConfirmation.asOf)}. The original verification date remains unrecorded.</p>}
               <p className="claim-evidence-context-note">Physical completion supports the assessment; claim quantities and values are reviewed separately.</p>

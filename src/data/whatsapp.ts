@@ -2,10 +2,13 @@ import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, 
 // Frontend-only fixtures. Fields are prefilled demonstration results, not AI output.
 import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.ts';
 import { isUnresolvedProgressReport } from './report-status.ts';
+import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope, syncAreaItemProgress } from './area-allocations.ts';
 export interface WhatsAppProcessingResult { project: Project; outcome: string; reportId?: string }
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 const clone = <T>(value: T): T => structuredClone(value);
+const inProject = (project: Project, report: SiteReport) => (!report.projectId || report.projectId === project.id)
+  && (!report.projectCode || report.projectCode === project.code);
 
 type MessageSeedProject = Pick<Project, 'id' | 'code' | 'items' | 'contract'>;
 
@@ -126,8 +129,21 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
   if (message.kind === 'progress' && areaLink.conflict) {
     return needsClarification(`Area ${areaLink.area?.code} is mapped to ${areaLink.area?.workItemIds?.join(', ')}, but this message names ${message.itemId}. Check the area or work item before updating progress.`);
   }
+  const allocation = item && message.kind === 'progress' ? getItemAreaAllocation(project, item.id) : null;
+  const areaProgress = allocation?.split && item && areaLink.area?.id
+    ? getAreaAllocationSnapshot(project, areaLink.area.id, item.id) : null;
+  if (allocation?.split && (!areaProgress || (message.areaId && message.areaId !== areaProgress.areaId))) {
+    return needsClarification('Choose an area with a saved quantity allocation for this contract item before updating area completion.');
+  }
+  if ((message.areaProgress || message.replyToMessageId && allocation?.split) && (!message.areaProgress || !areaProgress
+    || message.areaProgress.areaId !== areaProgress.areaId || message.areaProgress.itemId !== areaProgress.itemId
+    || message.areaProgress.allocatedQuantity !== areaProgress.allocatedQuantity
+    || message.areaProgress.contractQuantity !== areaProgress.contractQuantity)) {
+    return needsClarification('The saved area quantity changed. Review the allocation before processing this reply.');
+  }
   if (!Number.isFinite(new Date(message.date).getTime())) return invalid;
-  if (message.kind === 'progress' && project.reports.some((report) => report.itemId === item!.id
+  const scope = { itemId: item?.id, areaProgress: areaProgress || undefined };
+  if (message.kind === 'progress' && project.reports.some((report) => inProject(project, report) && sameProgressScope(report, scope)
     && !report.vo && !['rejected', 'superseded'].includes(report.status)
     && new Date(report.date!) > new Date(message.date))) {
     return needsClarification('A newer site report already exists. Review the chronology before replacing reported progress.');
@@ -140,22 +156,25 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
     sourceMessageId: message.id, itemId: isVo ? null : item!.id,
     area: message.area, location: message.location,
     areaMapping: snapshotMappedArea(areaLink.area),
+    ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),
     sender: message.sender, date: message.date, completion: isVo ? null : pct,
     completionBasis: isVo ? 'unclear' : 'cumulative', status: isVo ? 'needsReview' : 'pending',
     message: message.text, photo: message.photo, photoAlt: message.photoAlt,
     vo: isVo, demo: true, origin: 'simulated', channel: 'whatsapp-mock',
     note: isVo ? 'Mock possible VO. Scope, instruction evidence, entitlement and price need QS review.'
-      : 'Mock WhatsApp report. Total completion is cumulative; verified progress requires supervisor review.',
+      : areaProgress ? 'Mock WhatsApp report. Completion is cumulative for this allocated area; verified progress requires supervisor review.'
+        : 'Mock WhatsApp report. Total completion is cumulative; verified progress requires supervisor review.',
   };
   const note = isVo ? 'Possible VO flagged for QS review. Completion and price are unchanged.'
-    : `${item!.id} reported progress updated to ${pct}% total. Verified progress remains ${item!.verified}%.`;
+    : areaProgress ? `${areaLink.area?.code} reported completion saved at ${pct}% of its allocated quantity. Supervisor verification is still required.`
+      : `${item!.id} reported progress updated to ${pct}% total. Verified progress remains ${item!.verified}%.`;
   const marked = markMessage(project, message, 'processed', note, date);
   return {
     outcome: 'processed', reportId,
-    project: {
+    project: syncAreaItemProgress({
       ...marked,
-      items: project.items.map((entry) => !isVo && entry.id === item!.id ? { ...entry, reported: pct! } : entry),
-      reports: [...project.reports.map((entry) => !isVo && entry.itemId === item!.id && isUnresolvedProgressReport(entry)
+      items: project.items.map((entry) => !isVo && !areaProgress && entry.id === item!.id ? { ...entry, reported: pct! } : entry),
+      reports: [...project.reports.map((entry) => !isVo && inProject(project, entry) && sameProgressScope(entry, scope) && isUnresolvedProgressReport(entry)
         ? { ...entry, status: 'superseded', supersededByReportId: reportId, supersededAt: date,
           supersededBy: 'Alex Tan · Demo reviewer',
           supersededReason: 'Replaced by a newer cumulative mock WhatsApp report. Original evidence is retained.' }
@@ -163,6 +182,6 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
       whatsappMessages: marked.whatsappMessages.map((entry) => entry.id === message.id ? { ...entry, reportId } : entry),
       history: [{ id: `${message.id}-result`, action: isVo ? 'Possible VO flagged' : 'Reported completion updated',
         detail: note, date, actor: 'Alex Tan · Demo reviewer' }, ...marked.history],
-    },
+    }, isVo ? '' : item!.id),
   };
 }

@@ -4,6 +4,8 @@ import { getVOCases, getVOClaimEligibility } from './vo.ts';
 import { isReviewableProgressReport, needsProgressClarification } from './report-status.ts';
 import { getClaimTracking } from './claim-tracking.ts';
 import { getClaimRevisionContext } from './claim-revisions.ts';
+import { getLatestProgressReports } from './progress-review.ts';
+import { getItemAreaAllocation, getItemAreaRollup } from './area-allocations.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
 
 const list = <T,>(value: T[] | null | undefined): T[] => Array.isArray(value) ? value : [];
@@ -18,17 +20,12 @@ function currentMonth() {
 // Navigation guidance only. Physical progress and recorded approvals do not
 // determine claimable money, and no source or saved assessment is changed here.
 export function getProjectWorkflow(project: Project, period = currentMonth()) {
-  const items = list(project.items);
+  const items = list(project.items).map(item=>getItemAreaAllocation(project,item.id).split?{...item,reported:getItemAreaRollup(project,item.id,'reported').completion,verified:getItemAreaRollup(project,item.id,'verified').completion}:item);
   const itemIds = new Set(items.map((item) => item.id));
   const reports = list(project.reports).filter((report) => !report.projectId || report.projectId === project.id);
-  const latestReports = new Map<string, SiteReport>();
-  for (const report of reports) {
-    if (report.vo || !itemIds.has(report.itemId || '')) continue;
-    const previous = latestReports.get(report.itemId || '');
-    if (!previous || timestamp(report.date) >= timestamp(previous.date)) latestReports.set(report.itemId || '', report);
-  }
-  const pendingReports = [...latestReports.values()].filter(isReviewableProgressReport);
-  const clarificationReports = [...latestReports.values()].filter(needsProgressClarification);
+  const latestReports = getLatestProgressReports(project).filter(report=>itemIds.has(report.itemId || ''));
+  const pendingReports = latestReports.filter(isReviewableProgressReport);
+  const clarificationReports = latestReports.filter(needsProgressClarification);
   const unresolvedReportSources = new Set([...pendingReports, ...clarificationReports].map((report) => report.sourceMessageId).filter(Boolean));
   const messages = getWhatsAppMessages(project).filter((message) => message.projectId === project.id);
   const actionableMessages = messages.filter(message => {

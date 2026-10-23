@@ -362,10 +362,10 @@ export function resetProject(project: Project): Project {
   claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }),
   claimTracking: project.claimExamplesDemo === true ? normalizeClaimTracking({ ...project, ...seed, claimTracking: seed.claimTracking }) : [], messageClarifications: [] };
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
-  if (project.claimExamplesDemo !== true) delete next.lockedAt;
+  if (project.claimExamplesDemo !== true && project.areaSplitDemo !== true) delete next.lockedAt;
   if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;
   if (!Array.isArray(seed.contractTotalReviews)) delete next.contractTotalReviews;
-  delete next.drawingMapping;
+  if (project.areaSplitDemo !== true) delete next.drawingMapping;
   return next;
 }
 

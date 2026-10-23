@@ -1,5 +1,6 @@
 import type { ClaimAssessment, ClaimAssessmentRow, ClaimRow, ClaimWorkRow, ClaimVORow, ClaimReview, ClaimDraft, ClaimTotals } from '../types/claims';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
+import { getItemAreaAllocation, getItemAreaRollup, getItemAreaSplitStartedAt } from './area-allocations.ts';
 import { getVOCases, getVOClaimEligibility } from './vo.ts';
 import { captureClaimProjectDetails } from './claim-pack.ts';
 import { normalizeClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum, claimBasisDifference, applyClaimBasis } from './claim-basis.ts';
@@ -67,8 +68,17 @@ function normalizeAssessment(project: Project, input: unknown): { assessment: Cl
   return { assessment, errors };
 }
 
-function verificationFor(project: Project, item: WorkItem, end: number) {
-  const reports = (project.reports || []).filter((entry) => entry.itemId === item.id && !entry.vo
+function verificationFor(project: Project, item: WorkItem, end: number): {verified: number; verifiedAt: string | null | undefined; requiresDateConfirmation: boolean; evidence: SiteReport | null; areaEvidence?: SiteReport[]; allocationIssues?: string[]} {
+  const allocation=getItemAreaAllocation(project,item.id);
+  const splitStartedAt=getItemAreaSplitStartedAt(project,item.id);
+  // A new split never rewrites an earlier month's whole-item evidence.
+  if(allocation.split && (!splitStartedAt || dateTime(splitStartedAt)<=end)) {
+    const rollup=getItemAreaRollup(project,item.id,'verified',end);
+    const evidence=rollup.evidence;
+    return {verified:rollup.valid ? rollup.completion ?? 0 : 0,verifiedAt:evidence.map(report=>report.verifiedAt).filter((value):value is string=>Boolean(value)).sort().at(-1) || null,
+      requiresDateConfirmation:false,evidence:evidence[0] ? clone(evidence[0]) : null,areaEvidence:clone(evidence),allocationIssues:rollup.issues};
+  }
+  const reports = (project.reports || []).filter((entry) => entry.itemId === item.id && !entry.vo && !entry.areaProgress
     && ['verified', 'approved'].includes(entry.status)
     && (!entry.projectId || entry.projectId === project.id));
   const candidates = reports.filter((entry) => Number.isFinite(dateTime(entry.verifiedAt))
@@ -86,7 +96,7 @@ function verificationFor(project: Project, item: WorkItem, end: number) {
     verifiedAt: null, requiresDateConfirmation: true, evidence: clone(undated),
   };
   // Undated seeded progress is visible, but needs an explicit QS as-of confirmation.
-  if (!reports.length && finite(item.verified) && item.verified > 0) return {
+  if (!reports.length && !project.reports.some(report=>report.itemId===item.id && report.areaProgress) && finite(item.verified) && item.verified > 0) return {
     verified: item.verified, verifiedAt: null, requiresDateConfirmation: true, evidence: null,
   };
   return { verified: 0, verifiedAt: null, requiresDateConfirmation: false, evidence: null };
@@ -150,6 +160,7 @@ export function buildClaimReview(project: Project, period: string, input: unknow
     const rowIssues: string[] = [];
     if (included) {
       if (!eligible) rowIssues.push(exclusionReason);
+      if (verification.allocationIssues?.length) rowIssues.push(...verification.allocationIssues);
       if (assessedQuantity === null) rowIssues.push('Enter the QS-assessed cumulative quantity.');
       if (hasBasis && assessedQuantity !== null && sourceValid && cumulativeValue === null) rowIssues.push('Quantity or rate exceeds the supported decimal precision or amount limit.');
       if (hasBasis && cumulativeValue !== null && previousValue !== null && currentValue === null) rowIssues.push('The calculation exceeds the supported amount limit.');
@@ -161,11 +172,11 @@ export function buildClaimReview(project: Project, period: string, input: unknow
     return {
       id: item.id, itemId: item.id, ref: item.ref, description: item.description, unit: item.unit,
       rate: item.rate ?? null, contractQuantity: item.quantity ?? null, contractAmount: item.amount ?? null,
-      verified, currentVerified: item.verified, reported: item.reported,
+      verified, currentVerified: getItemAreaAllocation(project,item.id).split ? getItemAreaRollup(project,item.id,'verified').completion : item.verified, reported: getItemAreaAllocation(project,item.id).split ? getItemAreaRollup(project,item.id,'reported').completion : item.reported,
       verifiedAt: verification.verifiedAt, requiresDateConfirmation: verification.requiresDateConfirmation,
       evidenceDateConfirmed: entered.evidenceDateConfirmed === true,
       evidenceDateConfirmation: verification.requiresDateConfirmation && entered.evidenceDateConfirmed ? { asOf: cutoff, confirmed: true } : null,
-      evidence: verification.evidence, sourcePage: item.sourcePage ?? null, included, eligible, exclusionReason,
+      evidence: verification.evidence, ...(verification.areaEvidence ? {areaEvidence:verification.areaEvidence} : {}), sourcePage: item.sourcePage ?? null, included, eligible, exclusionReason,
       assessedQuantity, previousValue, cumulativeValue, currentValue, issues: rowIssues,
     };
   });

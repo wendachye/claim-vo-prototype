@@ -16,14 +16,14 @@ export function captureClaimProjectDetails(project: Project): ClaimProjectDetail
   });
 }
 
-function evidenceFor(row: ClaimRow, kind: 'work' | 'vo'): ClaimEvidenceReference {
-  const evidence: Partial<SiteReport> = record(row.evidence) ? row.evidence : {};
+function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | null | undefined = row.evidence): ClaimEvidenceReference {
+  const evidence: Partial<SiteReport> = record(source) ? source : {};
   return {
-    id: `${kind}-${row.id}`, kind, rowId: row.id,
+    id: evidence.areaProgress ? `${kind}-${row.id}-${evidence.id}` : `${kind}-${row.id}`, kind, rowId: row.id,
     rowRef: (kind === 'work' ? row.ref : row.reference) ?? null,
     title: (kind === 'work' ? row.description : row.title) ?? null,
     reportId: evidence.id ?? null, sourceMessageId: evidence.sourceMessageId ?? null,
-    date: evidence.date ?? null, verifiedAt: row.verifiedAt ?? null,
+    date: evidence.date ?? null, verifiedAt: evidence.areaProgress ? evidence.verifiedAt ?? null : row.verifiedAt ?? null,
     reviewer: evidence.verifiedBy ?? row.approval?.actor ?? null,
     sender: evidence.sender ?? null, message: evidence.message ?? null,
     photo: evidence.photo ?? null, photoAlt: evidence.photoAlt ?? null,
@@ -32,6 +32,7 @@ function evidenceFor(row: ClaimRow, kind: 'work' | 'vo'): ClaimEvidenceReference
     evidenceDateConfirmation: row.evidenceDateConfirmation ?? null,
     approvalReference: row.approvalReference ?? null, approvalDate: row.approvalDate ?? null,
     approver: row.approver ?? null, approvalStatus: kind === 'vo' ? row.status ?? null : null,
+    ...(evidence.areaProgress ? {areaProgress:clone(evidence.areaProgress)} : {}),
     ...(evidence.channel === 'manual-vo-mock' ? { channel: evidence.channel,
       reportedInstructionReference: evidence.reportedInstructionReference ?? null } : {}),
   };
@@ -53,7 +54,7 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
   const hasBasis = record(snapshot.claimBasis);
   const workRows = snapshot.workRows.filter((row) => record(row) && row.included === true);
   const voRows = snapshot.voRows.filter((row) => record(row) && row.included === true);
-  if ([...workRows, ...voRows].some((row) => row.evidence?.projectId && row.evidence.projectId !== project.id)) return invalid();
+  if ([...workRows, ...voRows].some((row) => row.evidence?.projectId && row.evidence.projectId !== project.id || row.areaEvidence?.some(evidence=>evidence.projectId && evidence.projectId!==project.id))) return invalid();
   const hasSavedDetails = record(draft.projectDetails);
   return { outcome: 'ready', pack: clone({
     id: draft.id, draftId: draft.id, projectId: draft.projectId,
@@ -68,7 +69,7 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
     workRows, voRows, totals: snapshot.totals, assessment: snapshot.assessment,
     ...(hasBasis ? { claimBasis: snapshot.claimBasis } : {}),
     issues: snapshot.issues, canPrepare: snapshot.canPrepare === true,
-    evidenceRefs: [...workRows.map((row) => evidenceFor(row, 'work')), ...voRows.map((row) => evidenceFor(row, 'vo'))],
+    evidenceRefs: [...workRows.flatMap((row) => row.areaEvidence?.length ? row.areaEvidence.map(evidence=>evidenceFor(row,'work',evidence)) : [evidenceFor(row, 'work')]), ...voRows.map((row) => evidenceFor(row, 'vo'))],
     prototypeNotice: hasBasis ? 'Local demonstration assessment using the saved mock claim basis. Retention is included in the net application; tax, retention releases and other deductions are not supported. Prepared status does not submit, certify or pay a claim; unknown amounts remain blank.' : 'Local demonstration assessment. Prepared status does not submit, certify or pay a claim. Values are before tax, retention and other deductions; unknown amounts remain blank.',
   }) };
 }
@@ -175,6 +176,7 @@ export function toClaimCSV(pack: ClaimPack) {
     'Message / photo': joined(evidence.message, photoReference(evidence.photo)),
     'Review notes': joined(evidence.channel === 'manual-vo-mock' && 'Source: Manual entry · local demo',
       evidence.reportedInstructionReference && `Reported instruction/reference: ${evidence.reportedInstructionReference}`,
+      evidence.areaProgress && `Area quantity: ${evidence.areaProgress.allocatedQuantity}; contract quantity: ${evidence.areaProgress.contractQuantity}` ,
       evidence.sender && `${evidence.channel === 'manual-vo-mock' ? 'Entered by' : 'Sender'}: ${evidence.sender}`,
       evidence.sourcePage != null && `Contract page: ${evidence.sourcePage}`,
       evidence.evidenceDateConfirmation?.confirmed && `Undated progress confirmed by QS as of ${evidence.evidenceDateConfirmation.asOf}`),

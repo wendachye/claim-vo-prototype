@@ -284,3 +284,17 @@
   .drawing-related-section > summary::after { margin-left:auto; }
   .drawing-progress-actions > .button { width:100%; }
 }
+
+/* Quantities stay beside their linked item, with one explicit area save. */
+.drawing-work-option { padding:12px 0; border-top:1px solid #eef1f5; }
+.drawing-work-option > .drawing-work-choice { padding:0; border-top:0; }
+.drawing-work-allocation { margin:12px 0 0 26px; }
+.drawing-work-allocation .form-field { max-width:280px; margin:0; }
+.drawing-allocation-summary, .drawing-allocation-note { margin:7px 0 0; color:#64748b; font-size:12px; line-height:1.7; }
+.drawing-allocation-summary.is-overallocated { color:#b45309; }
+.drawing-work-option > .drawing-link-only { margin-left:26px; }
+.drawing-progress-items li .drawing-allocated-quantity { color:#3156c8; }
+@media screen and (max-width:600px) {
+  .drawing-work-allocation { margin-left:26px; }
+  .drawing-work-allocation .form-field { max-width:none; }
+}

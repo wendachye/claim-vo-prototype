@@ -43,7 +43,7 @@ export interface ClaimRow {
   description?: string; title?: string; unit?: string; rate?: InputNumber;
   included: boolean; eligible: boolean; exclusionReason: string; previousValue: number | null;
   cumulativeValue: number | null; currentValue: number | null; issues: string[];
-  evidence?: SiteReport | null; sourcePage?: number | null;
+  evidence?: SiteReport | null; areaEvidence?: SiteReport[]; sourcePage?: number | null;
   verifiedAt?: string | null; evidenceDateConfirmation?: EvidenceDateConfirmation | null;
   assessedQuantity?: number | null; assessedValue?: number | null;
   approvedValue?: number | null; approvalReference?: string; approvalDate?: string | null;
@@ -102,6 +102,7 @@ export interface ClaimEvidenceReference {
   photoAlt: string | null; area: string | null; location: string | null; sourcePage: number | null;
   evidenceDateConfirmation: EvidenceDateConfirmation | null; approvalReference: string | null;
   approvalDate: string | null; approver: string | null; approvalStatus: string | null;
+  areaProgress?: SiteReport['areaProgress'];
   channel?: string; reportedInstructionReference?: string | null;
 }
 export interface ClaimPack {

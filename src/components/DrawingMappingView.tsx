@@ -4,7 +4,8 @@ import { Feedback, KeyboardSensor, PointerActivationConstraints, PointerSensor }
 import { DOMRectangle } from '@dnd-kit/dom/utilities';
 import { ArrowRight, ArrowUpRight, Check, CircleAlert, FileText, Flag, ImageOff, Info, MapPin, MessageSquare, Minus, Plus, RotateCcw, Save, Trash2, Upload } from 'lucide-react';
 import { DEMO_DRAWING_FILENAME, getDrawingAsset, getDrawingMapping, getProvidedDrawingSource, validateDrawingFile } from '../data/drawing-mapping.ts';
-import { getAreaProgress, getDrawingProgress } from '../data/drawing-progress.ts';
+import { getAreaProgress, getDrawingProgress, type DrawingAreaProgress as AreaProgress } from '../data/drawing-progress.ts';
+import { getItemAreaAllocation, areaQuantityUnits } from '../data/area-allocations.ts';
 import { getAreaVOFlags, getDrawingVOFlags } from '../data/drawing-vo.ts';
 import { getSITAreaUpdate } from '../data/sit-area-update.ts';
 import { getSITAreaDefinitions, getSITAreaExclusions } from '../data/sit-area-definitions.ts';
@@ -23,13 +24,11 @@ import './drawing-mapping.css';
 
 type DrawingWorkItem = WorkItem;
 type DrawingProject = Project;
-interface AreaForm { code: string; name: string; page: string; workItemIds: string[]; pinX: string; pinY: string }
-interface AreaValues { areaId: string; drawingId: string; code: string; name: string; page: number; position: DrawingPinPosition | null; workItemIds: string[] }
+interface AreaForm { code: string; name: string; page: string; workItemIds: string[]; pinX: string; pinY: string; workItemQuantities?: Record<string, string> }
+interface AreaValues { areaId: string; drawingId: string; code: string; name: string; page: number; position: DrawingPinPosition | null; workItemIds: string[]; workItemQuantities?: Record<string, string> }
 interface DrawingInput { inputKind: 'sample' | 'upload'; fileName: string; fileSize: number; mimeType: string; file?: File }
 interface MappingResult { outcome?: string; project?: DrawingProject; error?: string | null; itemCount?: number; areaCount?: number }
 type Awaitable<T> = T | Promise<T>;
-interface ProgressItem { id: string; description: string; completion: number | null; reported: number | null; verified: number | null; status: string; label: string }
-interface AreaProgress { areaId: string; totalCount: number; completedCount: number; status: string; label: string; tone: string; items: ProgressItem[] }
 type AreaFlags = ReturnType<typeof getAreaVOFlags>;
 interface PinCommand { projectId: string; scope: string; position: DrawingPinPosition; sequence: number }
 interface PinDragSnapshot { projectId: string; drawingId: string; areaId: string; scope: string; position: DrawingPinPosition; bounds: DrawingPinBounds; initialPoint: DrawingPinPosition; currentPoint: DrawingPinPosition }
@@ -49,6 +48,7 @@ interface DrawingMappingViewProps {
   onOpenEvidence?: (entry: { id: string }, areaId: string) => void;
   onOpenVO?: (caseId: string, areaId: string) => void;
   onStartCompletionDemo?: () => void;
+  onStartAreaSplitDemo?: () => void;
   onPreviewFile?: (file: File) => Awaitable<MappingResult | void>;
 }
 
@@ -56,7 +56,7 @@ const imageMimeTypes: Record<string, string> = { pdf: 'application/pdf', png: 'i
 const mimeFor = (file: File) => file.type || imageMimeTypes[file.name.split('.').at(-1)?.toLowerCase() || ''] || '';
 const clone = <T,>(value: T): T => structuredClone(value);
 const percentage = (value: number | null | undefined) => value == null ? '' : String(Math.round(value * 1000) / 10);
-const formFor = (area: DrawingArea | null): AreaForm => ({ code: area?.code || '', name: area?.name || '', page: String(area?.page || 1), workItemIds: [...(area?.workItemIds || [])], pinX: percentage(area?.position?.x), pinY: percentage(area?.position?.y) });
+const formFor = (area: DrawingArea | null): AreaForm => ({ code: area?.code || '', name: area?.name || '', page: String(area?.page || 1), workItemIds: [...(area?.workItemIds || [])], pinX: percentage(area?.position?.x), pinY: percentage(area?.position?.y), ...(area?.workItemQuantities && Object.keys(area.workItemQuantities).length ? { workItemQuantities: Object.fromEntries(Object.entries(area.workItemQuantities).map(([id, quantity]) => [id, String(quantity)])) } : {}) });
 const scopeFor = (drawing: DrawingMetadata, area: DrawingArea | null) => `drawing:area:${JSON.stringify([drawing.id, area?.id || 'new', area?.updatedAt || '', area ? formFor(area) : null])}`;
 const positionFor = (form: AreaForm): DrawingPinPosition | null => {
   if (form.pinX === '' || form.pinY === '') return null;
@@ -67,6 +67,9 @@ const actionLabels: Record<string, string> = { addDrawing: 'Drawing added', repl
 const actionLabel = (action: string) => actionLabels[action] || 'Area mapping updated';
 const sampleInput = (): DrawingInput => ({ inputKind: 'sample', fileName: DEMO_DRAWING_FILENAME, fileSize: 0, mimeType: 'image/svg+xml' });
 const completionText = (value: number) => `${Math.round(value * 10) / 10}%`;
+const quantityText = (value: number | null) => value === null ? '—' : value.toLocaleString('en-SG', { maximumFractionDigits: 4 });
+const canSplitItem = (item: WorkItem) => item.pricingType === 'measured' && typeof item.quantity === 'number' && Number.isFinite(item.quantity) && item.quantity > 0;
+const quantityFor = (value: string) => { const units = areaQuantityUnits(value); return units === null ? null : Number(units) / 10000; };
 const pinDetail = (progress: AreaProgress | undefined) => !progress || !progress.totalCount ? 'Not linked' : progress.totalCount === 1 ? progress.items[0].completion === null ? 'Needs update' : completionText(progress.items[0].completion) : `${progress.completedCount}/${progress.totalCount} done`;
 const voDescription = (flags: AreaFlags | undefined) => flags?.markerLabel ? `Extra work: ${flags.markerLabel}` : 'No active extra-work flags';
 const pinSensors = [
@@ -77,7 +80,7 @@ const pinSensors = [
 ];
 const pinPlugins: NonNullable<ComponentProps<typeof DragDropProvider>['plugins']> = (defaults) => [...defaults.filter((plugin) => plugin !== Feedback), Feedback.configure({ feedback: 'none', dropAnimation: null })];
 
-export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onAddContractAreas, onAddAreaMessages, onOpenSiteUpdates, onRemoveArea, onOpenProgress, onOpenContractItem, onOpenEvidence, onOpenVO, onStartCompletionDemo, onPreviewFile }: DrawingMappingViewProps) {
+export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack, onInstall, onSaveArea, onAddContractAreas, onAddAreaMessages, onOpenSiteUpdates, onRemoveArea, onOpenProgress, onOpenContractItem, onOpenEvidence, onOpenVO, onStartCompletionDemo, onStartAreaSplitDemo, onPreviewFile }: DrawingMappingViewProps) {
   const mapping = getDrawingMapping(project) as DrawingMapping;
   const drawing = mapping.drawing;
   const areas = mapping.areas || [];
@@ -305,7 +308,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
             })}
             {imageReady && draftPosition && !selected && <span className="drawing-pin draft" style={{ left: `${draftPosition.x * 100}%`, top: `${draftPosition.y * 100}%` }}><MapPin size={16} /><span>New area</span></span>}
           </div></div></DragDropProvider>}
-          <details className="drawing-legend-details"><summary>About completion &amp; area links</summary><p>Colours show {basisLabel.toLowerCase()} totals for whole work items. Shared items show the same progress in each area. Mapping does not measure area quantities or change claims.</p></details>
+          <details className="drawing-legend-details"><summary>About completion &amp; area links</summary><p>Colours show {basisLabel.toLowerCase()} completion. Enter an area quantity to track that portion separately. Link-only items keep whole-item progress until a quantity split is saved. Pins do not measure quantities.</p></details>
         </section>
         <section className="drawing-area-panel" ref={areaPanelRef} aria-labelledby="drawing-areas-heading">
           <header className="drawing-panel-heading"><div><h2 id="drawing-areas-heading">{showEditor && !unavailableArea ? 'Area mapping' : 'Linked contract items'}</h2><p>{selected ? `${selected.code} · ${selected.name}` : 'Choose which contract work belongs to a site area.'}</p></div>{!areas.length && <Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button>}</header>
@@ -333,7 +336,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
       </details>
       {mapping.history?.length > 0 && <details className="drawing-history"><summary>Mapping history · {mapping.history.length} {mapping.history.length === 1 ? 'action' : 'actions'}</summary><ol>{mapping.history.map((entry, index) => <li key={entry.id || index}><strong>{actionLabel(entry.action)}{entry.area?.code || entry.previousArea?.code ? ` · ${entry.area?.code || entry.previousArea?.code}` : ''}</strong>{entry.detail && <p>{entry.detail}</p>}{entry.date && <time dateTime={entry.date}>{formatTime(entry.date)}</time>}</li>)}</ol></details>}
     </>}
-    {onStartCompletionDemo && <details className="drawing-demo-tools"><summary>Try another demo</summary><div className="drawing-completion-demo"><div><strong>See completion on a plan</strong><p>Opens a separate demo project with all three statuses and extra-work examples.</p></div><Button className="ghost" icon={ArrowRight} onClick={onStartCompletionDemo}>Try completion demo</Button></div></details>}
+    {(onStartCompletionDemo || onStartAreaSplitDemo) && <details className="drawing-demo-tools"><summary>Try another demo</summary>{onStartCompletionDemo && <div className="drawing-completion-demo"><div><strong>See completion on a plan</strong><p>Opens a separate demo project with all three statuses and extra-work examples.</p></div><Button className="ghost" icon={ArrowRight} onClick={onStartCompletionDemo}>Try completion demo</Button></div>}{onStartAreaSplitDemo && <div className="drawing-completion-demo"><div><strong>Track one item across two areas</strong><p>A separate demo with West and East quantities and independent site updates.</p></div><Button className="ghost" icon={ArrowRight} onClick={onStartAreaSplitDemo}>Try area split demo</Button></div>}</details>}
     <p className="drawing-local-note">Demo · Mappings stay with this project in this browser. No AI, measurement or backend service is connected.</p>
     {(modal === 'upload' || modal === 'reattach') && <DrawingFileModal currentDrawing={drawing} reattach={modal === 'reattach'} onClose={() => setModal(null)} onInstall={install} onReattach={reattach} />}
     {modal === 'remove' && selected && <Modal title={`Remove area ${selected.code}?`} onClose={() => setModal(null)} footer={<><Button onClick={() => setModal(null)}>Cancel</Button><Button className="danger" icon={Trash2} onClick={removeSelected}>Remove area</Button></>}><p>Remove this area and its work-item links from the current drawing. Existing messages, progress, contract values and claim records are kept.</p></Modal>}
@@ -371,13 +374,13 @@ function AreaProgressSummary({ project, area, progress, basisLabel, summaryRef, 
         const sharedAreas = areas.filter((entry) => entry.id !== area.id && entry.workItemIds.includes(item.id));
         return <li key={item.id}><div>{onOpenContractItem && contractItem ? <Button className="ghost drawing-contract-item-link" aria-label={`View contract item ${contractItem.ref || item.id}`} onClick={() => onOpenContractItem(item.id, area.id)}><span><small>Ref. {contractItem.ref || item.id}</small><strong>{contractItem.description}</strong></span><ArrowUpRight size={15} /></Button> : <><small>Ref. {contractItem?.ref || item.id}</small><strong>{contractItem?.description || item.description}</strong></>}
           {contractItem?.sourcePage && <small>Source page {contractItem.sourcePage}{contractItem.pricingType === 'included' ? ' · Included' : contractItem.pricingType === 'rateOnly' ? ' · Rate only' : ''}</small>}
-          {sharedAreas.length > 0 && <small>Shared with {sharedAreas.map((entry) => entry.code).join(', ')} · one whole contract item.</small>}
+          {item.trackingScope === 'area' ? <small className="drawing-allocated-quantity">{quantityText(item.allocationQuantity ?? null)} {contractItem?.unit} assigned here · {quantityText(item.contractQuantity ?? null)} {contractItem?.unit} in contract</small> : item.trackingScope === 'link-only' ? <small>Quantity not assigned here. Edit area mapping to track this area separately.</small> : sharedAreas.length > 0 && <small>Shared with {sharedAreas.map((entry) => entry.code).join(', ')} · one whole contract item.</small>}
           {sourceArea && item.id === 'WI-012' && contractItem?.pricingType === 'included' && <small>Included with B.1 platform work. Shared W3/W5 scope; its quantity is not split and no separate claim value is added.</small>}
           {item.reported !== item.verified && <small>{basisLabel === 'Verified' ? `Reported ${item.reported === null ? 'Not recorded' : completionText(item.reported)}` : `Verified ${item.verified === null ? 'Not recorded' : completionText(item.verified)}`}</small>}
         </div><span className={`drawing-item-completion status-${item.status}`}><strong>{item.completion === null ? '—' : completionText(item.completion)}</strong><small>{item.label}</small></span></li>;
       })}</ul>
     </> : <p className="drawing-progress-help">Link contract work items to show their completion here.</p>}
-    <p className="drawing-progress-help">Whole-item progress · no area quantities are measured.</p>
+    <p className="drawing-progress-help">{progress.items.some((item) => item.trackingScope === 'area') ? 'Area completion uses its assigned quantity and new area reports. Site progress combines each portion once.' : progress.items.some((item) => item.trackingScope === 'link-only') ? 'Assign a quantity to this area before recording its completion.' : 'Whole-item progress · enter area quantities to track portions separately.'}</p>
     <div className="drawing-progress-actions"><Button className="ghost" onClick={onEdit}>Edit area mapping</Button>{onOpenProgress && progress.totalCount > 0 && <Button icon={ArrowRight} onClick={() => onOpenProgress(area.id)}>Open site progress</Button>}</div>
   </section>;
 }
@@ -419,8 +422,9 @@ function AreaMappingEditor({ project, drawing, area, onSave, onSaved, onRemove, 
   }, [pinCommand, project.id, scope]);
   useEffect(() => { const moved = form.pinX !== initial.pinX || form.pinY !== initial.pinY; onDraftPosition(moved ? position : null); }, [form.pinX, form.pinY, initial.pinX, initial.pinY, drawing.id]);
   useEffect(() => { if (errorField) formRef.current?.querySelector<HTMLElement>(`[name="${errorField}"]`)?.focus(); }, [error, errorField]);
+  const changeQuantity = (itemId: string, value: string) => { setForm((current) => ({ ...current, workItemQuantities: { ...current.workItemQuantities, [itemId]: value } })); setError(''); setErrorField(''); };
   const change = <K extends keyof AreaForm,>(field: K, value: AreaForm[K]) => { setForm((current) => ({ ...current, [field]: value })); setError(''); setErrorField(''); };
-  function problem(message: string, field = 'code') { setError(message); setErrorField(field); formRef.current?.querySelector<HTMLElement>(`[name="${field}"]`)?.focus(); }
+  function problem(message: string, field = 'code') { if (field.startsWith('allocation-')) setWorkSearch(''); setError(message); setErrorField(field); formRef.current?.querySelector<HTMLElement>(`[name="${field}"]`)?.focus(); }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busyRef.current || !onSave) return;
@@ -428,7 +432,18 @@ function AreaMappingEditor({ project, drawing, area, onSave, onSaved, onRemove, 
     if (!form.name.trim()) return problem('Enter a name for this area.', 'name');
     if (drawing.kind === 'pdf' && (!Number.isInteger(Number(form.page)) || Number(form.page) < 1 || Number(form.page) > 999)) return problem('Enter a PDF page from 1 to 999.', 'page');
     if (drawing.kind !== 'pdf' && ((form.pinX === '') !== (form.pinY === '') || ((form.pinX !== '' || form.pinY !== '') && !position))) return problem('Enter both pin positions from 0 to 100%, or leave both blank.', 'pinX');
-    const values = { areaId: area?.id || '', drawingId: drawing.id, code: form.code.trim().toUpperCase(), name: form.name.trim(), page: drawing.kind === 'pdf' ? Number(form.page) : 1, position, workItemIds: [...form.workItemIds] };
+    const workItemQuantities: Record<string, string> = {};
+    for (const itemId of form.workItemIds) {
+      const entered = form.workItemQuantities?.[itemId]?.trim() || '';
+      if (!entered) continue;
+      const quantity = quantityFor(entered);
+      if (quantity === null) return problem('Enter a positive area quantity with up to 4 decimal places, or leave it blank for a link only.', `allocation-${itemId}`);
+      const allocation = getItemAreaAllocation(project, itemId);
+      const elsewhere = allocation.areas.filter((entry) => entry.areaId !== area?.id).reduce((total, entry) => total + Math.round(entry.quantity * 10000), 0);
+      if (allocation.contractQuantity === null || elsewhere + Math.round(quantity * 10000) > Math.round(allocation.contractQuantity * 10000)) return problem('Area quantities cannot exceed the contract quantity. Reduce this quantity or edit the other areas first.', `allocation-${itemId}`);
+      workItemQuantities[itemId] = entered;
+    }
+    const values = { areaId: area?.id || '', drawingId: drawing.id, code: form.code.trim().toUpperCase(), name: form.name.trim(), page: drawing.kind === 'pdf' ? Number(form.page) : 1, position, workItemIds: [...form.workItemIds], workItemQuantities };
     busyRef.current = true; setBusy(true); setError(''); setErrorField('');
     try {
       const result = await onSave(values);
@@ -449,8 +464,16 @@ function AreaMappingEditor({ project, drawing, area, onSave, onSaved, onRemove, 
       <FormField label="Area name" required className="drawing-field-full" error={errorField === 'name' ? error : undefined}><Input name="name" className="form-input" value={form.name} maxLength={100} onChange={(event) => change('name', event.target.value)} placeholder="e.g. Block A - west wall" /></FormField>
     </div>
     {drawing.kind !== 'pdf' && <div className="drawing-pin-editor"><div><MapPin size={16} /><span>{position ? `Pin at ${percentage(position.x)}% across, ${percentage(position.y)}% down` : 'Pin not placed'}</span><Button onClick={() => onRequestPin((next) => setForm((current) => ({ ...current, pinX: percentage(next.x), pinY: percentage(next.y) })))} disabled={!canPlacePin}>{position ? 'Move pin' : 'Place pin'}</Button></div><details open={errorField === 'pinX' ? true : undefined}><summary>Enter a position instead</summary><div className="drawing-form-grid"><FormField label="Across drawing" suffix="%" error={errorField === 'pinX' ? error : undefined}><Input name="pinX" className="form-input" type="number" min="0" max="100" step="any" value={form.pinX} onChange={(event) => change('pinX', event.target.value)} /></FormField><FormField label="Down drawing" suffix="%"><Input name="pinY" className="form-input" type="number" min="0" max="100" step="any" value={form.pinY} onChange={(event) => change('pinY', event.target.value)} /></FormField></div>{position && <Button className="ghost" onClick={() => setForm((current) => ({ ...current, pinX: '', pinY: '' }))}>Clear pin position</Button>}</details></div>}
-    <fieldset className="drawing-work-choices"><legend>Link contract items</legend><p>Tick the work that belongs here. An item can be shared with other areas.</p>{project.items?.length ? <><FormField className="drawing-work-search" label="Find contract work"><Input className="form-input" type="search" value={workSearch} onChange={(event) => setWorkSearch(event.target.value)} placeholder="Search reference, work or location…" /></FormField><p className="drawing-work-count" aria-live="polite">{form.workItemIds.length} selected · {matchingItems.length} shown</p><div className="drawing-work-options">{matchingItems.map((item) => <label className="drawing-work-choice" key={item.id}><Checkbox checked={form.workItemIds.includes(item.id)} onChange={(event) => change('workItemIds', event.target.checked ? [...form.workItemIds, item.id] : form.workItemIds.filter((id) => id !== item.id))} /><span><strong>{item.description}</strong><small>Ref. {item.ref} · {item.location}</small></span></label>)}</div>{!matchingItems.length && <p className="drawing-search-empty">No matching work items. Clear the search to see all items; your selections are kept.</p>}</> : <div className="notice warning"><CircleAlert size={16} /><span>No contract work is available. Add the contract first; you can still save this area without work links.</span></div>}</fieldset>
-    {error && !['code', 'name', 'page', 'pinX'].includes(errorField) && <p className="form-error" role="alert">{error}</p>}
+    <fieldset className="drawing-work-choices"><legend>Link contract items</legend><p>Tick the work that belongs here. Enter its area quantity to track completion separately; leave blank for a link only.</p>{project.items?.length ? <><FormField className="drawing-work-search" label="Find contract work"><Input className="form-input" type="search" value={workSearch} onChange={(event) => setWorkSearch(event.target.value)} placeholder="Search reference, work or location…" /></FormField><p className="drawing-work-count" aria-live="polite">{form.workItemIds.length} selected · {matchingItems.length} shown</p><div className="drawing-work-options">{matchingItems.map((item) => {
+      const checked = form.workItemIds.includes(item.id);
+      const allocation = getItemAreaAllocation(project, item.id);
+      const elsewhereUnits = allocation.areas.filter((entry) => entry.areaId !== area?.id).reduce((total, entry) => total + Math.round(entry.quantity * 10000), 0);
+      const rawQuantity = form.workItemQuantities?.[item.id] || '';
+      const enteredQuantity = rawQuantity.trim() ? quantityFor(rawQuantity) : null;
+      const remaining = allocation.contractQuantity === null ? null : (Math.round(allocation.contractQuantity * 10000) - elsewhereUnits - Math.round((enteredQuantity || 0) * 10000)) / 10000;
+      return <div className="drawing-work-option" key={item.id}><label className="drawing-work-choice"><Checkbox checked={checked} onChange={(event) => change('workItemIds', event.target.checked ? [...form.workItemIds, item.id] : form.workItemIds.filter((id) => id !== item.id))} /><span><strong>{item.description}</strong><small>Ref. {item.ref} · {item.location}</small></span></label>{checked && (canSplitItem(item) ? <div className="drawing-work-allocation"><FormField label={`Quantity in this area · ${item.ref}`} optional suffix={item.unit} error={errorField === `allocation-${item.id}` ? error : undefined}><Input name={`allocation-${item.id}`} aria-label={`Quantity in this area for ${item.ref}`} type="number" inputMode="decimal" min="0" step="0.0001" value={rawQuantity} placeholder="Not split" onChange={(event) => changeQuantity(item.id, event.target.value)} /></FormField><p className={`drawing-allocation-summary${remaining !== null && remaining < 0 ? ' is-overallocated' : ''}`}>Contract {quantityText(allocation.contractQuantity)} {item.unit} · Elsewhere {quantityText(elsewhereUnits / 10000)} · Remaining {quantityText(remaining)} {item.unit}</p>{rawQuantity.trim() && !area?.workItemQuantities?.[item.id] && (item.reported !== null || item.verified !== null) && <p className="drawing-allocation-note">Separate area tracking uses new area reports; previous whole-item updates remain in history.</p>}</div> : <p className="drawing-allocation-note drawing-link-only">{item.pricingType === 'included' ? 'Included work · link only, no separate claim quantity.' : item.pricingType === 'rateOnly' ? 'Rate-only item · link only.' : 'Add a valid measured contract quantity before splitting this item.'}</p>)}</div>;
+    })}</div>{!matchingItems.length && <p className="drawing-search-empty">No matching work items. Clear the search to see all items; your selections are kept.</p>}</> : <div className="notice warning"><CircleAlert size={16} /><span>No contract work is available. Add the contract first; you can still save this area without work links.</span></div>}</fieldset>
+    {error && !['code', 'name', 'page', 'pinX'].includes(errorField) && !errorField.startsWith('allocation-') && <p className="form-error" role="alert">{error}</p>}
     <FormActions secondary={<BackButton onClick={onCancel}>{area ? 'Back to area status' : 'Back to areas'}</BackButton>}><Button className="primary" type="submit" icon={Save} disabled={busy || !onSave}>{busy ? 'Saving…' : 'Save area links'}</Button></FormActions>
   </form>;
 }

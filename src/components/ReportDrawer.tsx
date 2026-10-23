@@ -1,4 +1,4 @@
-import type { WorkItem, SiteReport } from '../types/domain';
+import type { Project, WorkItem, SiteReport } from '../types/domain';
 import { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import { Badge, Button, FormActions, FormField, formatTime } from './ui';
+import { Badge, Button, FormActions, FormField, formatNumber, formatTime } from './ui';
+import { getAreaItemProgress, getItemAreaAllocation } from '../data/area-allocations';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
 import { isReviewableProgressReport, needsProgressClarification } from '../data/report-status';
 import './report-drawer.css';
@@ -30,9 +31,10 @@ const timeLabel = (value?: string | null) => (
   value && !Number.isNaN(new Date(value).getTime()) ? formatTime(value) : 'Time not recorded'
 );
 
-interface ReportDrawerProps { projectCode?: string; item?: WorkItem | null; report?: SiteReport | null; locked: boolean; onClose?: () => void; onApprove?: (report: SiteReport, completion: string, reason: string) => void; onChange?: (report: SiteReport, action: string, reason: string) => void; onAdd?: (itemId?: string) => void; onReviewVO?: (report: SiteReport) => void }
+interface ReportDrawerProps { project?: Project; projectCode?: string; item?: WorkItem | null; report?: SiteReport | null; locked: boolean; onClose?: () => void; onApprove?: (report: SiteReport, completion: string, reason: string) => void; onChange?: (report: SiteReport, action: string, reason: string) => void; onAdd?: (itemId?: string) => void; onReviewVO?: (report: SiteReport) => void }
 
 export function ReportDrawer({
+  project,
   projectCode,
   item,
   report,
@@ -59,13 +61,17 @@ export function ReportDrawer({
   const isClarification = needsProgressClarification(report);
   const isVerified = report?.status === 'verified' || report?.status === 'approved';
   const isVo = Boolean(report?.vo);
+  const areaProgress = report?.areaProgress;
+  const legacyScope = Boolean(project && item && !areaProgress && getItemAreaAllocation(project, item.id).split);
+  const currentReported = areaProgress && project && item ? getAreaItemProgress(project, areaProgress.areaId, item.id, 'reported').completion : item?.reported;
+  const currentVerified = areaProgress && project && item ? getAreaItemProgress(project, areaProgress.areaId, item.id, 'verified').completion : item?.verified;
   const hasMatchedItem = Boolean(item && report?.itemId === item.id);
   const numericCompletion = Number(completion);
   const validCompletion = completion.trim() !== ''
     && Number.isFinite(numericCompletion)
     && numericCompletion >= 0
     && numericCompletion <= 100;
-  const canVerify = Boolean(locked && isPending && hasMatchedItem && !isVo && validCompletion && onApprove);
+  const canVerify = Boolean(locked && isPending && hasMatchedItem && !isVo && !legacyScope && validCompletion && onApprove);
   const photoUrl = typeof report?.photo === 'string' ? report.photo : report?.photo?.url;
   const isSimulated = report?.demo || report?.origin === 'simulated';
   const isManual = report?.origin === 'manual' || report?.origin === 'uploaded';
@@ -114,7 +120,7 @@ export function ReportDrawer({
     const original = report?.completion;
     if ((original == null || Number(original) !== numericCompletion)
       && needReason('Explain the corrected percentage before verifying progress.')) return;
-    if (item?.verified != null && numericCompletion < item.verified
+    if (currentVerified != null && numericCompletion < currentVerified
       && needReason('Explain the lower verified total before verifying progress.')) return;
     setError('');
     onApprove(report, completion.trim(), reason.trim());
@@ -161,12 +167,15 @@ export function ReportDrawer({
 
           <section className="site-report-progress" aria-label="Completion totals">
             <dl className="site-report-totals">
-              <div><dt>Current reported total</dt><dd>{percent(item?.reported)}</dd><small>Worker’s latest total</small></div>
-              <div><dt>Current verified total</dt><dd>{percent(item?.verified)}</dd><small>Supervisor checked</small></div>
+              <div><dt>{areaProgress ? 'Area reported total' : 'Current reported total'}</dt><dd>{percent(currentReported)}</dd><small>Worker’s latest total</small></div>
+              <div><dt>{areaProgress ? 'Area verified total' : 'Current verified total'}</dt><dd>{percent(currentVerified)}</dd><small>Supervisor checked</small></div>
             </dl>
-            {report && <div className="site-report-observation"><span>This update</span><strong>{percent(report.completion)}</strong><small>{report.completionBasis === 'cumulative' ? 'Cumulative total to date' : 'Completion basis needs confirmation'}</small></div>}
-            {isPending && !isVo && <p className="site-report-verification-preview"><ShieldCheck size={15} aria-hidden="true" /><span>After verification: <strong>{validCompletion ? percent(numericCompletion) : 'Enter a valid total'}</strong> verified. Reported total stays {percent(item?.reported)}.</span></p>}
+            {areaProgress && <p className="site-report-review-help">Area quantity: {formatNumber(areaProgress.allocatedQuantity)} {item?.unit} of {formatNumber(areaProgress.contractQuantity)} {item?.unit}. Whole item: reported {percent(item?.reported)} · verified {percent(item?.verified)}.</p>}
+            {report && <div className="site-report-observation"><span>This update</span><strong>{percent(report.completion)}</strong><small>{report.completionBasis === 'cumulative' ? areaProgress ? 'Cumulative completion of this allocated area' : 'Cumulative total to date' : 'Completion basis needs confirmation'}</small></div>}
+            {isPending && !isVo && !legacyScope && <p className="site-report-verification-preview"><ShieldCheck size={15} aria-hidden="true" /><span>After verification: <strong>{validCompletion ? percent(numericCompletion) : 'Enter a valid total'}</strong> {areaProgress ? 'of this area’s allocated quantity' : ''} verified. Reported total stays {percent(currentReported)}.</span></p>}
           </section>
+
+          {legacyScope && <div className="notice warning"><AlertTriangle aria-hidden="true"/><span>Whole-item update retained in history. Add an area update to track the allocated quantities independently.</span></div>}
 
           {isVo ? (
             <div className="notice warning">
@@ -196,9 +205,9 @@ export function ReportDrawer({
             <div className="notice warning"><AlertTriangle aria-hidden="true" /><span>Review and lock the contract baseline before verifying this progress update.</span></div>
           )}
 
-          {isPending && report && !isVo && (
+          {isPending && report && !isVo && !legacyScope && (
             <div>
-              <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">Check the original update and photo below, then confirm the whole work item’s verified total.</p>
+              <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">Check the original update and photo below, then confirm {areaProgress ? 'this area’s verified completion against its allocated quantity' : 'the whole work item’s verified total'}.</p>
               <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
                   <input
                     id={`${id}-completion`}

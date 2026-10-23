@@ -1,4 +1,5 @@
 import type { Project, SiteReport, WhatsAppMessage } from "../types/domain";
+import { getItemAreaAllocation } from './area-allocations.ts';
 // Progress review states stay separate from recorded physical totals and VO review.
 export const isReviewableProgressReport = (report: SiteReport | null | undefined) => Boolean(report && !report.vo
   && ['pending', 'needsReview'].includes(report.status));
@@ -19,6 +20,9 @@ export function requestProgressClarification(project: Project, reportId: string,
     && (!entry.projectId || entry.projectId === project.id)
     && (!entry.projectCode || entry.projectCode === project.code));
   if (!report || report.vo) return invalid('Choose a progress report from this project.');
+  if (report.itemId && getItemAreaAllocation(project, report.itemId).split && !report.areaProgress) {
+    return invalid('This whole-item report is kept in history. Add an update for an allocated area instead.');
+  }
   const note = typeof reason === 'string' ? reason.trim() : '';
   if (!note) return invalid('Add a note explaining what the worker needs to clarify.');
   if (needsProgressClarification(report) && report.reviewReason === note) return { project, outcome: 'unchanged' as const };

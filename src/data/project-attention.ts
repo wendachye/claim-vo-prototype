@@ -1,6 +1,6 @@
 import type { Project, SiteReport, AttentionTask, ClaimDraft, WorkItem, WhatsAppMessage } from "../types/domain";
 import { getWhatsAppMessages, getMessageReport } from './whatsapp.ts';
-import { getItemProgressReview } from './progress-review.ts';
+import { getLatestProgressReports }  from './progress-review.ts';
 import { getVOCases, getVOClaimEligibility } from './vo.ts';
 import { normalizeClaimDrafts } from './claims.ts';
 import { getClaimTracking } from './claim-tracking.ts';
@@ -32,14 +32,13 @@ export function getProjectAttention(project: Project): AttentionTask[] {
   const rawMessages = Array.isArray(project.whatsappMessages) ? project.whatsappMessages : getWhatsAppMessages(project);
   const messages = uniqueIds(rawMessages).filter((entry) => entry.projectId === project.id && entry.projectCode === project.code);
 
-  for (const item of items) {
-    const review = getItemProgressReview(scoped, item);
-    const report = review.report;
-    if (!report || !['review', 'clarification'].includes(review.key)) continue;
-    const clarification = review.key === 'clarification';
+  for (const report of getLatestProgressReports(scoped)) {
+    const item=items.find(entry=>entry.id===report.itemId);
+    if(!item || !['pending','needsReview','clarification','needsClarification'].includes(report.status))continue;
+    const clarification=['clarification','needsClarification'].includes(report.status);
     add({ id: `progress:${report.id}`, category: 'site', kind: clarification ? 'clarification' : 'progress',
       title: clarification ? 'Clarify a site update' : 'Verify site progress',
-      detail: `${item.ref || item.id} · ${item.description || 'Contract work'}`,
+      detail: `${report.areaProgress && report.area ? `Area ${report.area} · ` : ''}${item.ref || item.id} · ${item.description || 'Contract work'}`,
       reference: report.id, statusLabel: clarification ? 'Needs clarification' : 'Awaiting verification',
       actionLabel: clarification ? 'View clarification' : 'Review update', date: report.date,
       priority: clarification ? 35 : 20, target: { route: 'completion', itemId: item.id, reportId: report.id } });

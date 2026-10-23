@@ -139,7 +139,7 @@ For recovery, enable **Try failed-page demo** before extraction. Page 1 keeps fo
 
 ## Drawing and area mapping
 
-Open **Contract → Drawing & areas**, then **Use demo drawing** or select a local PDF/image. Choose an area, link its contract work items and **Save area**. Add your own area codes as needed. Image plans support pins; PDF references use an area name and page. Mapping is manual and does not measure work.
+Open **Contract → Drawing & areas**, then **Use demo drawing** or select a local PDF/image. Choose an area, link its contract work items and **Save area links**. Add your own area codes as needed. Image plans support pins; PDF references use an area name and page. Mapping is manual and does not measure work.
 
 Saved links appear in the contract work list, site-message review and Progress. A message naming a work item that conflicts with its area link is held for clarification. A map never turns an unclear message into automatic completion. Existing report evidence, baselines and claim snapshots remain unchanged.
 
@@ -149,9 +149,21 @@ Drawing metadata and saved areas stay in browser storage. Custom file previews l
 
 Open **Contract → Drawing & areas** to see Not started, In progress and Completed colours from linked work items. **Verified** shows supervisor-checked totals; **Reported** shows worker updates. Select an area and choose **View in Progress** to open just its linked items. Verify a pending report there and return to the drawing to see the status change.
 
-Statuses refer to each linked work item as a whole, not measured quantities within an area. Multiple items are summarized by counts, without averaging their percentages. Unlinked areas and missing progress are shown separately.
+Without an explicit quantity split, linked areas retain whole-item progress. Set **Quantity in this area** for a measured item to track each area independently. Multiple different work items are summarized by counts rather than averaging unlike quantities. Unlinked areas and missing progress remain distinct.
 
 **Try completion demo** opens a separate fictional project containing all three completion states and a pending report for review. Existing projects are preserved. No backend or live AI is connected.
+
+## Split contract quantities across areas
+
+In **Drawing & areas → Edit area mapping**, link a measured item and optionally enter **Quantity in this area**. The compact summary shows contract quantity, allocated elsewhere and the remainder. Use the original contract unit; positive quantities allow up to four decimal places and all areas together cannot exceed the contract quantity. Blank stays a context link; Included and Rate only scope have no quantity split. **Save area links** confirms the change.
+
+An explicit split starts separate area tracking from new reports. Original whole-item progress is retained in history and is never copied into every area. A new split message must identify an allocated area; a missing/conflicting area needs clarification. A 50% report for 600 m² and a 25% report for 400 m² record 300 + 100 = 400 m² of a 1,000 m² contract item, or 40% overall. Each area's latest cumulative report replaces that area's previous total. It does not supersede another area's pending review. Missing reports stay unrecorded, and any unallocated remainder is shown separately.
+
+The drawing and an area-filtered Site progress view show that area's percentage. The full progress list shows the quantity-weighted contract-item total, with a compact **Area breakdown** to review each area. Reported and supervisor-verified totals stay separate. Once a scoped report exists, its quantity/link is retained; code/name/pin edits remain available. A later incompatible contract quantity requires allocation review and never silently rescales old reports.
+
+New monthly claims still contain one financial row per contract item and require explicit QS-assessed quantities. Its weighted verified percentage and all contributing area messages/photos are captured at the claim cutoff. **View evidence** switches between those frozen originals; CSV/PDF list each source once. Existing drafts, prepared/paid claims and their exports remain unchanged.
+
+Use **Drawing & areas → Try another demo → Try area split demo** for an independent fictional warehouse: 720 m² West + 480 m² East, with 50% and 25% mock reports. Process both, then verify each to see 40% weighted completion. No existing project is copied or reset. The example's generated façade photos are illustrative attachments, not evidence of actual cladding or measured geometry.
 
 ## Area messages and site photos
 
