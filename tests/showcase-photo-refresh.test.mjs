@@ -58,14 +58,18 @@ test('loading a saved showcase replaces repeated demo images without changing th
   const storage = memoryStorage(workspace);
   const loadedWorkspace = loadShowcaseWorkspace(storage, now);
   const loaded = savedProject(loadedWorkspace, project.id);
-  assert.equal(new Set(loaded.whatsappMessages.map((message) => message.photo)).size, 18);
+  assert.equal(new Set(loaded.whatsappMessages.map((message) => message.photo).filter(Boolean)).size, 18);
   assert.equal(loadedWorkspace.activeProjectId, 'WH02');
   for (const [field, value] of Object.entries(expected)) {
-    if (!['whatsappMessages', 'reports', 'history'].includes(field)) assert.deepEqual(loaded[field], value, field);
+    if (!['whatsappMessages', 'reports', 'history', 'drawingMapping'].includes(field)) assert.deepEqual(loaded[field], value, field);
   }
+  assert.deepEqual(loaded.drawingMapping.drawing, expected.drawingMapping.drawing);
+  assert.deepEqual(loaded.drawingMapping.areas.slice(0, expected.drawingMapping.areas.length), expected.drawingMapping.areas);
+  assert.deepEqual(loaded.drawingMapping.history.slice(0, expected.drawingMapping.history.length), expected.drawingMapping.history);
   for (const field of ['whatsappMessages', 'reports']) {
-    assert.deepEqual(loaded[field].map(withoutPhoto), expected[field].map(withoutPhoto), field);
-    loaded[field].forEach((record, index) => {
+    const originalRecords = loaded[field].filter(record => expected[field].some(source => source.id === record.id));
+    assert.deepEqual(originalRecords.map(withoutPhoto), expected[field].map(withoutPhoto), field);
+    originalRecords.forEach((record, index) => {
       assert.equal(record.demoPhotoHistory.at(-1).photo, expected[field][index].photo);
       assert.equal(record.demoPhotoHistory.at(-1).photoAlt, expected[field][index].photoAlt);
     });
@@ -90,7 +94,7 @@ test('all saved original S.I.T. demos are refreshed, including inactive projects
   assert.equal(loaded.activeProjectId, 'WH02');
   assert.equal(loaded.projects.length, expected.projects.length);
   for (const project of [first, second]) {
-    assert.equal(new Set(savedProject(loaded, project.id).whatsappMessages.map((message) => message.photo)).size, 18);
+    assert.equal(new Set(savedProject(loaded, project.id).whatsappMessages.map((message) => message.photo).filter(Boolean)).size, 18);
   }
   for (const project of expected.projects.filter((entry) => ![first.id, second.id].includes(entry.id))) {
     assert.deepEqual(savedProject(loaded, project.id), project);
@@ -191,7 +195,7 @@ test('readable storage with blocked writes still refreshes the in-memory showcas
   const storage = memoryStorage(workspace, false);
   const originalBytes = storage.getItem(WORKSPACE_STORE);
   const loaded = savedProject(loadShowcaseWorkspace(storage, now), project.id);
-  assert.equal(new Set(loaded.whatsappMessages.map((message) => message.photo)).size, 18);
+  assert.equal(new Set(loaded.whatsappMessages.map((message) => message.photo).filter(Boolean)).size, 18);
   assert.deepEqual(loaded.claimDrafts, expected.claimDrafts);
   assert.deepEqual(loaded.items, expected.items);
   assert.deepEqual(loaded.seed, expected.seed);
@@ -202,7 +206,7 @@ test('a new visitor receives matching photos immediately and subsequent loads ke
   const storage = memoryStorage();
   const loaded = loadShowcaseWorkspace(storage, now);
   const showcase = savedProject(loaded, loaded.sitShowcase.projectId);
-  assert.equal(new Set(showcase.whatsappMessages.map((message) => message.photo)).size, 18);
+  assert.equal(new Set(showcase.whatsappMessages.map((message) => message.photo).filter(Boolean)).size, 18);
   assert.equal(showcase.items[0].quantity, 2088);
   assert.equal(showcase.claimDrafts[0].snapshot.totals.currentValue, 15894);
   assert.deepEqual(loadShowcaseWorkspace(storage, new Date('2026-10-22T13:00:00Z')), loaded);

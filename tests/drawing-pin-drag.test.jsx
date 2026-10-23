@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -309,7 +310,7 @@ describe('draggable drawing pins keep Save area links authoritative', () => {
     expect(workspace().projects).toEqual(before);
 
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}`, exact: true }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     loadDrawing();
     const foreignArea = getDrawingMapping(other).areas.find((entry) => entry.code === nextArea.code);
     await chooseSelect(user, picker(), foreignArea.id);

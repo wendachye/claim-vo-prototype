@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -179,7 +180,7 @@ describe('S.I.T. workflow navigation retains source context without changing rec
     mount(`#claims?vo=${encodeURIComponent(caseId)}`);
     await screen.findByRole('heading', { name: 'Prepare a monthly claim' });
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     await screen.findByRole('heading', { name: 'Monthly claims' });
     expect(location.hash).toBe('#claims');
     expect(screen.queryByRole('region', { name: 'Extra work from VO review' })).toBeNull();
@@ -290,7 +291,7 @@ describe('S.I.T. workflow navigation retains source context without changing rec
     mount(`#vo?case=${encodeURIComponent(caseId)}`);
     expectStatuses(project);
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     expectStatuses(otherProject);
     expect(location.hash).toBe('#vo');
     expect(readWorkspace().activeProjectId).toBe(other.id);

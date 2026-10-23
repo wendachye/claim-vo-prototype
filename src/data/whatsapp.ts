@@ -2,6 +2,7 @@ import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, 
 // Frontend-only fixtures. Fields are prefilled demonstration results, not AI output.
 import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.ts';
 import { getMessageMatchContext } from './message-match.ts';
+import { getVoiceNoteContext } from './voice-notes.ts';
 import { isUnresolvedProgressReport } from './report-status.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope, syncAreaItemProgress } from './area-allocations.ts';
 export interface WhatsAppProcessingResult { project: Project; outcome: string; reportId?: string; error?: string }
@@ -110,6 +111,13 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
     project: markMessage(project, originalMessage!, 'clarification', note, date),
     outcome: 'clarification',
   });
+  const voice=Object.hasOwn(message,'audio') || Object.hasOwn(message,'originalTranscript') ? getVoiceNoteContext(project,message.id) : null;
+  if (voice) {
+    if (!voice.eligible) return { ...invalid,error:voice.issue || 'Review the original voice note before processing.' };
+    if (voice.needsClarification) return needsClarification(voice.issue || 'Confirm the area and cumulative total with the worker.');
+    if (!voice.effectiveMessage) return { ...invalid,error:'Review and confirm the transcript before adding progress.' };
+    message=voice.effectiveMessage;
+  }
   if (message.kind === 'clarification') return needsClarification(message.processingNote);
   if (!['progress', 'vo'].includes(message.kind)) return invalid;
   const matchContext = Object.hasOwn(message, 'matchSuggestion') ? getMessageMatchContext(project, message.id) : null;
@@ -174,13 +182,14 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
   const report: SiteReport = {
     id: reportId, projectId: project.id, projectCode: project.code,
     sourceMessageId: message.id, itemId: isVo ? null : item!.id,
-    area: originalMessage!.area, location: originalMessage!.location,
+    area: voice ? message.area : originalMessage!.area, location: voice ? message.location : originalMessage!.location,
     areaMapping: snapshotMappedArea(areaLink.area),
     ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),
     ...(matchContext?.review ? { matchReview: clone(matchContext.review) } : {}),
+    ...(voice?.evidence || originalMessage!.originalVoiceNote ? { voiceNote:clone(voice?.evidence || originalMessage!.originalVoiceNote!) } : {}),
     sender: message.sender, date: message.date, completion: isVo ? null : pct,
     completionBasis: isVo ? 'unclear' : 'cumulative', status: isVo ? 'needsReview' : 'pending',
-    message: message.text, photo: message.photo, photoAlt: message.photoAlt,
+    message: voice ? originalMessage!.text : message.text, photo: message.photo, photoAlt: message.photoAlt,
     vo: isVo, demo: true, origin: 'simulated', channel: 'whatsapp-mock',
     note: isVo ? 'Mock possible VO. Scope, instruction evidence, entitlement and price need QS review.'
       : areaProgress ? 'Mock WhatsApp report. Completion is cumulative for this allocated area; verified progress requires supervisor review.'

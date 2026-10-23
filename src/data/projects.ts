@@ -370,6 +370,7 @@ export function resetProject(project: Project): Project {
   if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;
   if (!Array.isArray(seed.contractTotalReviews)) delete next.contractTotalReviews;
   if (!Array.isArray(seed.messageMatchReviews)) delete next.messageMatchReviews;
+  if (!Array.isArray(seed.voiceTranscriptReviews)) delete next.voiceTranscriptReviews;
   if (project.areaSplitDemo !== true) delete next.drawingMapping;
   return next;
 }

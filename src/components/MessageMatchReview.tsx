@@ -105,7 +105,7 @@ export function MessageMatchReviewPanel({ project, message, onSave, onEditingCha
 
   if (!context.eligible && !context.review) return null;
   return <section className="wa-match-review" aria-label="Review match">
-    <header className="wa-match-heading"><div><h3>Review match</h3><p>Mock suggestion · review against the original below.</p></div>
+    <header className="wa-match-heading"><div><h3>Review match</h3><p>{source.audio ? 'Mock suggestion · check the reviewed transcript and recording above.' : 'Mock suggestion · review against the original below.'}</p></div>
       {editable && !editing && <Button className="ghost" icon={Pencil} onClick={() => setForm(previous => ({ ...previous, editing: true }))}>Edit match</Button>}
     </header>
     {feedback && <div ref={feedbackRef} tabIndex={-1} role={feedback.error ? 'alert' : 'status'} className={`wa-match-feedback${feedback.error ? ' error' : ''}`}>{feedback.message}</div>}
@@ -115,7 +115,7 @@ export function MessageMatchReviewPanel({ project, message, onSave, onEditingCha
         <FormField label="Site area" required error={errors.areaId}><SelectField ref={node => { controls.current.areaId = node; }} value={form.areaId} disabled={!selectedItem} onChange={event => update('areaId', event.target.value)}><option value="">Choose linked area</option>{areas.map(area => <option key={area.id} value={area.id}>Area {area.code} · {area.name}</option>)}</SelectField></FormField>
       </div>
       <p className="wa-match-completion">Reported completion: <strong>{fields?.completion ?? 'Not recorded'}{fields?.completion != null ? '%' : ''}</strong> · cumulative, unchanged</p>
-      <FormField label="Correction reason" required={changed} optional={!changed} error={errors.reason} hint="Required when changing the suggested work item or area."><Textarea ref={node => { controls.current.reason = node; }} rows={2} maxLength={1000} value={form.reason} onChange={event => update('reason', event.target.value)} placeholder="e.g. Photo and message refer to the east wall." /></FormField>
+      <FormField label="Correction reason" required={changed} optional={!changed} error={errors.reason} hint="Required when changing the suggested work item or area."><Textarea ref={node => { controls.current.reason = node; }} rows={2} maxLength={1000} value={form.reason} onChange={event => update('reason', event.target.value)} placeholder={source.audio ? 'e.g. The reviewed transcript refers to the east wall.' : 'e.g. Photo and message refer to the east wall.'} /></FormField>
       {!choices.length && <p className="wa-match-help">No measured work has a valid linked area. Check the contract and area mapping first.</p>}
       {context.issue && <p className="wa-match-help">{context.issue}</p>}
       <FormActions secondary={<Button onClick={cancel}>Cancel</Button>}><Button type="submit" className="primary" icon={CheckCheck} disabled={!choices.length}>Confirm match</Button></FormActions>

@@ -93,6 +93,22 @@ The original message, photo, sender/date and mock suggestion are retained. Proce
 
 Use **Site updates → Demo options → Try match review demo**, or the same option under **Drawing & areas → Try another demo**, for an independent project with a correct suggestion, a mistaken roofing/WEST suggestion for EAST wall cladding, and an ambiguous area that requires clarification. No existing project is copied or reset, and no message is sent.
 
+## Main showcase and Demo examples
+
+The original S.I.T. project is the main showcase in the project picker and All projects. Test fixtures stay under a collapsed **Demo examples** section; search includes them, and the selected example remains accessible. No projects are deleted or merged.
+
+**Try demo** reopens the active matching example, or the first existing one, before creating a fixture. Progress, saved claims and unfinished forms stay with that project. Explicit **New project** and contract imports still create independent projects when requested.
+
+The main S.I.T. showcase also includes synthetic voice notes, a mistaken match and shared-area clarification, using D.5 cantilever brackets split into two simulated, unplaced 90-piece zones. Existing source rows, messages, reports, progress and saved claims stay unchanged. Changed or already-used D.5 scopes are skipped with an explanation. Opening these examples in the main showcase stays in that project. Its original saved claim supports preparation, tracking and query/revision; completed/incomplete comparison records remain optional Demo examples. Recovery/re-extraction stays optional so it never replaces the checked S.I.T. contract automatically.
+
+## Mock voice-note review
+
+Use **Site updates → Demo options → Try voice-note demo** for a separate project with two synthetic recordings. The clear WEST cladding update has a deliberate `wail`/`wall` transcript typo; the EAST update says “another 10%” without a cumulative total. Audio is generated for demonstration; no live transcription is connected.
+
+Listen, **Confirm transcript** or **Edit transcript**, and save a correction with its reason. Original audio/text and earlier reviews remain available. Then use the existing **Confirm match → Add progress update → Review progress** flow. Saving a transcript never changes progress. Unclear recordings and unsupported meanings use the existing clarification request and separate worker reply; the reply retains the original recording. After processing or clarification, the original transcript review is read-only.
+
+Unfinished transcript fields stay separate by project/message while browsing. A correction requires another match review; drawing changes preserve the transcript but require a current mapping match. Saved report/claim evidence retains its recording, transcript and correction reason, even when live records change. Existing projects and saved claims are preserved. See [demo audio sources](public/assets/DEMO-AUDIO.md).
+
 ## Mock clarification replies
 
 Open an unclear WhatsApp message and **Save clarification request**. Use **Use demo reply** or enter a measured work item, compatible site area, cumulative total and worker reply, then **Save mock reply**. The original message and photo stay in the thread; the reply is a separate saved message and reuses the original attachment with an explicit label. No progress changes until **Add clarified progress update**. Use **Verify clarified progress** for the supervisor's review. Needs attention follows the reply and then its pending report, clearing that action after verification. Threads survive reload, while unfinished forms remain in session memory by project/message. This is a local demonstration; no WhatsApp message is sent.

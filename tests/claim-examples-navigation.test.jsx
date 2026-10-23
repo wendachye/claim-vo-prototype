@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -101,7 +102,7 @@ describe('independent claim examples walkthrough', () => {
     expect(workspace().projects).toHaveLength(before.length + 1);
     expect(workspace().projects.filter(entry => entry.id !== exampleId)).toEqual(before);
     await user.click(screen.getByRole('button', { name: `Project: ${example.name}`, exact: true }));
-    await user.click(screen.getByRole('option', { name: new RegExp(project.name) }));
+    await chooseProjectOption(user, project);
     await waitFor(() => expect(workspace().activeProjectId).toBe(project.id));
     expect(readFormBuffer(project.id, 'claims:forms')).toEqual(buffer);
     expect(buildClaimPack(workspace().projects.find(entry => entry.id === project.id), project.claimDrafts[0].id)).toEqual(originalPack);

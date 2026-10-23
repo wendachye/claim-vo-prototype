@@ -45,6 +45,7 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
   const request = context?.request;
   const reply = context?.reply;
   const report = context?.report;
+  const hasVoiceEvidence = Boolean(original.audio || original.originalVoiceNote || reply?.originalVoiceNote || report?.voiceNote);
   const stage = context?.stage;
   const selectedReply = reply?.id === message.id;
   const stageIndex = !request ? 0 : !reply ? 1 : 2;
@@ -120,7 +121,7 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
     : newerReply ? 'Review the latest progress report. This earlier reply remains saved.'
       : canAddReply ? 'Adding this reply updates reported completion. Supervisor verification is still required.'
         : !report ? reply?.processingNote || 'Open site progress to review the saved update.'
-          : report.reviewReason || (stage === 'rejected' || stage === 'superseded' ? 'Open the saved review for the recorded decision.' : 'Review the reply and photo before confirming progress.');
+          : report.reviewReason || (stage === 'rejected' || stage === 'superseded' ? 'Open the saved review for the recorded decision.' : hasVoiceEvidence ? 'Review the reply and retained recording before confirming progress.' : 'Review the reply and photo before confirming progress.');
 
   return <section className="wa-clarification" aria-label="Clarification">
     {selectedReply && <BackButton onClick={() => onSelectMessage?.(originalId)}>Back to original message</BackButton>}
@@ -143,9 +144,9 @@ export function WhatsAppClarification({ project, message, onSaveRequest, onSaveR
         {!choices.length && <p className="wa-clarification-help">No measured work has a compatible area. Check the contract and area mapping first.</p>}
         <FormActions><Button type="submit" className="primary" icon={Save} disabled={!onSaveReply || !choices.length}>Save mock reply</Button></FormActions>
       </form> : <>
-        <details className="wa-clarification-record wa-clarification-saved-reply" key={`${originalId}:reply:${canAddReply}`} open={canAddReply || undefined}><summary><strong>Saved worker reply</strong><span>{replyItem?.ref || 'Contract work'} · {reply.completion}% total</span></summary><div className="wa-clarification-reply-meta"><span>{reply.area || reply.location}</span><time>{dateLabel(reply.date)}</time></div><p>{reply.text}</p><small>{reply.photo ? 'Original photo retained; this mock reply has no new photo.' : 'No photo is attached to this mock reply.'}</small></details>
+        <details className="wa-clarification-record wa-clarification-saved-reply" key={`${originalId}:reply:${canAddReply}`} open={canAddReply || undefined}><summary><strong>Saved worker reply</strong><span>{replyItem?.ref || 'Contract work'} · {reply.completion}% total</span></summary><div className="wa-clarification-reply-meta"><span>{reply.area || reply.location}</span><time>{dateLabel(reply.date)}</time></div><p>{reply.text}</p><small>{reply.photo ? 'Original photo retained; this mock reply has no new photo.' : hasVoiceEvidence ? 'The original recording and transcript are retained with this reply.' : 'No photo is attached to this mock reply.'}</small></details>
         <div className={`wa-clarification-next${done ? ' complete' : ''}`}>
-          {done ? <><CheckCheck size={19} /><div><strong>Clarified progress verified</strong><p>The original message and linked reply remain saved.</p></div></> : <div><strong>{nextTitle}</strong><p>{nextHelp}</p></div>}
+          {done ? <><CheckCheck size={19} /><div><strong>Clarified progress verified</strong><p>{hasVoiceEvidence ? 'The original recording and linked reply remain saved.' : 'The original message and linked reply remain saved.'}</p></div></> : <div><strong>{nextTitle}</strong><p>{nextHelp}</p></div>}
         </div>
         {!done && <FormActions>{canAddReply ? <Button className="primary" icon={ArrowRight} disabled={!onProcess} onClick={() => onProcess?.(reply)}>Add clarified progress update</Button>
           : newerReply && context?.latestReport ? <Button className="primary" icon={ArrowRight} disabled={!onReview} onClick={() => context?.latestReport && onReview?.(context.latestReport)}>Review latest progress</Button>

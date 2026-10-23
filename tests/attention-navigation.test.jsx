@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -141,7 +142,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(notifications()).toBeNull();
     await openNotifications(user);
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(otherProject.name) }));
+    await chooseProjectOption(user, otherProject);
     expect(notifications()).toBeNull();
     expect(readWorkspace().activeProjectId).toBe(otherProject.id);
     expect(bell().getAttribute('aria-label')).toBe(`Needs attention, ${otherTasks.length} pending tasks`);
@@ -314,7 +315,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     await screen.findByRole('heading', { name: 'WhatsApp messages' });
     expect(params().get('message')).toBe(task.target.messageId);
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     await screen.findByRole('heading', { name: 'WhatsApp messages' });
     expect(params().has('message')).toBe(false);
     expect(params().has('from')).toBe(false);

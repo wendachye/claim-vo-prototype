@@ -17,7 +17,8 @@ export function getMessageSummary(message: Partial<WhatsAppMessage> = {}) {
   const validTotal = message.kind === 'progress' && message.completionBasis === 'cumulative'
     && typeof message.completion === 'number' && Number.isFinite(message.completion)
     && message.completion >= 0 && message.completion <= 100;
-  const title = message.kind === 'vo' ? 'Possible extra work'
+  const title = message.audio ? message.audio.clarity === 'unclear' ? 'Voice note · needs clarification' : 'Voice note'
+    : message.kind === 'vo' ? 'Possible extra work'
     : message.kind === 'clarification' ? 'Unclear site update'
       : validTotal ? `${message.completion}% reported total`
         : message.kind === 'progress' ? 'Progress update' : 'Site update';

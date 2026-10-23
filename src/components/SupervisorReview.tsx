@@ -1,3 +1,4 @@
+import { VoiceNoteEvidenceDetails } from './VoiceNoteReview';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Check, ImageOff, MessageSquare, Pencil, ShieldCheck } from 'lucide-react';
 import type { Project } from '../types/domain';
@@ -40,6 +41,7 @@ export function SupervisorReview({ project, reportId, routeProjectId, onBack, on
   const completionRef = useRef<HTMLInputElement | null>(null);
   const reasonRef = useRef<HTMLTextAreaElement | null>(null);
   const photoUrl = typeof report?.photo === 'string' ? report.photo : report?.photo?.url;
+  const originalVoiceReport = Boolean(report?.voiceNote && report.voiceNote.messageId === report.sourceMessageId);
   const shownFeedback = feedback?.identity === identity ? feedback : null;
   const complete = Boolean(shownFeedback && !shownFeedback.error);
   const editable = context.canReview && !complete;
@@ -91,11 +93,11 @@ export function SupervisorReview({ project, reportId, routeProjectId, onBack, on
   return <main className="supervisor-review-page">
     <div className="supervisor-review-top"><BackButton onClick={onBack}>Back to Site progress</BackButton><Badge tone="blue">Browser-local demo</Badge></div>
     <div className="supervisor-review-project">{project.name}</div>
-    <PageHeader title="Supervisor review" description="Check one site update against its message and photo." />
+    <PageHeader title="Supervisor review" description={report?.voiceNote ? 'Check one site update against its recording, transcript and any clarification.' : 'Check one site update against its message and photo.'} />
 
     {shownFeedback && <div ref={feedbackRef} tabIndex={-1} role={shownFeedback.error ? 'alert' : 'status'} className={`supervisor-review-feedback${shownFeedback.error ? ' error' : ''}`}>
       {!shownFeedback.error && <Check size={18} aria-hidden="true" />}<div><strong>{shownFeedback.message}</strong>{!shownFeedback.error && <p>{shownFeedback.message.startsWith('Can’t verify')
-        ? 'Verified progress is unchanged. This report now needs clarification.' : 'The original message, photo and reported percentage are retained.'}</p>}</div>
+        ? 'Verified progress is unchanged. This report now needs clarification.' : report?.voiceNote ? 'The original recording, transcript and reported percentage are retained.' : 'The original message, photo and reported percentage are retained.'}</p>}</div>
     </div>}
 
     {!report || !item ? <section className="supervisor-review-unavailable" aria-label="Review unavailable"><ShieldCheck aria-hidden="true" /><h2>Update unavailable</h2><p>{context.error || 'Choose a pending report from the selected project in Site progress.'}</p></section> : <>
@@ -103,11 +105,12 @@ export function SupervisorReview({ project, reportId, routeProjectId, onBack, on
         <header className="supervisor-review-work"><div><span className="supervisor-review-eyebrow">Contract work · {item.ref || item.id}</span><h2>{item.description}</h2><p>{location}</p>{report.areaProgress && <p>{formatNumber(report.areaProgress.allocatedQuantity)} {item.unit} allocated to this area</p>}</div><Badge tone={clarificationSaved || context.state === 'clarification' ? 'amber' : complete || context.state === 'reviewed' ? 'green' : context.state === 'pending' ? 'amber' : 'slate'}>{statusLabel}</Badge></header>
         <dl className="supervisor-review-totals"><div><dt>Reported in this update</dt><dd>{percent(context.reportedCompletion)}</dd></div><div><dt>Current verified</dt><dd>{percent(context.verifiedCompletion)}</dd></div></dl>
         <p className="supervisor-review-cumulative">Cumulative completion{report.areaProgress ? ' for this area' : ''} · total to date</p>
-        <div className="supervisor-review-source"><div className="supervisor-review-sender"><strong>{report.sender || 'Sender not recorded'}</strong><time dateTime={report.date}>{timeLabel(report.date)}</time></div><blockquote>{report.message || report.text || 'No message text attached.'}</blockquote></div>
-        {photoUrl && !photoFailed ? <figure className="supervisor-review-photo"><img src={photoUrl} alt={report.photoAlt || 'Photo attached to this site update'} onError={() => setPhotoFailed(true)} /><figcaption>Demonstration photo · review alongside the message</figcaption></figure>
-          : <div className="supervisor-review-photo-missing"><ImageOff aria-hidden="true" /><p>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</p><span>Check the available evidence before confirming. Use Can’t verify if it is insufficient.</span></div>}
+        <div className="supervisor-review-source"><div className="supervisor-review-sender"><strong>{report.sender || 'Sender not recorded'}</strong><time dateTime={report.date}>{timeLabel(report.date)}</time></div>{!originalVoiceReport && <blockquote>{report.message || report.text || 'No message text attached.'}</blockquote>}</div>
+        {photoUrl && !photoFailed ? <figure className="supervisor-review-photo"><img src={photoUrl} alt={report.photoAlt || 'Photo attached to this site update'} onError={() => setPhotoFailed(true)} /><figcaption>Demonstration photo · {report.voiceNote ? 'review alongside the recording and transcript' : 'review alongside the message'}</figcaption></figure>
+          : (!report.voiceNote || photoFailed) && <div className="supervisor-review-photo-missing"><ImageOff aria-hidden="true" /><p>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</p><span>Check the available evidence before confirming. Use Can’t verify if it is insufficient.</span></div>}
       </section>
 
+      {report.voiceNote && <VoiceNoteEvidenceDetails evidence={report.voiceNote}/>}
       {!editable && !complete && <section className="supervisor-review-readonly" aria-label="Review status"><strong>{context.state === 'clarification' ? 'A clearer update is needed' : context.state === 'reviewed' ? 'This update has been reviewed' : 'Review is unavailable'}</strong><p>{context.error || 'Return to Site progress to see the current report status.'}</p>{report.reviewReason && <p className="supervisor-review-recorded-reason">{report.reviewReason}</p>}</section>}
 
       {editable && <section className="supervisor-review-decision" aria-label="Your review">

@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
@@ -59,12 +60,16 @@ async function enterReply(user, project, text, completion) {
 
 async function switchProject(user, current, next) {
   await user.click(screen.getByRole('button', { name: `Project: ${current.name}` }));
-  await user.click(screen.getByRole('option', { name: new RegExp(next.name) }));
+  await chooseProjectOption(user, next);
 }
 
-async function chooseUnclearMessage(user) {
+async function chooseUnclearMessage(user, project) {
   await user.type(screen.getByRole('textbox', { name: 'Search site updates' }), 'another 10%');
-  await user.click(screen.getByRole('button', { name: /^Open message:/ }));
+  // The full showcase also has an unclear voice note. Reopen the original
+  // photographed message whose unfinished clarification this test owns.
+  const source = sourceMessage(project);
+  const name = `Open message: ${source.area}, Unclear site update,`.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  await user.click(screen.getByRole('button', { name: new RegExp(`^${name}`) }));
 }
 
 beforeEach(() => {
@@ -175,12 +180,12 @@ describe('mock WhatsApp clarification replies stay linked to the original and re
     const { itemId, area } = await enterReply(user, project, replyText, 42);
     const savedProjects = readWorkspace().projects;
     await switchProject(user, project, other);
-    await chooseUnclearMessage(user);
+    await chooseUnclearMessage(user, other);
     expect(questionInput().value).not.toContain('Please confirm the W5 item, area and total completion.');
     expect(screen.queryByRole('textbox', { name: 'Worker reply' })).toBeNull();
     expect(getMessageClarification(selectedProject(), sourceMessage(other).id)?.thread).toBeFalsy();
     await switchProject(user, other, project);
-    await chooseUnclearMessage(user);
+    await chooseUnclearMessage(user, project);
     expect(replyInput().value).toBe(replyText);
     expect(completionInput().value).toBe('42');
     expect(screen.getByRole('combobox', { name: 'Contract work item' }).getAttribute('data-value')).toBe(itemId);

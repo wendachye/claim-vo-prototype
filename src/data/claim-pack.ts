@@ -1,3 +1,4 @@
+import { isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 import type { ClaimRow, ClaimPack, ClaimProjectDetails, ClaimEvidenceReference } from '../types/claims';
 import { isMessageMatchReviewSnapshot } from './message-match.ts';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
@@ -34,6 +35,7 @@ function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | nu
     approvalReference: row.approvalReference ?? null, approvalDate: row.approvalDate ?? null,
     approver: row.approver ?? null, approvalStatus: kind === 'vo' ? row.status ?? null : null,
     ...(evidence.areaProgress ? {areaProgress:clone(evidence.areaProgress)} : {}),
+    ...(isVoiceNoteEvidenceSnapshot(evidence.voiceNote) ? {voiceNote:clone(evidence.voiceNote)} : {}),
     ...(isMessageMatchReviewSnapshot(evidence.matchReview) ? {matchReview:clone(evidence.matchReview)} : {}),
     ...(evidence.channel === 'manual-vo-mock' ? { channel: evidence.channel,
       reportedInstructionReference: evidence.reportedInstructionReference ?? null } : {}),
@@ -175,8 +177,9 @@ export function toClaimCSV(pack: ClaimPack) {
     'Evidence date': joined(evidence.date && `${evidence.channel === 'manual-vo-mock' ? 'Recorded' : 'Reported'}: ${evidence.date}`,
       evidence.verifiedAt && `Verified: ${evidence.verifiedAt}`, evidence.approvalDate && `Approved: ${evidence.approvalDate}`),
     'Reviewer / approver': joined(evidence.reviewer, evidence.approver),
-    'Message / photo': joined(evidence.message, photoReference(evidence.photo)),
+    'Message / photo': joined(evidence.message, photoReference(evidence.photo), evidence.voiceNote && `Synthetic demo voice note: ${evidence.voiceNote.audio.asset}`),
     'Review notes': joined(evidence.channel === 'manual-vo-mock' && 'Source: Manual entry · local demo',
+      evidence.voiceNote && `Original mock transcript: ${evidence.voiceNote.originalTranscript}; reviewed transcript: ${evidence.voiceNote.reviewedTranscript || 'Not reviewed'}; correction reason: ${evidence.voiceNote.reason || (evidence.voiceNote.reviewId ? 'Original transcript confirmed' : 'Not reviewed')}; reviewed by: ${evidence.voiceNote.reviewedBy || 'Not recorded'} at ${evidence.voiceNote.reviewedAt || 'Not recorded'}`,
       evidence.reportedInstructionReference && `Reported instruction/reference: ${evidence.reportedInstructionReference}`,
       evidence.areaProgress && `Area quantity: ${evidence.areaProgress.allocatedQuantity}; contract quantity: ${evidence.areaProgress.contractQuantity}` ,
       evidence.matchReview && `Match review: ${evidence.matchReview.suggested?.itemRef || evidence.matchReview.originalSuggestion?.fields?.itemId || 'Unknown item'} / ${evidence.matchReview.suggested?.areaCode || 'Unknown area'} to ${evidence.matchReview.confirmed?.itemRef || evidence.matchReview.fields?.itemId || 'Unknown item'} / ${evidence.matchReview.confirmed?.areaCode || 'Unknown area'}; reason: ${evidence.matchReview.reason || 'Original suggestion confirmed'}; reviewed by ${evidence.matchReview.reviewedBy || 'Not recorded'} at ${evidence.matchReview.reviewedAt || 'Not recorded'}`,

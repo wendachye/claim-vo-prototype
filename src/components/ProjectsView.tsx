@@ -1,8 +1,9 @@
 import type { Project, SiteReport, VOCase } from '../types/domain';
 import { useId, useRef, useState, type FormEvent } from 'react';
-import { ArrowRight, Building2, Check, CircleAlert, Clock3, FileText, FolderOpen, Info, ListChecks, LockKeyhole, MapPin, Plus, Search, X } from 'lucide-react';
+import { ArrowRight, Building2, Check, ChevronDown, CircleAlert, Clock3, FileText, FolderOpen, Info, ListChecks, LockKeyhole, MapPin, Plus, Search, X } from 'lucide-react';
 import { Badge, Button, FormField, Modal, PageHeader, Input, SelectField, Textarea } from './ui';
 import { getVOCases } from '../data/vo';
+import { getProjectCatalog } from '../data/demo-catalog';
 import './projects.css';
 
 const COUNTRIES = ['Singapore', 'Malaysia'];
@@ -38,13 +39,35 @@ function matchesProject(project: Project, search: string) {
 export function ProjectsView({ projects = [], activeProjectId, showcaseProjectId, onOpen, onCreate, onBack }: { projects?: Project[]; activeProjectId?: string; showcaseProjectId?: string | null; onOpen?: (id: string, route: string) => void; onCreate?: () => void; onBack?: () => void }) {
   const [search, setSearch] = useState('');
   const [country, setCountry] = useState('all');
+  const [examplesExpanded, setExamplesExpanded] = useState(false);
+  const examplesId = useId();
   const available = list(projects);
-  const shown = available.filter((project) => matchesProject(project, search) && (country === 'all' || project.country === country));
+  const catalog = getProjectCatalog(available, showcaseProjectId);
+  const matchesFilter = (project: Project) => matchesProject(project, search) && (country === 'all' || project.country === country);
+  const showcase = catalog.showcase && matchesFilter(catalog.showcase) ? catalog.showcase : null;
+  const regularProjects = catalog.projects.filter(matchesFilter);
+  const examples = catalog.examples.filter(matchesFilter);
+  const filtered = Boolean(search.trim()) || country !== 'all';
+  const showExamples = examplesExpanded || filtered;
+  const shownCount = (showcase ? 1 : 0) + regularProjects.length + examples.length;
+  const renderProject = (project: Project) => {
+    const counts = projectStats(project);
+    const isShowcase = project.id === catalog.showcase?.id;
+    return <article key={project.id} className={`project-list-row${project.id === activeProjectId ? ' active' : ''}${isShowcase ? ' project-main-showcase' : ''}`}>
+      <div className="project-list-icon"><Building2 size={22} aria-hidden="true"/></div>
+      <div className="project-list-copy"><h2>{project.name}</h2><p>{project.code} · {project.country || 'Country not set'}</p><div>{isShowcase && <Badge tone="blue">Main showcase</Badge>}{project.id === activeProjectId && !isShowcase && <Badge tone="blue">Current project</Badge>}<Badge tone={project.locked ? 'green' : counts.items ? 'amber' : 'slate'}>{project.locked ? 'Contract checked' : counts.items ? 'Contract to check' : 'No contract yet'}</Badge>{counts.pending > 0 && <span>{counts.pending} site {counts.pending === 1 ? 'update' : 'updates'} to check</span>}</div></div>
+      <Button onClick={() => onOpen?.(project.id, 'projects')}>{isShowcase ? 'Open showcase' : project.id === activeProjectId ? 'View overview' : 'Open project'}<ArrowRight size={14} aria-hidden="true"/></Button>
+    </article>;
+  };
   return <div className="projects-view">
     <PageHeader title="All projects" description={showcaseProjectId ? 'Open the S.I.T. showcase or choose another project.' : 'Open a project to see its next steps.'} onBack={onBack} backLabel="Back to overview" actions={<Button className="primary" icon={Plus} onClick={onCreate}>New project</Button>} />
     <div className="section-toolbar projects-toolbar"><label className="search-box"><Search size={16}/><Input aria-label="Search projects" placeholder="Find a project…" value={search} onChange={event=>setSearch(event.target.value)}/>{search&&<button aria-label="Clear project search" onClick={()=>setSearch('')}><X size={14}/></button>}</label><SelectField className="form-select" aria-label="Filter projects by country" value={country} onChange={event=>setCountry(event.target.value)}><option value="all">All countries</option>{COUNTRIES.map(value=><option key={value}>{value}</option>)}</SelectField></div>
-    <div className="projects-simple-list">{shown.map(project=>{const counts=projectStats(project);return <article key={project.id} className={`project-list-row${project.id===activeProjectId?' active':''}`}><div className="project-list-icon"><Building2 size={22}/></div><div className="project-list-copy"><h2>{project.name}</h2><p>{project.code} · {project.country||'Country not set'}</p><div>{project.id===showcaseProjectId&&<Badge tone="blue">Default showcase</Badge>}<Badge tone={project.locked?'green':counts.items?'amber':'slate'}>{project.locked?'Contract checked':counts.items?'Contract to check':'No contract yet'}</Badge>{counts.pending>0&&<span>{counts.pending} site {counts.pending===1?'update':'updates'} to check</span>}</div></div><Button onClick={()=>onOpen?.(project.id,'projects')}>{project.id===showcaseProjectId?'Open showcase':project.id===activeProjectId?'View overview':'Open project'}<ArrowRight size={14}/></Button></article>;})}</div>
-    {!shown.length&&<div className="empty-state"><FolderOpen size={28}/><h3>No matching projects</h3><p>Try a different name or country.</p><Button onClick={()=>{setSearch('');setCountry('all');}}>Clear filters</Button></div>}
+    <div className="projects-catalog">
+      {showcase && <section aria-label="Main showcase">{renderProject(showcase)}</section>}
+      {regularProjects.length > 0 && <section aria-label="Your projects"><h2 className="projects-group-title">Your projects</h2><div className="projects-simple-list">{regularProjects.map(renderProject)}</div></section>}
+      {examples.length > 0 && <section className="projects-examples" aria-label="Demo examples"><button type="button" className="projects-examples-toggle" aria-expanded={showExamples} aria-controls={examplesId} disabled={filtered} onClick={() => setExamplesExpanded((current) => !current)}><FolderOpen size={17} aria-hidden="true"/><span>Demo examples <small>{examples.length}</small></span><ChevronDown size={16} aria-hidden="true"/></button><div className="projects-simple-list" id={examplesId} hidden={!showExamples}>{showExamples && examples.map(renderProject)}</div></section>}
+    </div>
+    {!shownCount&&<div className="empty-state"><FolderOpen size={28}/><h3>No matching projects</h3><p>Try a different name or country.</p><Button onClick={()=>{setSearch('');setCountry('all');}}>Clear filters</Button></div>}
   </div>;
 }
 

@@ -1,3 +1,4 @@
+import { VoiceNoteEvidenceDetails } from './VoiceNoteReview';
 import type { ReactNode } from 'react';
 import type { ClaimRow } from '../types/claims';
 import type { SiteReport } from '../types/domain';
@@ -78,6 +79,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
               </> : <p className="claim-evidence-empty">No original report was saved for this item.</p>}
               {photo && !photoFailed ? <figure className="claim-evidence-photo"><img src={photo} alt={evidence?.photoAlt || 'Photo saved with the original site update'} onError={() => setPhotoFailed(true)} /><figcaption>{generated ? 'Generated demo photo · not actual project evidence' : 'Saved site attachment'} · review alongside the original message</figcaption></figure> : <div className="claim-evidence-photo-empty"><ImageOff size={20} aria-hidden="true" /><span>{photoFailed ? 'Photo could not be displayed. The saved message and review remain available.' : 'No photo was saved with this item.'}</span></div>}
             </section>
+            {evidence?.voiceNote && <VoiceNoteEvidenceDetails evidence={evidence.voiceNote}/>}
             {evidence?.matchReview && <MessageMatchReviewDetails review={evidence.matchReview}/>}
             {kind === 'work' ? <section className="claim-evidence-section" aria-label="Supervisor review">
               <h3>Supervisor review</h3>

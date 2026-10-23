@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -198,7 +199,7 @@ describe('overview recent activity opens exact saved records without changing th
     expect(rows()).toHaveLength(3);
     for (const card of getProjectOverview(project).cards) expect(cards().textContent).toContain(card.summary);
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}`, exact: true }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     await waitFor(() => expect(workspace().activeProjectId).toBe(other.id));
     expect(screen.getByRole('heading', { name: 'Project overview', exact: true })).toBeTruthy();
     expect(within(recent()).queryAllByRole('button')).toHaveLength(0);
@@ -206,7 +207,7 @@ describe('overview recent activity opens exact saved records without changing th
     expect(screen.getByText('Ready to get started', { exact: true })).toBeTruthy();
     expect(workspace().projects).toEqual(before);
     await user.click(screen.getByRole('button', { name: `Project: ${other.name}`, exact: true }));
-    await user.click(screen.getByRole('option', { name: new RegExp(project.name) }));
+    await chooseProjectOption(user, project);
     await waitFor(() => expect(workspace().activeProjectId).toBe(project.id));
     expect(rows()).toHaveLength(3);
     expect(workspace().projects).toEqual(before);

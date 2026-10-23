@@ -76,6 +76,19 @@ export interface MessageMatchReview {
   areaMapping: AreaMappingSnapshot; areaProgress?: AreaProgressSnapshot;
   suggested: MessageMatchLabels; confirmed: MessageMatchLabels;
 }
+export interface VoiceNoteAudio {
+  version: 1; asset: '/assets/demo-voice-clear.wav' | '/assets/demo-voice-unclear.wav' | '/assets/demo-sit-voice-clear.wav' | '/assets/demo-sit-voice-unclear.wav';
+  mimeType: 'audio/wav'; durationSeconds: number; demo: true; clarity: 'clear' | 'unclear';
+}
+export interface VoiceTranscriptReview {
+  version: 1; id: string; projectId: string; messageId: string; sourceKey: string; sourceFingerprint: string;
+  previousReviewId: string | null; audio: VoiceNoteAudio; originalTranscript: string; transcript: string;
+  reason: string; reviewedBy: string; reviewedAt: string;
+}
+export interface VoiceNoteEvidence {
+  version: 1; projectId: string; messageId: string; audio: VoiceNoteAudio; originalTranscript: string;
+  reviewedTranscript: string | null; reason: string; reviewedBy: string | null; reviewedAt: string | null; reviewId: string | null; sourceKey: string;
+}
 export interface SiteReport {
   id: string; itemId?: string | null; projectId?: string; projectCode?: string; sourceMessageId?: string;
   kind?: string; vo?: boolean; channel?: string; status: string; sender?: string; senderRole?: string;
@@ -86,6 +99,7 @@ export interface SiteReport {
   reportedInstructionReference?: string; approvedCompletion?: number | null;
   areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; scopeLabel?: string;
   matchReview?: MessageMatchReview;
+  voiceNote?: VoiceNoteEvidence;
   manualEntry?: { version: number; submissionId: string; input: Record<string, string> };
   supersededByReportId?: string; supersededAt?: string; supersededBy?: string; supersededReason?: string;
   [key: string]: unknown;
@@ -98,6 +112,8 @@ export interface WhatsAppMessage {
   areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; replyToMessageId?: string; clarificationThreadId?: string;
   clarificationReplyMessageId?: string; clarificationRequestedAt?: string; clarificationRequestedBy?: string;
   matchSuggestion?: MessageMatchSuggestion;
+  audio?: VoiceNoteAudio; originalTranscript?: string; voiceSourceKey?: string;
+  originalVoiceNote?: VoiceNoteEvidence;
   demoPhotoHistory?: { photo: string; photoAlt?: string }[]; vo?: boolean; demo?: boolean; origin?: string; channel?: string;
   [key: string]: unknown;
 }
@@ -155,12 +171,15 @@ export interface ProjectWorkflow {
   baselines: ContractBaseline[]; locked: boolean; version: number; lockedAt?: string;
   voReviews: VOReview[]; claimDrafts: ClaimDraft[]; claimTracking?: ClaimTracking[]; messageClarifications?: MessageClarification[];
   messageMatchReviews?: MessageMatchReview[];
+  voiceTranscriptReviews?: VoiceTranscriptReview[];
   voConfirmationRequests?: VOConfirmationRequest[];
   whatsappMessages?: WhatsAppMessage[]; drawingMapping?: DrawingMapping; contractVersion?: ContractVersionMetadata; contractTotalReviews?: ContractTotalReview[];
 }
+export type DemoKind = 'drawing-progress' | 'area-split' | 'area-alias' | 'message-match' | 'voice-note' | 'claim-examples';
+export type ProjectDemoKind = DemoKind | 'contract-scenario' | 'campus' | 'warehouse' | 'sample-project';
 export interface Project extends ProjectWorkflow {
   id: string; code: string; name: string; country: string; description: string; contract: ContractDetails; whatsappMessages: WhatsAppMessage[];
-  seed: ProjectWorkflow; drawingMapping?: DrawingMapping; demoTemplate?: string; claimExamplesDemo?: boolean; providedContractDemo?: boolean; areaSplitDemo?: boolean;
+  seed: ProjectWorkflow; drawingMapping?: DrawingMapping; demoKind?: ProjectDemoKind; demoTemplate?: string; claimExamplesDemo?: boolean; providedContractDemo?: boolean; areaSplitDemo?: boolean;
   [key: string]: unknown;
 }
 export interface Workspace { schemaVersion: number; activeProjectId: string; projects: Project[]; sitShowcase?: { version: number; projectId: string }; [key: string]: unknown }

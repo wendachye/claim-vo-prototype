@@ -1,0 +1,29 @@
+.wa-voice-review{margin:18px 0;padding-top:16px;border-top:1px solid #e2e8f0;color:#334155;min-width:0}
+.wa-voice-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.wa-voice-heading h3{display:flex;align-items:center;gap:7px;margin:0;color:#1e293b;font-size:14px;line-height:1.4}
+.wa-voice-heading h3 svg{color:#64748b;flex-shrink:0}
+.wa-voice-heading p,.wa-voice-help,.wa-voice-reviewer{margin:5px 0 0;color:#64748b;font-size:11px;line-height:1.6}
+.wa-voice-player{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+.wa-voice-player audio{display:block;width:100%;max-width:390px;min-width:0;height:40px}
+.wa-voice-player>span{font-size:11px;color:#64748b;font-variant-numeric:tabular-nums}
+.wa-voice-audio-error,.wa-voice-unclear{display:flex;align-items:flex-start;gap:7px;margin:0 0 13px;font-size:12px;line-height:1.6;color:#92400e}
+.wa-voice-audio-error svg,.wa-voice-unclear svg{flex-shrink:0;margin-top:2px}
+.wa-voice-transcript>span,.wa-voice-current-review strong,.wa-voice-history strong{display:block;color:#64748b;font-size:11px;font-weight:500;line-height:1.5}
+.wa-voice-transcript>p,.wa-voice-current-review p,.wa-voice-history p{margin:5px 0 0;font-size:12px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}
+.wa-voice-current-review{margin-top:11px}
+.wa-voice-current-review .wa-voice-reviewer,.wa-voice-history .wa-voice-reviewer{font-size:11px}
+.wa-voice-editor{display:grid;gap:13px}
+.wa-voice-review .form-actions{margin-top:13px;padding-top:0;border-top:0}
+.wa-voice-editor .form-actions{margin-top:0}
+.wa-voice-history{margin-top:14px;padding-top:12px;border-top:1px solid #edf1f5}
+.wa-voice-history summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font-size:12px;font-weight:600;line-height:1.5}
+.wa-voice-history summary>span{color:#64748b;font-weight:400;font-size:11px}
+.wa-voice-history summary::after{content:'+';margin-left:auto;color:#64748b;font-size:15px;font-weight:400}
+.wa-voice-history[open] summary::after{content:'−'}
+.wa-voice-history summary:focus-visible{outline:2px solid #2563eb;outline-offset:4px;border-radius:3px}
+.wa-voice-original{margin:12px 0}
+.wa-voice-history ol{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.wa-voice-history li{border-top:1px solid #edf1f5;padding-top:10px}
+.wa-voice-feedback{padding:10px 12px;margin-bottom:13px;background:#eff6ff;border:1px solid #dbeafe;border-radius:6px;font-size:12px;line-height:1.5;color:#1d4ed8;outline-offset:3px}
+.wa-voice-feedback.error{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+@media(max-width:640px){.wa-voice-heading{flex-wrap:wrap}.wa-voice-player audio{max-width:none}.wa-voice-player>span{display:none}}

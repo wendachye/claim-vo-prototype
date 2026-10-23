@@ -3,6 +3,18 @@
 .projects-summary .summary-label { font-size: 10px; letter-spacing: .15px; }
 .projects-summary .summary-detail { font-size: 10px; }
 .projects-toolbar { margin-bottom: 17px; }
+.projects-catalog { display: flex; flex-direction: column; gap: 25px; }
+.projects-view .project-main-showcase { border-color: #cbdcfb; }
+.project-main-showcase .project-list-icon { border-color: #dbeafe; color: #2563eb; background: #eff6ff; }
+.projects-group-title { margin-bottom: 11px; color: #475569; font-size: 13px; font-weight: 600; }
+.projects-examples { border-top: 1px solid #e2e8f0; }
+.projects-examples-toggle { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 54px; padding: 13px 1px; border: 0; background: transparent; color: #64748b; text-align: left; }
+.projects-examples-toggle > span { flex: 1; font-size: 13px; font-weight: 550; }
+.projects-examples-toggle small { margin-left: 7px; color: #94a3b8; font-size: 11px; font-weight: 400; }
+.projects-examples-toggle:hover:not(:disabled) { color: #2563eb; }
+.projects-examples-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; border-radius: 5px; }
+.projects-examples-toggle[aria-expanded='true'] > svg:last-child { transform: rotate(180deg); }
+.projects-examples-toggle:disabled { cursor: default; opacity: 1; }
 .projects-toolbar .search-box { width: 330px; }
 .projects-result-count { margin-right: 5px; color: #94a3b8 !important; font-size: 11px; }
 .projects-search-clear { display: grid; place-items: center; padding: 0; background: none; border: 0; color: #94a3b8; }

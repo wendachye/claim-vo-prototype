@@ -7,6 +7,7 @@ import { normalizeClaimDrafts } from './claims.ts';
 import { getClaimTracking } from './claim-tracking.ts';
 import { getClaimRevisionContext } from './claim-revisions.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
+import { getVoiceNoteContext } from './voice-notes.ts';
 
 const list = <T,>(value: T[] | null | undefined): T[] => Array.isArray(value) ? value : [];
 const text = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
@@ -50,11 +51,12 @@ export function getProjectAttention(project: Project): AttentionTask[] {
     // VO case, including when the inbox status was left stale by an old demo.
     if (getMessageReport(scoped, message) || !['new', 'clarification'].includes(message.status)) continue;
     const clarification = message.status === 'clarification';
+    const voice=message.audio?getVoiceNoteContext(scoped,message.id):null;
     const context = getMessageClarification(scoped, message.id);
     if (context?.reply?.id === message.id && context!.stage === 'superseded') continue;
     const isReply = context?.reply?.id === message.id;
     add({ id: `message:${message.id}`, category: 'site', kind: clarification ? 'clarification' : 'message',
-      title: clarification ? 'Clarify a site message' : isReply ? 'Review a clarification reply' : 'Review a site message',
+      title: clarification || voice?.needsClarification ? 'Clarify a site message' : isReply ? 'Review a clarification reply' : voice ? voice.review ? 'Review a voice-note match' : 'Review a voice transcript' : 'Review a site message',
       detail: [message.sender, message.area || message.location].filter(Boolean).join(' · ') || 'Mock site update',
       reference: message.id, statusLabel: clarification ? 'Needs clarification' : isReply ? 'Reply received' : 'New message',
       actionLabel: clarification ? 'View message' : isReply ? 'Review reply' : 'Review message', date: message.date,

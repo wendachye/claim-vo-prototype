@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -121,7 +122,7 @@ describe('claim status navigation uses the selected project and exact saved revi
     const user = userEvent.setup();
     const view = mount(`#claim-status?draft=${encodeURIComponent(draftId)}`);
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     await screen.findByRole('heading', { name: 'Monthly claims' });
     expect(location.hash).toBe('#claims');
     expect(readWorkspace().activeProjectId).toBe(other.id);
@@ -142,7 +143,7 @@ describe('claim status navigation uses the selected project and exact saved revi
     await screen.findByRole('heading', { name: 'Claim preview' });
     expect(screen.getByRole('button', { name: 'Back to claim status' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     await screen.findByRole('heading', { name: 'Monthly claims' });
     expect(location.hash).toBe('#claims');
     expect(screen.queryByRole('button', { name: 'Back to claim status' })).toBeNull();

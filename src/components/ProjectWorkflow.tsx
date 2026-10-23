@@ -4,6 +4,7 @@ import { ArrowRight, Bell, Check, CheckCheck, ChevronDown, ClipboardList, FileTe
 import { getProjectWorkflow } from '../data/workflow';
 import { getProjectAttention } from '../data/project-attention';
 import { getProjectOverview } from '../data/project-overview';
+import { getSITShowcaseFeatureTargets } from '../data/sit-showcase-features';
 import { periodLabel } from './claim-view-utils';
 import { Badge, Button, formatTime, PageHeader } from './ui';
 import './project-workflow.css';
@@ -53,14 +54,15 @@ function nextTaskContext(project: Project, task: AttentionTask) {
 
 type WorkflowNext = ReturnType<typeof getProjectWorkflow>['next'];
 type OverviewActivity = ReturnType<typeof getProjectOverview>['activities'][number];
-interface ProjectOverviewProps { project: Project; onNavigate: (route: string) => void; onNext: (next: WorkflowNext) => void; onOpenTask?: (task: AttentionTask) => void; onOpenActivity?: (activity: OverviewActivity) => void; onReviewContract?: () => void; onOpenAttention?: () => void; attentionOpen?: boolean }
+interface ProjectOverviewProps { project: Project; onNavigate: (route: string) => void; onNext: (next: WorkflowNext) => void; onOpenTask?: (task: AttentionTask) => void; onOpenActivity?: (activity: OverviewActivity) => void; onReviewContract?: () => void; onOpenMessage?: (messageId: string) => void; onOpenAttention?: () => void; attentionOpen?: boolean }
 
-export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onOpenActivity, onReviewContract, onOpenAttention, attentionOpen }: ProjectOverviewProps) {
+export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onOpenActivity, onReviewContract, onOpenMessage, onOpenAttention, attentionOpen }: ProjectOverviewProps) {
   const workflow = getProjectWorkflow(project);
   const overview = getProjectOverview(project);
   const attentionTasks = getProjectAttention(project).filter(task => task.projectId === project.id);
   const nextTask = workflow.next.route === 'contract' ? null : attentionTasks[0];
   const usesProvidedSource = project.contract?.sourceKind === 'provided';
+  const showcaseExamples = getSITShowcaseFeatureTargets(project);
   const taskCount = attentionTasks.length;
   const attentionHeading = taskCount ? `${taskCount} task${taskCount === 1 ? '' : 's'} need${taskCount === 1 ? 's' : ''} attention` : !project.items?.length ? 'Ready to get started' : workflow.next.route === 'contract' ? 'Contract setup' : 'All caught up';
   const nextTitle = nextTask ? nextTask.title : workflow.next.label;
@@ -110,15 +112,15 @@ export function ProjectOverview({ project, onNavigate, onNext, onOpenTask, onOpe
       <summary><span>About this demo<small>{usesProvidedSource ? 'Provided contract · simulated site activity' : 'Fictional contract · simulated site activity'}</small></span><ChevronDown size={16} aria-hidden="true" /></summary>
       <div className="contract-scenario-content">
         <p>{usesProvidedSource ? `${project.items.length} representative contract rows and the supplied site plan. The sample contains selected rows, not the full work list. Site activity, dates, photos, approvals and claim assessments are simulated.` : `${project.items.length} fictional contract rows and an illustrative campus plan. All values, parties, site activity and claim assessments are demo data.`}</p>
-        <p>The demo starts with a checked contract baseline and a saved example claim.</p>
+        <p>The demo starts with a checked contract baseline and a saved example claim. {showcaseExamples.available ? 'The newer examples are included here; opening them keeps you in this project.' : showcaseExamples.reason || ''}</p>
         <ol>
           <li><strong>Contract:</strong> compare W3 and W5 items with the {usesProvidedSource ? 'supplied' : 'fictional'} schedule.</li>
-          <li><strong>Drawing:</strong> select an area for its work, messages, photos and VO flags. Pins are illustrative manual links.</li>
-          <li><strong>Site updates:</strong> compare reported and verified totals. An unclear “another 10%” message needs clarification.</li>
-          <li><strong>Extra work:</strong> check the scope query, recorded approval and included-scope rejection.</li>
+          <li><strong>Drawing:</strong> select an area for its work, messages, photos and VO flags. Pins are illustrative manual links.{showcaseExamples.available && ' D.5 includes two unplaced demo zones, with 90 brackets each and separate completion.'}</li>
+          <li><strong>Site updates:</strong> review messages, photos and voice notes; correct transcripts and matches before adding progress. Clarify unclear recordings and shared area names, then verify separately on desktop or mobile.</li>
+          <li><strong>Extra work:</strong> check the scope query, recorded approval and included-scope rejection. Add manual extra work or preview a mock customer confirmation in the same project.</li>
           <li><strong>Claims:</strong> review the saved example. QS quantities and VO values are mock assessments; physical percentages do not price a claim. Claim status separately simulates submission, queries, revisions, certification and payment.</li>
         </ol>
-        <div className="contract-scenario-actions"><Button className="ghost" icon={FileText} onClick={() => onReviewContract ? onReviewContract() : onNavigate('contract')}>Review contract</Button><Button className="ghost" icon={MapPin} onClick={() => onNavigate('drawing')}>Explore the drawing</Button><Button className="ghost" onClick={() => onNavigate('claims')}>View example claim<ArrowRight size={14} /></Button></div>
+        <div className="contract-scenario-actions"><Button className="ghost" icon={FileText} onClick={() => onReviewContract ? onReviewContract() : onNavigate('contract')}>Review contract</Button><Button className="ghost" icon={MapPin} onClick={() => onNavigate('drawing')}>Explore the drawing</Button><Button className="ghost" onClick={() => onNavigate('claims')}>View example claim<ArrowRight size={14} /></Button>{showcaseExamples.voiceMessageId && onOpenMessage && <Button className="ghost" onClick={()=>onOpenMessage(showcaseExamples.voiceMessageId!)}>Review voice note<ArrowRight size={14}/></Button>}{showcaseExamples.matchMessageId && onOpenMessage && <Button className="ghost" onClick={()=>onOpenMessage(showcaseExamples.matchMessageId!)}>Review match<ArrowRight size={14}/></Button>}{showcaseExamples.unclearVoiceMessageId && onOpenMessage && <Button className="ghost" onClick={()=>onOpenMessage(showcaseExamples.unclearVoiceMessageId!)}>Clarify recording<ArrowRight size={14}/></Button>}</div>
       </div>
     </details>}
   </section>;

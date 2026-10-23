@@ -1,3 +1,4 @@
+import { VoiceNoteEvidenceDetails } from './VoiceNoteReview';
 import type { Project, WorkItem, SiteReport } from '../types/domain';
 import { useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
@@ -76,6 +77,7 @@ export function ReportDrawer({
     && numericCompletion <= 100;
   const canVerify = Boolean(locked && isPending && hasMatchedItem && !isVo && !legacyScope && validCompletion && onApprove);
   const photoUrl = typeof report?.photo === 'string' ? report.photo : report?.photo?.url;
+  const originalVoiceReport = Boolean(report?.voiceNote && report.voiceNote.messageId === report.sourceMessageId);
   const isSimulated = report?.demo || report?.origin === 'simulated';
   const isManual = report?.origin === 'manual' || report?.origin === 'uploaded';
   const reportStatus = isVo ? 'Flagged extra work'
@@ -217,7 +219,7 @@ export function ReportDrawer({
 
           {isPending && report && !isVo && !legacyScope && (
             <div>
-              <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">Check the original update and photo below, then confirm {areaProgress ? 'this area’s verified completion against its allocated quantity' : 'the whole work item’s verified total'}.</p>
+              <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">{report.voiceNote ? 'Check the recording, transcript and any clarification below, then confirm ' : 'Check the original update and photo below, then confirm '}{areaProgress ? 'this area’s verified completion against its allocated quantity' : 'the whole work item’s verified total'}.</p>
               {onMobileReview && <Button className="ghost" icon={Smartphone} onClick={openMobileReview}>Open mobile review</Button>}
               <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
                   <input
@@ -254,18 +256,19 @@ export function ReportDrawer({
             </div>
           )}
 
+          {report?.voiceNote && <VoiceNoteEvidenceDetails evidence={report.voiceNote}/>}
           {report?.matchReview && <MessageMatchReviewDetails review={report.matchReview}/>}
-          {report ? <details className="site-report-evidence" open={isPending || undefined}>
-            <summary>Original site update &amp; photo</summary>
+          {report ? <details className="site-report-evidence" open={!originalVoiceReport && isPending || undefined}>
+            <summary>{originalVoiceReport ? 'Sender & update details' : report.voiceNote ? 'Worker reply & sender details' : 'Original site update & photo'}</summary>
             <div className="site-report-evidence-body">
               <div className="message-card">
               <div className="message-meta">
                 <strong>{report.sender || 'Sender not recorded'}</strong>
                 <time dateTime={report.date || undefined}>{timeLabel(report.date)}</time>
               </div>
-              <blockquote className="message-text" style={{ margin: 0 }}>
+              {!originalVoiceReport && <blockquote className="message-text" style={{ margin: 0 }}>
                 {report.message || 'No message text attached.'}
-              </blockquote>
+              </blockquote>}
               </div>
 
               {photoUrl && !photoFailed ? (
@@ -275,9 +278,9 @@ export function ReportDrawer({
                 alt={report?.photoAlt || `Site evidence attached to report ${report?.id || ''}`}
                 onError={() => setPhotoFailed(true)}
               />
-              <figcaption>{report?.channel === 'whatsapp-mock' ? 'Generated demo photo · not actual project evidence' : isSimulated ? 'Demo attachment' : 'Attached site photo'} · review alongside the original message</figcaption>
+              <figcaption>{report?.channel === 'whatsapp-mock' ? 'Generated demo photo · not actual project evidence' : isSimulated ? 'Demo attachment' : 'Attached site photo'} · {report.voiceNote ? 'review alongside the recording and transcript' : 'review alongside the original message'}</figcaption>
             </figure>
-          ) : (
+          ) : (!report.voiceNote || photoFailed) && (
             <div className="evidence-placeholder">
               <ImageOff aria-hidden="true" />
               <strong>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</strong>
@@ -298,7 +301,7 @@ export function ReportDrawer({
               </dl>
               <p>Verification records physical progress. The QS reviews claim quantities, values and eligibility separately.</p>
               {report?.reviewReason && <p><strong>Recorded review note:</strong> {report.reviewReason}</p>}
-              <p>The original message and photo stay with this report.</p>
+              <p>{report.voiceNote ? 'The original recording and transcript stay with this report.' : 'The original message and photo stay with this report.'}</p>
             </details>
           )}
         </div>

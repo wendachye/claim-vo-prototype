@@ -1,6 +1,7 @@
 import type { DateInput, DrawingArea, MessageMatchFields, MessageMatchLabels, MessageMatchReview, MessageMatchSuggestion, Project, WhatsAppMessage } from '../types/domain';
 import { getAreaLinkStatus, getDrawingMapping, snapshotMappedArea } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation } from './area-allocations.ts';
+import { getVoiceNoteContext } from './voice-notes.ts';
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
@@ -51,7 +52,8 @@ function sourceKey(project: Project, source: WhatsAppMessage, suggestion: Messag
       sender: source.sender, senderRole: source.senderRole, date: source.date, itemId: source.itemId, area: source.area,
       areaId: source.areaId, areaMapping: source.areaMapping, areaProgress: source.areaProgress, location: source.location,
       completion: source.completion, completionBasis: source.completionBasis, photo: source.photo, photoAlt: source.photoAlt,
-      demo: source.demo, origin: source.origin, channel: source.channel, suggestion },
+      demo: source.demo, origin: source.origin, channel: source.channel, suggestion,
+      ...(source.audio ? { audio:source.audio, originalTranscript:source.originalTranscript, voiceSourceKey:source.voiceSourceKey } : {}) },
     drawing: mapping.drawing, areas: mapping.areas, mappingHistory: mapping.history,
     items: project.items.map(({ id, ref, description, pricingType, quantity }) => ({ id, ref, description, pricingType, quantity })) });
 }
@@ -82,7 +84,13 @@ export function getMessageMatchContext(project: Project, messageId: string): Mes
   const empty: MessageMatchContext = { eligible: false, requiresReview: false, original: null, suggestion: null, review: null, fields: null, effectiveMessage: null };
   const messages = Array.isArray(project?.whatsappMessages) ? project.whatsappMessages.filter(entry => record(entry) && entry.id === messageId) : [];
   if (messages.length !== 1) return { ...empty, issue: 'Choose a message from the selected project.' };
-  const original = messages[0];
+  let original = messages[0];
+  if (Object.hasOwn(original,'audio') || Object.hasOwn(original,'originalTranscript')) {
+    const voice=getVoiceNoteContext(project,messageId);
+    if (!voice.effectiveMessage) return { ...empty, original, requiresReview:true,
+      ...(voice.needsClarification ? {clarificationRequired:true} : {}), issue:voice.issue || 'Review and confirm the transcript before reviewing its match.' };
+    original=voice.effectiveMessage;
+  }
   if (!Object.hasOwn(original, 'matchSuggestion')) return { ...empty, original };
   const base = { ...empty, original, requiresReview: true };
   const unsafe = (issue: string): MessageMatchContext => ({ ...base, issue, clarificationRequired: true });

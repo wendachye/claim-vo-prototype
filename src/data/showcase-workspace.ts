@@ -4,6 +4,8 @@ import type { Project, Workspace, DateInput } from "../types/domain";
 import { loadWorkspace, WORKSPACE_STORE } from './projects.ts';
 import { createSITContractDemo } from './provided-contract-demo.ts';
 import { refreshSITDemoPhotos } from './sit-demo-photos.ts';
+import { enrichSITShowcaseFeatures } from './sit-showcase-features.ts';
+import { buildClaimReview } from './claims.ts';
 
 export const SIT_SHOWCASE_VERSION = 1;
 
@@ -37,6 +39,16 @@ function availableCode(projects: Project[]) {
   return `SIT-DEMO${String(sequence).padStart(2, '0')}`;
 }
 
+function createCompleteShowcase(code: string, now: DateInput) {
+  // Only new, never-saved fixtures receive their initial claim snapshot after
+  // all showcase sources are installed. Existing visitors' claims stay frozen.
+  const created = createSITContractDemo({ name: 'S.I.T. Plot 1 — Showcase (Demo)', code }, now);
+  const enriched = enrichSITShowcaseFeatures(created, now).project;
+  const claimDrafts = enriched.claimDrafts.map(draft => ({ ...draft,
+    snapshot: buildClaimReview(enriched, draft.period, draft.assessment) }));
+  return { ...enriched, claimDrafts, seed: { ...enriched.seed, claimDrafts: structuredClone(claimDrafts) } };
+}
+
 export function ensureSITShowcase(workspace: Workspace, now: DateInput = new Date()): Workspace {
   const base: Partial<Workspace> = record(workspace) ? workspace : { schemaVersion: 2 };
   const projects = Array.isArray(base.projects) ? base.projects : [];
@@ -44,9 +56,7 @@ export function ensureSITShowcase(workspace: Workspace, now: DateInput = new Dat
   const markedId = getShowcaseProjectId(base);
   const showcase = projects.find((project) => project?.id === markedId && isSITShowcaseProject(project))
     || projects.find(isSITShowcaseProject)
-    || createSITContractDemo({
-      name: 'S.I.T. Plot 1 — Showcase (Demo)', code: availableCode(projects),
-    }, now);
+    || createCompleteShowcase(availableCode(projects), now);
   // Reuse the original object, including all user edits and saved claim revisions.
   const ordered = projects[0] === showcase ? projects : [showcase, ...projects.filter((project) => project !== showcase)];
   const activeIsValid = projects.some((project) => project?.id === base.activeProjectId);
@@ -70,7 +80,11 @@ export function loadShowcaseWorkspace(storage: Storage | null = browserStorage()
   // Refresh eligible generated illustrations in every original demo, including
   // inactive projects. The guarded refresh archives old photos and leaves
   // progress, uploaded attachments and saved claim snapshots untouched.
-  const projects = loaded.projects.map((project) => refreshSITDemoPhotos(project, now).project);
+  const showcaseId = getShowcaseProjectId(loaded);
+  const projects = loaded.projects.map((project) => {
+    const refreshed = refreshSITDemoPhotos(project, now).project;
+    return project.id === showcaseId ? enrichSITShowcaseFeatures(refreshed, now).project : refreshed;
+  });
   const workspace = projects.some((project, index) => project !== loaded.projects[index])
     ? { ...loaded, projects } : loaded;
   try { storage?.setItem(WORKSPACE_STORE, JSON.stringify(workspace)); } catch { /* Keep the showcase usable in memory. */ }

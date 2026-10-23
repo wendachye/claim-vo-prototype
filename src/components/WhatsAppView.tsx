@@ -1,7 +1,7 @@
 import type { Project, WhatsAppMessage, SiteReport, VOCase, DrawingMapping, WorkItem } from '../types/domain';
 import type { ClarificationResult, WhatsAppClarificationProps } from './WhatsAppClarification';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ImagePlus, ListChecks, LockKeyhole, MapPin, MessageSquare, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ImagePlus, ListChecks, LockKeyhole, MapPin, MessageSquare, Mic, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
 import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, formatMoney, formatNumber, Input, SelectField } from './ui';
 import { getVOCases, getVOClaimEligibility } from '../data/vo';
 import { getMessageReport as messageReport } from '../data/whatsapp';
@@ -17,6 +17,8 @@ import { getMessageClarification, getMessageClarificationEligibility } from '../
 import { WhatsAppClarification } from './WhatsAppClarification';
 import { MessageMatchReviewPanel, MessageMatchReviewDetails } from './MessageMatchReview';
 import { getMessageMatchContext } from '../data/message-match';
+import { getVoiceNoteContext } from '../data/voice-notes';
+import { VoiceNoteReview, VoiceNoteEvidenceDetails } from './VoiceNoteReview';
 import './whatsapp.css';
 import { ActionMenu } from './ActionMenu';
 
@@ -34,9 +36,9 @@ function DemoPhoto({ src, alt, className = '', onOpen }: { src?: string | null; 
 }
 
 interface DemoPhotoRecord { photo: string; photoAlt?: string }
-interface WhatsAppViewProps { project: Project; messages?: WhatsAppMessage[]; initialMessageId?: string | null; onProcess?: (message: WhatsAppMessage) => void; onSaveMatch?: (messageId:string,fields:{itemId:string;areaId:string;reason:string})=>{outcome:string;error?:string}|undefined; onStartMatchDemo?:()=>void; onReview?: (report: SiteReport) => void; onSaveClarificationRequest?: WhatsAppClarificationProps['onSaveRequest']; onSaveClarificationReply?: WhatsAppClarificationProps['onSaveReply']; onOpenCompletion?: (itemId?: string | null, areaId?: string, messageId?: string) => void; onOpenContract?: () => void; onOpenContractItem?: (id: string) => void; onOpenVO?: (id: string) => void; onOpenDrawing?: (areaId?: string) => void; onAddAreaMessages?: () => void; onRefreshDemoPhotos?: () => void; onSelectMessage?: (id: string) => void; onClearMessageSelection?: () => void; onBackToDrawing?: () => void; onBackToOverview?: () => void }
+interface WhatsAppViewProps { project: Project; messages?: WhatsAppMessage[]; initialMessageId?: string | null; onProcess?: (message: WhatsAppMessage) => void; onSaveMatch?: (messageId:string,fields:{itemId:string;areaId:string;reason:string})=>{outcome:string;error?:string}|undefined; onStartMatchDemo?:()=>void; onStartVoiceDemo?:()=>void; onSaveTranscript?:(messageId:string,values:{transcript:string;reason:string;sourceKey:string})=>{outcome:string;error?:string}|undefined; onReview?: (report: SiteReport) => void; onSaveClarificationRequest?: WhatsAppClarificationProps['onSaveRequest']; onSaveClarificationReply?: WhatsAppClarificationProps['onSaveReply']; onOpenCompletion?: (itemId?: string | null, areaId?: string, messageId?: string) => void; onOpenContract?: () => void; onOpenContractItem?: (id: string) => void; onOpenVO?: (id: string) => void; onOpenDrawing?: (areaId?: string) => void; onAddAreaMessages?: () => void; onRefreshDemoPhotos?: () => void; onSelectMessage?: (id: string) => void; onClearMessageSelection?: () => void; onBackToDrawing?: () => void; onBackToOverview?: () => void }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview, onSaveMatch, onStartMatchDemo }: WhatsAppViewProps) {
+export function WhatsAppView({ project, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview, onSaveMatch, onStartMatchDemo, onStartVoiceDemo, onSaveTranscript }: WhatsAppViewProps) {
   const voCases: VOCase[] = getVOCases(project);
   const caseFor = (report?: SiteReport | null) => voCases.find((entry) => entry.id === report?.id);
   const unresolvedArea = (message: WhatsAppMessage, report?: SiteReport | null) => !report && !getMessageClarification(project, message.id)?.reply && (getAreaLinkStatus(project, message).ambiguous || getAreaLinkStatus(project, message).blocked);
@@ -49,6 +51,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [matchEditing, setMatchEditing] = useState<{messageId:string;editing:boolean}|null>(null);
+  const [voiceEditing,setVoiceEditing]=useState<{messageId:string;editing:boolean}|null>(null);
   const [photo, setPhoto] = useState<{ src?: string | null; alt?: string | null } | null>(null);
   const [reviewOpen, setReviewOpen] = useState(Boolean(initialMessageId));
   const searchId = useId();
@@ -76,9 +79,10 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
   const selected = unavailable ? null : messages.find((message) => message.id === selectedId) || shown[0];
   const selectionOutsideFilters = Boolean(selected && !shown.some((message) => message.id === selected.id));
   const report: SiteReport | null = selected ? messageReport(project, selected) : null;
-  const matchContext = selected?.matchSuggestion ? getMessageMatchContext(project, selected.id) : null;
+  const voiceContext=selected && (Object.hasOwn(selected,'audio') || Object.hasOwn(selected,'originalTranscript')) ? getVoiceNoteContext(project,selected.id) : null;
+  const matchContext = selected && (selected.matchSuggestion || voiceContext) ? getMessageMatchContext(project, selected.id) : null;
   const matchFields = matchContext?.review?.fields || matchContext?.suggestion?.fields;
-  const routeMessage = matchContext?.effectiveMessage || (selected && matchContext?.eligible && matchFields ? { ...selected, itemId:matchFields.itemId, areaId:matchFields.areaId, area:getDrawingMapping(project).areas.find(area=>area.id===matchFields.areaId)?.code || selected.area, areaMapping:undefined, areaProgress:undefined } : selected);
+  const routeMessage = matchContext?.effectiveMessage || voiceContext?.effectiveMessage || (selected && matchContext?.eligible && matchFields ? { ...selected, itemId:matchFields.itemId, areaId:matchFields.areaId, area:getDrawingMapping(project).areas.find(area=>area.id===matchFields.areaId)?.code || selected.area, areaMapping:undefined, areaProgress:undefined } : selected);
   const item = project.items.find((entry) => entry.id === (report && !report.vo ? report.itemId : routeMessage?.itemId));
   const clarification = selected ? getMessageClarification(project, selected.id) : null;
   const selectedIsReply = Boolean(selected && clarification?.reply?.id === selected.id);
@@ -113,7 +117,9 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
     .filter((entry) => /^\/assets\/demo-[a-z0-9-]+\.jpg$/.test(entry?.photo || ''));
   const needsMatchConfirmation = Boolean(isNew && matchContext?.eligible && !matchContext.clarificationRequired);
   const editingMatch = Boolean(matchEditing && matchEditing.messageId === selected?.id && matchEditing.editing);
-  const isUnclear = matchContext?.clarificationRequired || areaAmbiguous || areaBlocked || needsMessageClarification(selected, report) || (!needsMatchConfirmation && isNew && (areaLink?.conflict || allocation?.split && !areaProgress));
+  const editingVoice=Boolean(voiceEditing?.messageId===selected?.id && voiceEditing?.editing);
+  const voiceAwaitingReview=Boolean(isNew && voiceContext && !voiceContext.needsClarification && !voiceContext.review);
+  const isUnclear = voiceContext && !report ? voiceContext.needsClarification : matchContext?.clarificationRequired || areaAmbiguous || areaBlocked || needsMessageClarification(selected, report) || (!needsMatchConfirmation && isNew && (areaLink?.conflict || allocation?.split && !areaProgress));
   const showClarification = Boolean(selected && (clarification || getMessageClarificationEligibility(project, selected.id).eligible));
   const newCount = messages.filter((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id))).length;
   const nextMessage = orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id)) && message.id !== selected?.id);
@@ -124,7 +130,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
   const voReviewLabel = needsClaimEligibilityReview ? 'Review claim eligibility' : hasPendingReview ? 'Review extra work' : 'View extra work';
   const nextMessageButton = !isNew && nextMessage ? <Button className={hasPendingReview ? 'ghost' : 'primary'} icon={ArrowRight} onClick={() => { setSearch(''); setFilter('all'); chooseMessage(nextMessage); }}>Next message</Button> : null;
   function processSelectedMessage() {
-    if (!selected || needsMatchConfirmation && (!matchContext?.review || editingMatch)) return;
+    if (!selected || editingVoice || voiceAwaitingReview || needsMatchConfirmation && (!matchContext?.review || editingMatch)) return;
     setSearch('');
     setFilter('all');
     setSelectedId(selected.id);
@@ -175,7 +181,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
           <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find message</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search site updates" placeholder="Search messages, work items or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" className="wa-clear-search" aria-label="Clear message search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>
           <FormField label="Review status"><SelectField aria-label="Filter site updates" value={filter} onChange={(event) => setFilter(event.target.value)}>{filters.map(([key,label]) => <option value={key} key={key}>{label} ({filterCount(key)})</option>)}</SelectField></FormField>
         </div>
-        <div className="wa-list-tools"><span>{shown.length} of {messages.length} messages · {newCount} new to review</span><div>{(search || filter !== 'all') && <Button className="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}{(onStartMatchDemo || (areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages) || (photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos)) && <ActionMenu label="Demo options" items={[onStartMatchDemo && {label:'Try match review demo',icon:MessageSquare,onSelect:onStartMatchDemo},areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages && {label:'Add S.I.T. area messages',icon:MessageSquare,onSelect:onAddAreaMessages},photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos && {label:'Use matching demo photos',icon:ImagePlus,onSelect:onRefreshDemoPhotos}]} />}</div></div>
+        <div className="wa-list-tools"><span>{shown.length} of {messages.length} messages · {newCount} new to review</span><div>{(search || filter !== 'all') && <Button className="ghost" onClick={() => { setSearch(''); setFilter('all'); }}>Clear filters</Button>}{(onStartVoiceDemo || onStartMatchDemo || (areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages) || (photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos)) && <ActionMenu label="Demo options" items={[onStartVoiceDemo && {label:'Try voice-note demo',icon:MessageSquare,onSelect:onStartVoiceDemo},onStartMatchDemo && {label:'Try match review demo',icon:MessageSquare,onSelect:onStartMatchDemo},areaMessageUpdate.available && areaMessageUpdate.messageCount > 0 && onAddAreaMessages && {label:'Add S.I.T. area messages',icon:MessageSquare,onSelect:onAddAreaMessages},photoUpdate.available && photoUpdate.messageCount + photoUpdate.reportCount > 0 && onRefreshDemoPhotos && {label:'Use matching demo photos',icon:ImagePlus,onSelect:onRefreshDemoPhotos}]} />}</div></div>
       </div>
       <div className="wa-workspace">
         <section ref={inboxRef} className="wa-inbox" aria-labelledby="wa-inbox-heading">
@@ -187,7 +193,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
             const referencedItem = project.items.find((entry) => entry.id === (linked && !linked.vo ? linked.itemId : message.itemId));
             const area = message.area || message.location || 'Area unclear';
             return <button type="button" className={`wa-message${selected?.id === message.id ? ' selected' : ''}`} key={message.id} ref={(node) => { if (node) messageRefs.current.set(message.id,node); else messageRefs.current.delete(message.id); }} aria-label={`Open message: ${area}, ${summary.title}, ${time(message.date)}`} aria-pressed={selected?.id === message.id} onClick={() => chooseMessage(message)}>
-              <DemoPhoto src={message.photo} alt={message.photoAlt} className="wa-message-thumb"/>
+              <DemoPhoto src={message.photo} alt={message.photoAlt} className="wa-message-thumb"/>{message.audio && <Mic size={22} aria-label="Demo voice note"/>}
               <div className="wa-message-copy">
                 <div className="wa-message-title"><strong>{summary.title}</strong><Badge tone={state.tone}>{state.label === 'To check' ? 'Needs verification' : state.label === 'Approved' ? 'Price approved' : state.label}</Badge></div>
                 <span className="wa-message-area"><MapPin size={12} aria-hidden="true"/>{area}{referencedItem?.ref && <span>· Ref. {referencedItem.ref}</span>}</span>
@@ -205,17 +211,19 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
           <header className="wa-panel-header"><div><h2 id="wa-review-heading" ref={reviewHeadingRef} tabIndex={-1}>{selectedSummary?.title}</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><Badge tone={status?.tone}>{status?.label === 'To check' ? 'Needs verification' : status?.label === 'Approved' ? 'Price approved' : status?.label}</Badge></header>
           <div className="wa-review-body">
             {selectionOutsideFilters && <p className="wa-selected-filter-note" role="status">Selected message is outside these filters.</p>}
-            {item && !showClarification && !matchContext?.eligible && <div className="wa-linked-work"><span>{isVo ? 'Related contract work · QS to confirm scope' : 'Contract work'}</span><strong>Ref. {item.ref} · {item.description}</strong></div>}
+            {report?.voiceNote ? <VoiceNoteEvidenceDetails evidence={report.voiceNote}/> : voiceContext && <VoiceNoteReview key={selected.id} project={project} messageId={selected.id} onSave={onSaveTranscript} onEditingChange={editing=>setVoiceEditing({messageId:selected.id,editing})}/>}
+            {selected.originalVoiceNote && !report?.voiceNote && <VoiceNoteEvidenceDetails evidence={selected.originalVoiceNote}/>}
+            {item && !voiceAwaitingReview && !showClarification && !matchContext?.eligible && <div className="wa-linked-work"><span>{isVo ? 'Related contract work · QS to confirm scope' : 'Contract work'}</span><strong>Ref. {item.ref} · {item.description}</strong></div>}
 
             {areaAmbiguous && <div className="notice warning" role="status"><CircleAlert size={16}/><span>“{selected.area}” matches {sourceAreaLink?.candidates.map(area => area.code).join(' and ')}. Ask the worker to confirm one area code. Progress stays unchanged.</span></div>}
             {areaBlocked && <div className="notice warning" role="status"><CircleAlert size={16}/><span>The saved area names or reference need review. Confirm the site area before processing this message.</span></div>}
-            {!report && !matchContext?.eligible && !areaAmbiguous && !areaBlocked && areaLink?.area && <div className="wa-linked-work"><span>Matched site area</span><strong>{areaLink.area.code} · {areaLink.area.name}</strong>{onOpenDrawing && <Button className="ghost" onClick={() => onOpenDrawing(areaLink.area!.id)}>View area</Button>}</div>}
+            {!report && !voiceAwaitingReview && !matchContext?.eligible && !areaAmbiguous && !areaBlocked && areaLink?.area && <div className="wa-linked-work"><span>Matched site area</span><strong>{areaLink.area.code} · {areaLink.area.name}</strong>{onOpenDrawing && <Button className="ghost" onClick={() => onOpenDrawing(areaLink.area!.id)}>View area</Button>}</div>}
 
-            {isNew && matchContext?.eligible && !showClarification && <MessageMatchReviewPanel key={selected.id} project={project} message={selected} onSave={onSaveMatch} onEditingChange={(editing)=>setMatchEditing({messageId:selected.id,editing})}/>}
+            {isNew && !editingVoice && matchContext?.eligible && !showClarification && <MessageMatchReviewPanel key={`${selected.id}-${voiceContext?.review?.id||'text'}`} project={project} message={selected} onSave={onSaveMatch ? (id,fields)=>editingVoice?{outcome:'invalid',error:'Save or cancel transcript edits before confirming a match.'}:onSaveMatch(id,fields):undefined} onEditingChange={(editing)=>setMatchEditing({messageId:selected.id,editing})}/>}
             {report?.matchReview && <MessageMatchReviewDetails review={report.matchReview}/>}
             {isNew && matchContext?.clarificationRequired && !areaAmbiguous && !areaBlocked && !showClarification && <p className="notice warning">{matchContext.issue || 'Confirm the message details with the worker before updating progress.'}</p>}
 
-            {showClarification ? <WhatsAppClarification project={project} message={selected}
+            {voiceAwaitingReview ? <p className="wa-selected-filter-note">Confirm the transcript, then review its suggested work item and area.</p> : showClarification ? <WhatsAppClarification project={project} message={selected}
               onSaveRequest={onSaveClarificationRequest ? (messageId, fields) => saveClarification(messageId, fields, onSaveClarificationRequest) : undefined}
               onSaveReply={onSaveClarificationReply ? (messageId, fields) => saveClarification(messageId, fields, onSaveClarificationReply) : undefined}
               onProcess={onProcess ? (reply) => { setSearch(''); setFilter('all'); onProcess(reply); } : undefined}
@@ -229,23 +237,23 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
               {!isNew && <div className="wa-this-update"><span>This update</span><strong>{percent(report ? report.completion : selected.completion)}</strong><small>Saved with this message</small></div>}
               <div className="wa-progress-comparison"><div><span>{areaProgress ? 'Area reported total' : isNew ? 'Reported total' : 'Current reported total'}</span><strong>{isNew ? <>{percent(currentReported)}<ArrowRight size={15} /><em>{percent(routeMessage?.completion)}</em></> : percent(currentReported)}</strong></div><div><span>{areaProgress ? 'Area verified total' : 'Verified total'}</span><strong className="wa-verified-number">{percent(currentVerified)}{!isVerified && <small>{isNew ? 'unchanged' : 'current total'}</small>}</strong></div></div>
               {areaProgress && <div className="wa-result-foot">{formatNumber(areaProgress.allocatedQuantity)} {item?.unit} allocated to this area of {formatNumber(areaProgress.contractQuantity)} {item?.unit}. Whole-item weighted totals: reported {percent(overallReported)} · verified {percent(overallVerified)}.</div>}
-              <div className="wa-result-foot">{legacyScope ? 'Historical whole-item update retained. Its percentage is not assigned to the new areas.' : isNew ? areaProgress ? 'This replaces this area’s reported completion. Other areas and supervisor verification stay unchanged.' : 'This replaces the reported total. Supervisor verification stays unchanged.' : isVerified ? 'Verification saved with the original message and photo.' : report?.status === 'rejected' ? 'Dismissed. Verified progress stays unchanged.' : report?.status === 'superseded' ? 'Use the newer update when reviewing progress.' : 'Next, ask the supervisor to verify the update.'}</div>
+              <div className="wa-result-foot">{legacyScope ? 'Historical whole-item update retained. Its percentage is not assigned to the new areas.' : isNew ? areaProgress ? 'This replaces this area’s reported completion. Other areas and supervisor verification stay unchanged.' : 'This replaces the reported total. Supervisor verification stays unchanged.' : isVerified ? report?.voiceNote ? 'Verification saved with the original recording and transcript.' : 'Verification saved with the original message and photo.' : report?.status === 'rejected' ? 'Dismissed. Verified progress stays unchanged.' : report?.status === 'superseded' ? 'Use the newer update when reviewing progress.' : 'Next, ask the supervisor to verify the update.'}</div>
             </div>}
             </>}
 
             {!showClarification && !project.locked && !isVo && !isUnclear && <div className="wa-baseline-note"><LockKeyhole size={13} /><span>Confirm the contract first so the supervisor can verify progress.</span><button type="button" onClick={() => onOpenContract?.()}>Review contract<ChevronRight size={12} /></button></div>}
-            {!showClarification && <footer className="wa-review-footer"><FormActions secondary={hasPendingReview && nextMessageButton ? nextMessageButton : <span className="wa-footer-note">{needsMatchConfirmation && (!matchContext?.review || editingMatch) ? 'Confirm the match before adding progress.' : isNew ? 'Check the original message and photo below before saving.' : isUnclear ? 'Waiting for a clearer update.' : isVo && hasPendingReview ? needsClaimEligibilityReview ? 'Next: review claim eligibility.' : 'Next: review the extra work.' : waiting(report) && !isVo ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>
-            {isNew ? <Button className="primary" icon={isUnclear ? MessageSquare : isVo ? Flag : Check} disabled={needsMatchConfirmation && (!matchContext?.review || editingMatch)} onClick={processSelectedMessage}>{isUnclear ? 'Needs clarification' : isVo ? 'Flag extra work' : 'Add progress update'}</Button> : <>
+            {!showClarification && <footer className="wa-review-footer"><FormActions secondary={hasPendingReview && nextMessageButton ? nextMessageButton : <span className="wa-footer-note">{needsMatchConfirmation && (!matchContext?.review || editingMatch) ? 'Confirm the match before adding progress.' : isNew ? selected.audio ? 'Check the recording and reviewed transcript above before saving.' : 'Check the original message and photo below before saving.' : isUnclear ? 'Waiting for a clearer update.' : isVo && hasPendingReview ? needsClaimEligibilityReview ? 'Next: review claim eligibility.' : 'Next: review the extra work.' : waiting(report) && !isVo ? 'Next: supervisor verification.' : 'Saved with this project.'}</span>}>
+            {isNew ? <Button className="primary" icon={isUnclear ? MessageSquare : isVo ? Flag : Check} disabled={editingVoice || voiceAwaitingReview || needsMatchConfirmation && (!matchContext?.review || editingMatch)} onClick={processSelectedMessage}>{isUnclear ? 'Needs clarification' : isVo ? 'Flag extra work' : 'Add progress update'}</Button> : <>
               {report ? isVo ? <Button className={hasPendingReview ? 'primary' : 'ghost'} icon={ArrowRight} onClick={() => onOpenVO?.(report.id)}>{voReviewLabel}</Button> : needsProgressClarification(report) && !legacyScope ? <Button icon={MessageSquare} onClick={() => onReview?.(report)}>View clarification</Button> : waiting(report) && !legacyScope ? <Button className="primary" icon={ShieldCheck} onClick={() => onReview?.(report)}>Review progress</Button> : <Button icon={ArrowRight} onClick={() => onOpenCompletion?.(item?.id, areaLink?.area?.id, selected.id)}>View progress</Button> : <Badge tone="amber">Clarification needed</Badge>}
               {!hasPendingReview && nextMessageButton}
             </>}
           </FormActions></footer>}
-            <details className="wa-source-evidence" key={`${selected.id}:${report?.id || 'inbox'}:${clarification?.stage || 'original'}-evidence`} open={isNew && !clarification?.request}>
-              <summary><MessageSquare size={15} /><span>{selectedIsReply ? 'Reply message & retained photo' : 'Original message & photo'}</span><small>{selected.sender} · {time(selected.date)}</small></summary>
+            <details className="wa-source-evidence" key={`${selected.id}:${report?.id || 'inbox'}:${clarification?.stage || 'original'}-evidence`} open={isNew && !clarification?.request && !selected.audio}>
+              <summary><MessageSquare size={15} /><span>{selectedIsReply ? 'Reply message & retained evidence' : selected.audio ? 'Sender & message details' : 'Original message & photo'}</span><small>{selected.sender} · {time(selected.date)}</small></summary>
               <div className="wa-source-content">
             <div className="wa-evidence-heading"><div className="avatar wa-worker-avatar">{selected.sender?.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('') || 'DW'}</div><div><strong>{selected.sender}</strong><span>{selected.senderRole || 'Site worker · demo'}</span></div><time dateTime={selected.date}>{time(selected.date)}</time></div>
-            <div className="wa-original-message"><div className="wa-original-label"><MessageSquare size={12} />{selectedIsReply ? 'Worker’s reply' : 'Worker’s message'}</div><blockquote>{selected.text}</blockquote></div>
-            <DemoPhoto src={selected.photo} alt={selected.photoAlt} className="wa-evidence-photo" onOpen={() => setPhoto({ src: selected.photo, alt: selected.photoAlt })} />
+            {!selected.audio && <div className="wa-original-message"><div className="wa-original-label"><MessageSquare size={12} />{selectedIsReply ? 'Worker’s reply' : 'Worker’s message'}</div><blockquote>{selected.text}</blockquote></div>}
+            {(selected.photo || !selected.audio) && <DemoPhoto src={selected.photo} alt={selected.photoAlt} className="wa-evidence-photo" onOpen={() => setPhoto({ src: selected.photo, alt: selected.photoAlt })} />}
             {previousDemoPhotos.length > 0 && <details className="wa-message-details" key={`${selected.id}-photos`}><summary>Earlier demo illustrations</summary>{previousDemoPhotos.map((entry, index) => <Button key={`${entry.photo}-${index}`} className="ghost" aria-label={`View earlier demo illustration ${index + 1}`} onClick={() => setPhoto({ src: entry.photo, alt: entry.photoAlt })}>View earlier illustration {index + 1}</Button>)}</details>}
 
               </div>

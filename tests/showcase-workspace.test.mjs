@@ -5,6 +5,7 @@ import { createProject, LEGACY_STORE, seedWorkspace, WORKSPACE_STORE } from '../
 import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
 import { getDrawingAsset, getDrawingMapping } from '../src/data/drawing-mapping.ts';
 import { getVOCases } from '../src/data/vo.ts';
+import { markClaimPrepared } from '../src/data/claims.ts';
 
 const now = new Date('2026-10-21T13:00:00Z');
 const isOriginal = (project) => project.contract?.sourceKind === 'provided'
@@ -33,12 +34,14 @@ test('a fresh visitor starts on the complete original S.I.T. showcase with other
   assert.equal(sit.contract.reference, 'CCSC/SIT/SC/21.183');
   assert.equal(getDrawingAsset(sit), '/assets/site-plan.png');
   const areas = getDrawingMapping(sit).areas;
-  assert.equal(areas.length, 12);
-  assert.equal(new Set(areas.flatMap(area => area.workItemIds)).size, 13);
+  assert.equal(areas.length, 14);
+  assert.equal(new Set(areas.flatMap(area => area.workItemIds)).size, 14);
   assert.equal(areas.filter(area => area.position !== null).length, 4);
   assert.equal(areas.find(area => area.code === 'W3-ST36').position, null);
   assert.equal(sit.reports.length, 7);
-  assert.equal(sit.whatsappMessages.length, 18);
+  assert.equal(sit.whatsappMessages.length, 22);
+  assert.equal(sit.whatsappMessages.filter(message => message.audio).length, 2);
+  assert.deepEqual(areas.filter(area => area.code.startsWith('BRACKET-')).map(area => area.workItemQuantities['WI-016']), [90, 90]);
   assert.equal(sit.whatsappMessages.filter(message => message.mockSampleSet === 'sit-mapped-areas-v1').length, 10);
   assert.ok(sit.reports.every((report) => report.demo && report.origin === 'simulated'));
   assert.deepEqual(getVOCases(sit).map((entry) => entry.status).sort(), ['approved', 'flagged', 'rejected']);
@@ -46,6 +49,7 @@ test('a fresh visitor starts on the complete original S.I.T. showcase with other
   assert.equal(sit.claimDrafts[0].status, 'draft');
   assert.equal(sit.claimDrafts[0].snapshot.totals.currentValue, 15894);
   assert.equal(sit.claimDrafts[0].snapshot.canPrepare, true);
+  assert.equal(markClaimPrepared(sit, sit.claimDrafts[0].id).outcome, 'updated');
   assert.deepEqual(JSON.parse(storage.getItem(WORKSPACE_STORE)), workspace);
 });
 

@@ -104,6 +104,7 @@ export interface ClaimEvidenceReference {
   approvalDate: string | null; approver: string | null; approvalStatus: string | null;
   areaProgress?: SiteReport['areaProgress'];
   matchReview?: SiteReport['matchReview'];
+  voiceNote?: SiteReport['voiceNote'];
   channel?: string; reportedInstructionReference?: string | null;
 }
 export interface ClaimPack {

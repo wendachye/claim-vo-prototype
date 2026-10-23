@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -87,7 +88,7 @@ async function confirmWorkList(user) {
 
 async function switchProject(user, from, to) {
   await user.click(screen.getByRole('button', { name: `Project: ${from.name}`, exact: true }));
-  await user.click(screen.getByRole('option', { name: new RegExp(to.name) }));
+  await chooseProjectOption(user, to);
   await waitFor(() => expect(workspace().activeProjectId).toBe(to.id));
 }
 

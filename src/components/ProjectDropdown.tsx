@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 
 import { Building2, Check, ChevronDown, FolderOpen, Plus, Search, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Input } from './ui';
+import { getProjectCatalog } from '../data/demo-catalog';
 import './project-dropdown.css';
 
 const matches = (project: Project, search: string) => `${project.name ?? ''} ${project.code ?? ''}`.toLowerCase().includes(search.trim().toLowerCase());
@@ -14,6 +15,7 @@ export function ProjectDropdown({ projects = [], activeProjectId, showcaseProjec
   const activeProject = available.find((project) => project.id === activeProjectId) || available[0];
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [examplesExpanded, setExamplesExpanded] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
   const restoreFocusOnClose = useRef(false);
@@ -23,7 +25,14 @@ export function ProjectDropdown({ projects = [], activeProjectId, showcaseProjec
   const id = useId();
   const popupId = `${id}-popup`;
   const listId = `${id}-list`;
-  const shown = useMemo(() => available.filter((project) => matches(project, search)), [projects, search]);
+  const catalog = useMemo(() => getProjectCatalog(available, showcaseProjectId), [projects, showcaseProjectId]);
+  const searching = Boolean(search.trim());
+  const groups = useMemo(() => [
+    { label: 'Main showcase', projects: catalog.showcase && matches(catalog.showcase, search) ? [catalog.showcase] : [] },
+    { label: 'Your projects', projects: catalog.projects.filter((project) => matches(project, search)) },
+    { label: searching || examplesExpanded ? 'Demo examples' : 'Current demo', projects: catalog.examples.filter((project) => matches(project, search) && (searching || examplesExpanded || project.id === activeProjectId)) },
+  ].filter((group) => group.projects.length), [catalog, search, searching, examplesExpanded, activeProjectId]);
+  const shown = groups.flatMap((group) => group.projects);
   const currentIndex = shown.length ? Math.max(0, Math.min(highlighted, shown.length - 1)) : -1;
   const optionId = (index: number) => `${id}-option-${index}`;
 
@@ -33,9 +42,11 @@ export function ProjectDropdown({ projects = [], activeProjectId, showcaseProjec
   };
 
   const openMenu = (edge?: 'first' | 'last') => {
-    const selected = available.findIndex((project) => project.id === activeProjectId);
+    const initiallyShown = [...(catalog.showcase ? [catalog.showcase] : []), ...catalog.projects, ...catalog.examples.filter((project) => project.id === activeProjectId)];
+    const selected = initiallyShown.findIndex((project) => project.id === activeProjectId);
     setSearch('');
-    setHighlighted(edge === 'first' ? 0 : edge === 'last' ? Math.max(0, available.length - 1) : Math.max(0, selected));
+    setExamplesExpanded(false);
+    setHighlighted(edge === 'first' ? 0 : edge === 'last' ? Math.max(0, initiallyShown.length - 1) : Math.max(0, selected));
     restoreFocusOnClose.current = false;
     setOpen(true);
   };
@@ -99,11 +110,14 @@ export function ProjectDropdown({ projects = [], activeProjectId, showcaseProjec
       onInteractOutside={() => { restoreFocusOnClose.current = false; }}>
       <div className="project-dropdown-search"><Search size={15} aria-hidden="true" /><Input ref={searchRef} type="text" role="combobox" aria-label="Search projects by name or code" aria-expanded="true" aria-controls={listId} aria-autocomplete="list" aria-activedescendant={currentIndex >= 0 ? optionId(currentIndex) : undefined} placeholder="Search project name or code…" value={search} onChange={(event) => updateSearch(event.target.value)} onKeyDown={handleKeys} autoComplete="off" spellCheck="false" />{search && <button type="button" aria-label="Clear project search" onClick={() => { updateSearch(''); searchRef.current?.focus(); }}><X size={14} aria-hidden="true" /></button>}</div>
       <div className="project-dropdown-list" role="listbox" id={listId} aria-label="Projects">
-        {shown.map((project, index) => <button type="button" role="option" aria-selected={project.id === activeProjectId} aria-disabled={!onSelect} tabIndex={-1} key={project.id} id={optionId(index)} ref={(element) => { optionRefs.current[index] = element; }} className={`project-dropdown-option${project.id === activeProjectId ? ' is-selected' : ''}${currentIndex === index ? ' is-highlighted' : ''}`} onMouseEnter={() => setHighlighted(index)} onClick={() => selectProject(project)}>
+        {groups.map((group) => <div role="group" aria-label={group.label} className="project-dropdown-group" key={group.label}>
+          <div className="project-dropdown-group-label" aria-hidden="true">{group.label}</div>
+          {group.projects.map((project) => { const index = shown.findIndex((entry) => entry.id === project.id); return <button type="button" role="option" aria-selected={project.id === activeProjectId} aria-disabled={!onSelect} tabIndex={-1} key={project.id} id={optionId(index)} ref={(element) => { optionRefs.current[index] = element; }} className={`project-dropdown-option${project.id === activeProjectId ? ' is-selected' : ''}${currentIndex === index ? ' is-highlighted' : ''}${project.id === catalog.showcase?.id ? ' is-showcase' : ''}`} onMouseEnter={() => setHighlighted(index)} onClick={() => selectProject(project)}>
           <span className="project-dropdown-option-icon"><Building2 size={16} aria-hidden="true" /></span><span className="project-dropdown-option-copy"><strong>{project.name || 'Untitled project'}</strong><small>{project.code}{project.country ? ` · ${project.country}` : ''}{project.id===showcaseProjectId ? ' · Showcase' : ''}</small></span>{project.id === activeProjectId && <Check className="project-dropdown-selected-check" size={16} aria-hidden="true" />}
-        </button>)}
+        </button>; })}</div>)}
       </div>
-      {!shown.length && <div className="project-dropdown-empty" role="status"><FolderOpen size={23} aria-hidden="true" /><strong>{available.length ? 'No matching projects' : 'No projects yet'}</strong><span>{available.length ? 'Try another name or project code.' : 'Create a project to get started.'}</span></div>}
+      {catalog.examples.length > 0 && !searching && <button type="button" className="project-dropdown-examples-toggle" aria-expanded={examplesExpanded} aria-controls={listId} onClick={() => { setExamplesExpanded((current) => !current); setHighlighted(0); }}><FolderOpen size={14} aria-hidden="true"/><span>Demo examples <small>{catalog.examples.length}</small></span><ChevronDown size={14} aria-hidden="true"/></button>}
+      {!shown.length && (searching || !catalog.examples.length) && <div className="project-dropdown-empty" role="status"><FolderOpen size={23} aria-hidden="true" /><strong>{available.length ? 'No matching projects' : 'No projects yet'}</strong><span>{available.length ? 'Try another name or project code.' : 'Create a project to get started.'}</span></div>}
       {(onManage || onCreate) && <div className="project-dropdown-footer">{onManage && <button type="button" onClick={() => runAction(onManage)}><FolderOpen size={14} aria-hidden="true" />Manage projects</button>}{onCreate && <button type="button" className="project-dropdown-create" onClick={() => runAction(onCreate)}><Plus size={14} aria-hidden="true" />New project</button>}</div>}
     </PopoverContent>}
     </Popover>

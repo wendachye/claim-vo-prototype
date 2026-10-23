@@ -1,3 +1,4 @@
+import { chooseProjectOption } from './project-select-helpers.mjs';
 import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -159,12 +160,12 @@ describe('claim queries revise and resubmit an independent project-scoped versio
     await screen.findByRole('heading', { name: 'Revise claim' });
     expect(quantityInput().value).toBe('999');
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(other.name) }));
+    await chooseProjectOption(user, other);
     await screen.findByRole('heading', { name: 'Monthly claims' });
     expect(location.hash).toBe('#claims');
     expect(screen.queryByRole('textbox', { name: 'QS response' })).toBeNull();
     await user.click(screen.getByRole('button', { name: `Project: ${other.name}` }));
-    await user.click(screen.getByRole('option', { name: new RegExp(project.name) }));
+    await chooseProjectOption(user, project);
     await screen.findByRole('heading', { name: 'Monthly claims' });
     await user.click(screen.getByRole('button', { name: 'Continue revision' }));
     await screen.findByRole('heading', { name: 'Revise claim' });

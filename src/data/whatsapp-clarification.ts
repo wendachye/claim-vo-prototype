@@ -4,6 +4,7 @@ import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, 
 import { getMessageReport, getWhatsAppMessages } from './whatsapp.ts';
 import { getDrawingMapping, snapshotMappedArea } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope } from './area-allocations.ts';
+import { getVoiceNoteContext, isVoiceNoteAudio, isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 
 export interface ClarificationMutation { project: Project; outcome: string; error?: string; thread?: MessageClarification }
 export interface ClarificationContext { thread: MessageClarification; original: WhatsAppMessage; request: MessageClarification['request']; reply: WhatsAppMessage | null; report: SiteReport | null; latestReport: SiteReport | null; stage: string; sourceMessageId: string; replyMessageId: string | null }
@@ -47,13 +48,15 @@ function sourceFor(project: Project, messageId: string): WhatsAppMessage | null 
 function sourceEvidenceValid(project: Project, source: WhatsAppMessage | null): source is WhatsAppMessage {
   return Boolean(source && local(project, source) && validId(source.id) && text(source.text) && text(source.sender) && time(source.date) !== null
     && !source.vo && source.kind !== 'vo' && !source.replyToMessageId
-    && (source.kind === 'clarification' || source.status === 'clarification')
+    && (source.kind === 'clarification' || source.status === 'clarification' || isVoiceNoteAudio(source.audio) && source.originalTranscript === source.text)
     && (source.photo == null || typeof source.photo === 'string')
     && (source.photoAlt == null || typeof source.photoAlt === 'string'));
 }
 
 function originalMatches(original: WhatsAppMessage, source: WhatsAppMessage) {
-  return originalFields.every((field) => original[field] === source[field]);
+  return originalFields.every((field) => original[field] === source[field])
+    && original.originalTranscript === source.originalTranscript
+    && JSON.stringify(original.audio ?? null) === JSON.stringify(source.audio ?? null);
 }
 
 function childReport(project: Project, reply: WhatsAppMessage) {
@@ -79,6 +82,11 @@ function savedReplyValid(project: Project, thread: MessageClarification, reply: 
     || !['new', 'clarification', 'processed'].includes(reply.status) || !text(reply.text) || !text(reply.area)
     || !completionValue(reply.completion) || time(reply.date) === null || time(reply.date)! < time(thread.request.date)!
     || reply.sender !== thread.original.sender || reply.photo !== thread.original.photo || reply.photoAlt !== thread.original.photoAlt) return false;
+  if (thread.original.audio && !reply.originalVoiceNote) return false;
+  if (reply.originalVoiceNote !== undefined && (!isVoiceNoteEvidenceSnapshot(reply.originalVoiceNote)
+    || reply.originalVoiceNote.projectId !== project.id || reply.originalVoiceNote.messageId !== thread.sourceMessageId
+    || JSON.stringify(reply.originalVoiceNote.audio) !== JSON.stringify(thread.original.audio)
+    || reply.originalVoiceNote.originalTranscript !== thread.original.originalTranscript)) return false;
   const item = oneById(project.items, reply.itemId);
   if (!item || !optionalLocal(project, item)) return false;
   if (reply.areaId) {
@@ -119,7 +127,9 @@ export function getMessageClarificationEligibility(project: Project, messageId: 
   if (!source) return invalid('Choose an original message from the selected project.');
   if (source.replyToMessageId) return invalid('Open the original clarification to review this reply.');
   if (source.vo || source.kind === 'vo') return invalid('Review possible extra work in VO review.');
-  if (!sourceEvidenceValid(project, source)) return invalid('Only an unclear site message can request clarification.');
+  const voice = getVoiceNoteContext(project,messageId);
+  if ((source.audio || source.originalTranscript) && !(voice.eligible && voice.needsClarification)) return invalid('This voice note has a clear cumulative update. Review its transcript and suggested match instead.');
+  if (!sourceEvidenceValid(project, source) && !(voice.eligible && voice.needsClarification)) return invalid('Only an unclear site message can request clarification.');
   const item = source.itemId ? oneById(project.items, source.itemId) : null;
   if (source.itemId && !item) return invalid('The original work-item reference is missing or duplicated in this project.');
   if (item && (!optionalLocal(project, item) || ['included', 'rateOnly'].includes(item.pricingType))) {
@@ -214,6 +224,7 @@ export function saveMockClarificationReply(project: Project, messageId: string, 
     replyToMessageId: messageId, clarificationThreadId: thread.id, sender: original.sender,
     senderRole: original.senderRole || 'Site worker · demo', date, text: text(values.text),
     photo: original.photo, photoAlt: original.photoAlt, itemId: item.id,
+    ...(getVoiceNoteContext(project,messageId).evidence ? {originalVoiceNote:clone(getVoiceNoteContext(project,messageId).evidence!)} : {}),
     area: mappedArea?.code || text(values.area), areaId: mappedArea?.id || null,
     areaMapping: snapshotMappedArea(mappedArea), location: item.location || mappedArea?.name || '',
     ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),
