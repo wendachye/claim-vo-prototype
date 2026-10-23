@@ -16,6 +16,7 @@ import { getAreaItemProgress, getItemAreaAllocation } from '../data/area-allocat
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
 import { isReviewableProgressReport, needsProgressClarification } from '../data/report-status';
 import './report-drawer.css';
+import { MessageMatchReviewDetails } from './MessageMatchReview';
 
 const percent = (value: unknown) => {
   if (value == null || value === '' || !Number.isFinite(Number(value))) return 'Not recorded';
@@ -243,6 +244,7 @@ export function ReportDrawer({
             </div>
           )}
 
+          {report?.matchReview && <MessageMatchReviewDetails review={report.matchReview}/>}
           {report ? <details className="site-report-evidence" open={isPending || undefined}>
             <summary>Original site update &amp; photo</summary>
             <div className="site-report-evidence-body">

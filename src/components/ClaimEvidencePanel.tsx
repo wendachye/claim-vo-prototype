@@ -7,6 +7,7 @@ import { Badge, Button, FormField, SelectField, formatNumber } from './ui';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
 import { VO_EXECUTION_LABELS, VO_INSTRUCTION_LABELS, VO_SCOPE_LABELS, VO_STATUS_LABELS } from '../data/vo.ts';
 import './claim-evidence.css';
+import { MessageMatchReviewDetails } from './MessageMatchReview';
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const known = (value: unknown) => value !== null && value !== undefined && value !== '';
@@ -77,6 +78,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
               </> : <p className="claim-evidence-empty">No original report was saved for this item.</p>}
               {photo && !photoFailed ? <figure className="claim-evidence-photo"><img src={photo} alt={evidence?.photoAlt || 'Photo saved with the original site update'} onError={() => setPhotoFailed(true)} /><figcaption>{generated ? 'Generated demo photo · not actual project evidence' : 'Saved site attachment'} · review alongside the original message</figcaption></figure> : <div className="claim-evidence-photo-empty"><ImageOff size={20} aria-hidden="true" /><span>{photoFailed ? 'Photo could not be displayed. The saved message and review remain available.' : 'No photo was saved with this item.'}</span></div>}
             </section>
+            {evidence?.matchReview && <MessageMatchReviewDetails review={evidence.matchReview}/>}
             {kind === 'work' ? <section className="claim-evidence-section" aria-label="Supervisor review">
               <h3>Supervisor review</h3>
               <dl className="claim-evidence-fields"><Field label={hasAreaEvidence ? 'Verified area completion' : 'Verified total'}>{percent(hasAreaEvidence ? evidence?.approvedCompletion ?? evidence?.completion : row.verified)}</Field><Field label="Reviewer">{text(evidence?.verifiedBy)}</Field><Field label="Verified">{dateTime(hasAreaEvidence ? evidence?.verifiedAt : row.verifiedAt)}</Field>{hasAreaEvidence && <Field label="Weighted contract item total">{percent(row.verified)}</Field>}</dl>

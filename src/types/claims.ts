@@ -103,6 +103,7 @@ export interface ClaimEvidenceReference {
   evidenceDateConfirmation: EvidenceDateConfirmation | null; approvalReference: string | null;
   approvalDate: string | null; approver: string | null; approvalStatus: string | null;
   areaProgress?: SiteReport['areaProgress'];
+  matchReview?: SiteReport['matchReview'];
   channel?: string; reportedInstructionReference?: string | null;
 }
 export interface ClaimPack {

@@ -1,4 +1,5 @@
 import type { ClaimRow, ClaimPack, ClaimProjectDetails, ClaimEvidenceReference } from '../types/claims';
+import { isMessageMatchReviewSnapshot } from './message-match.ts';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
 // Read-only exports of saved local assessments; never rebuild from live progress.
 const clone = <T>(value: T): T => structuredClone(value);
@@ -33,6 +34,7 @@ function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | nu
     approvalReference: row.approvalReference ?? null, approvalDate: row.approvalDate ?? null,
     approver: row.approver ?? null, approvalStatus: kind === 'vo' ? row.status ?? null : null,
     ...(evidence.areaProgress ? {areaProgress:clone(evidence.areaProgress)} : {}),
+    ...(isMessageMatchReviewSnapshot(evidence.matchReview) ? {matchReview:clone(evidence.matchReview)} : {}),
     ...(evidence.channel === 'manual-vo-mock' ? { channel: evidence.channel,
       reportedInstructionReference: evidence.reportedInstructionReference ?? null } : {}),
   };
@@ -177,6 +179,7 @@ export function toClaimCSV(pack: ClaimPack) {
     'Review notes': joined(evidence.channel === 'manual-vo-mock' && 'Source: Manual entry · local demo',
       evidence.reportedInstructionReference && `Reported instruction/reference: ${evidence.reportedInstructionReference}`,
       evidence.areaProgress && `Area quantity: ${evidence.areaProgress.allocatedQuantity}; contract quantity: ${evidence.areaProgress.contractQuantity}` ,
+      evidence.matchReview && `Match review: ${evidence.matchReview.suggested?.itemRef || evidence.matchReview.originalSuggestion?.fields?.itemId || 'Unknown item'} / ${evidence.matchReview.suggested?.areaCode || 'Unknown area'} to ${evidence.matchReview.confirmed?.itemRef || evidence.matchReview.fields?.itemId || 'Unknown item'} / ${evidence.matchReview.confirmed?.areaCode || 'Unknown area'}; reason: ${evidence.matchReview.reason || 'Original suggestion confirmed'}; reviewed by ${evidence.matchReview.reviewedBy || 'Not recorded'} at ${evidence.matchReview.reviewedAt || 'Not recorded'}`,
       evidence.sender && `${evidence.channel === 'manual-vo-mock' ? 'Entered by' : 'Sender'}: ${evidence.sender}`,
       evidence.sourcePage != null && `Contract page: ${evidence.sourcePage}`,
       evidence.evidenceDateConfirmation?.confirmed && `Undated progress confirmed by QS as of ${evidence.evidenceDateConfirmation.asOf}`),

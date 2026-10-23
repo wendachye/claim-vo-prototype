@@ -1,9 +1,10 @@
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
 // Frontend-only fixtures. Fields are prefilled demonstration results, not AI output.
 import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.ts';
+import { getMessageMatchContext } from './message-match.ts';
 import { isUnresolvedProgressReport } from './report-status.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope, syncAreaItemProgress } from './area-allocations.ts';
-export interface WhatsAppProcessingResult { project: Project; outcome: string; reportId?: string }
+export interface WhatsAppProcessingResult { project: Project; outcome: string; reportId?: string; error?: string }
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 const clone = <T>(value: T): T => structuredClone(value);
@@ -92,19 +93,31 @@ function markMessage(project: Project, message: WhatsAppMessage, status: string,
 
 export function processWhatsAppMessage(project: Project, messageId: string): WhatsAppProcessingResult {
   const invalid = { project, outcome: 'invalid' };
-  const message = getWhatsAppMessages(project).find((entry) => entry.id === messageId);
+  const messages = getWhatsAppMessages(project);
+  // A malformed stored inbox must not replace an opted-in reviewed source
+  // with a legacy fixture bearing the same ID.
+  if (Array.isArray(project.whatsappMessages) && project.whatsappMessages.some(entry => record(entry)
+    && entry.id === messageId && Object.hasOwn(entry, 'matchSuggestion')) && messages !== project.whatsappMessages) return invalid;
+  const originalMessage = messages.find((entry) => entry.id === messageId);
+  let message = originalMessage;
   if (!message || message.projectId !== project.id || message.projectCode !== project.code) return invalid;
-  const existing = project.reports.find((report) => report.sourceMessageId === message.id);
+  const existing = project.reports.find((report) => report.sourceMessageId === messageId);
   if (message.status !== 'new' || existing) {
     return { project, outcome: 'duplicate', reportId: existing?.id || message.reportId };
   }
   const date = new Date().toISOString();
   const needsClarification = (note?: string) => ({
-    project: markMessage(project, message, 'clarification', note, date),
+    project: markMessage(project, originalMessage!, 'clarification', note, date),
     outcome: 'clarification',
   });
   if (message.kind === 'clarification') return needsClarification(message.processingNote);
   if (!['progress', 'vo'].includes(message.kind)) return invalid;
+  const matchContext = Object.hasOwn(message, 'matchSuggestion') ? getMessageMatchContext(project, message.id) : null;
+  if (matchContext) {
+    if (matchContext.clarificationRequired) return needsClarification(matchContext.issue);
+    if (!matchContext.review || !matchContext.effectiveMessage) return { ...invalid, error: matchContext.issue || 'Review the suggested match before adding progress.' };
+    message = matchContext.effectiveMessage;
+  }
   const item = project.items.find((entry) => entry.id === message.itemId);
   const pct = message.completion;
   if (message.kind === 'progress' && (!item || message.completionBasis !== 'cumulative'
@@ -161,9 +174,10 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
   const report: SiteReport = {
     id: reportId, projectId: project.id, projectCode: project.code,
     sourceMessageId: message.id, itemId: isVo ? null : item!.id,
-    area: message.area, location: message.location,
+    area: originalMessage!.area, location: originalMessage!.location,
     areaMapping: snapshotMappedArea(areaLink.area),
     ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),
+    ...(matchContext?.review ? { matchReview: clone(matchContext.review) } : {}),
     sender: message.sender, date: message.date, completion: isVo ? null : pct,
     completionBasis: isVo ? 'unclear' : 'cumulative', status: isVo ? 'needsReview' : 'pending',
     message: message.text, photo: message.photo, photoAlt: message.photoAlt,
@@ -175,7 +189,7 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
   const note = isVo ? 'Possible VO flagged for QS review. Completion and price are unchanged.'
     : areaProgress ? `${areaLink.area?.code} reported completion saved at ${pct}% of its allocated quantity. Supervisor verification is still required.`
       : `${item!.id} reported progress updated to ${pct}% total. Verified progress remains ${item!.verified}%.`;
-  const marked = markMessage(project, message, 'processed', note, date);
+  const marked = markMessage(project, originalMessage!, 'processed', note, date);
   return {
     outcome: 'processed', reportId,
     project: syncAreaItemProgress({

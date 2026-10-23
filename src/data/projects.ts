@@ -365,6 +365,7 @@ export function resetProject(project: Project): Project {
   if (project.claimExamplesDemo !== true && project.areaSplitDemo !== true) delete next.lockedAt;
   if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;
   if (!Array.isArray(seed.contractTotalReviews)) delete next.contractTotalReviews;
+  if (!Array.isArray(seed.messageMatchReviews)) delete next.messageMatchReviews;
   if (project.areaSplitDemo !== true) delete next.drawingMapping;
   return next;
 }

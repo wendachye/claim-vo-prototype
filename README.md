@@ -73,6 +73,16 @@ Review reconciles gross value, retention held, cumulative net and prior submitte
 
 Existing gross-only drafts keep their original calculation until **Set claim basis** is chosen for a new revision. Saved versions, evidence, preview/CSV/PDF and tracker amounts retain the basis captured with that version; incomplete settings can be saved for later but cannot be prepared.
 
+## Review a suggested message match
+
+New mock free-text suggestions offer **Review match** inside the WhatsApp panel. Check the suggested work item and site area against the original message/photo, or use **Edit match** to choose another measured item and compatible area. A changed suggestion needs a short correction reason. The reported percentage stays fixed; unclear or incremental completion and conflicting explicit references still require the separate worker clarification flow.
+
+**Confirm match** saves the review only. **Add progress update** remains a separate action and creates pending reported progress; a supervisor must still verify it. An open edit form blocks processing until confirmed or canceled. Unfinished edits stay isolated by project/message while browsing; save before refreshing. Changed source, baseline or mapping requires another review.
+
+The original message, photo, sender/date and mock suggestion are retained. Processed reports, evidence panels and new claim snapshots keep the confirmed item/area, correction reason and reviewer. Existing drafts, prepared/paid claims and exports stay unchanged. Earlier structured messages retain their existing workflow; there is no automatic migration or live AI.
+
+Use **Site updates → Demo options → Try match review demo**, or the same option under **Drawing & areas → Try another demo**, for an independent project with a correct suggestion, a mistaken roofing/WEST suggestion for EAST wall cladding, and an ambiguous area that requires clarification. No existing project is copied or reset, and no message is sent.
+
 ## Mock clarification replies
 
 Open an unclear WhatsApp message and **Save clarification request**. Use **Use demo reply** or enter a measured work item, compatible site area, cumulative total and worker reply, then **Save mock reply**. The original message and photo stay in the thread; the reply is a separate saved message and reuses the original attachment with an explicit label. No progress changes until **Add clarified progress update**. Use **Verify clarified progress** for the supervisor's review. Needs attention follows the reply and then its pending report, clearing that action after verification. Threads survive reload, while unfinished forms remain in session memory by project/message. This is a local demonstration; no WhatsApp message is sent.

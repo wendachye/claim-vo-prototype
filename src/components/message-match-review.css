@@ -1,0 +1,23 @@
+.wa-match-review{margin:18px 0;padding-top:16px;border-top:1px solid #e2e8f0;color:#334155}
+.wa-match-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.wa-match-heading h3{margin:0;color:#1e293b;font-size:14px;line-height:1.4}
+.wa-match-heading p,.wa-match-help,.wa-match-completion{margin:5px 0 0;color:#64748b;font-size:11px;line-height:1.6}
+.wa-match-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.wa-match-completion{margin:12px 0}
+.wa-match-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin:0}
+.wa-match-summary dt,.wa-match-record dt{color:#64748b;font-size:11px;line-height:1.5}
+.wa-match-summary dd,.wa-match-record dd{margin:3px 0 0;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.wa-match-review .form-actions{margin-top:14px;padding-top:0;border-top:0}
+.wa-match-record{margin-top:14px;padding-top:12px;border-top:1px solid #edf1f5}
+.wa-match-record summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;font-size:12px;font-weight:600}
+.wa-match-record summary span{color:#64748b;font-size:11px;font-weight:400}
+.wa-match-record summary::after{content:'+';margin-left:auto;color:#64748b;font-size:15px;font-weight:400}
+.wa-match-record[open] summary::after{content:'−'}
+.wa-match-record summary:focus-visible{outline:2px solid #2563eb;outline-offset:4px;border-radius:3px}
+.wa-match-record dl{display:grid;gap:8px;margin:12px 0}
+.wa-match-reason{margin:10px 0;font-size:12px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.wa-match-reason strong{display:block;color:#64748b;font-size:11px;font-weight:400}
+.wa-match-reviewer{margin:10px 0 0;font-size:11px;line-height:1.5;color:#64748b}
+.wa-match-feedback{padding:10px 12px;margin-bottom:13px;background:#eff6ff;border:1px solid #dbeafe;border-radius:6px;font-size:12px;line-height:1.5;color:#1d4ed8;outline-offset:3px}
+.wa-match-feedback.error{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+@media(max-width:640px){.wa-match-fields{grid-template-columns:minmax(0,1fr)}.wa-match-heading{flex-wrap:wrap}}

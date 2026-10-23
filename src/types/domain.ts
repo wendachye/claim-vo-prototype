@@ -63,6 +63,19 @@ export interface WorkItem {
 export interface AreaProgressSnapshot {
   areaId: string; itemId: string; allocatedQuantity: number; contractQuantity: number;
 }
+export interface MessageMatchFields { itemId: string; areaId: string; completion: number }
+export interface MessageMatchSuggestion {
+  version: 1; origin: 'mock'; baselineVersion: number; fields: MessageMatchFields; sourceExcerpt: string; reason: string;
+}
+export interface MessageMatchLabels {
+  itemId: string; itemRef: string; itemDescription: string; areaId: string; areaCode: string; areaName: string;
+}
+export interface MessageMatchReview {
+  id: string; projectId: string; messageId: string; baselineVersion: number; sourceKey: string;
+  originalSuggestion: MessageMatchSuggestion; fields: MessageMatchFields; reason: string; reviewedBy: string; reviewedAt: string;
+  areaMapping: AreaMappingSnapshot; areaProgress?: AreaProgressSnapshot;
+  suggested: MessageMatchLabels; confirmed: MessageMatchLabels;
+}
 export interface SiteReport {
   id: string; itemId?: string | null; projectId?: string; projectCode?: string; sourceMessageId?: string;
   kind?: string; vo?: boolean; channel?: string; status: string; sender?: string; senderRole?: string;
@@ -72,6 +85,7 @@ export interface SiteReport {
   reviewReason?: string; clarificationRequestedAt?: string; clarificationRequestedBy?: string;
   reportedInstructionReference?: string; approvedCompletion?: number | null;
   areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; scopeLabel?: string;
+  matchReview?: MessageMatchReview;
   manualEntry?: { version: number; submissionId: string; input: Record<string, string> };
   supersededByReportId?: string; supersededAt?: string; supersededBy?: string; supersededReason?: string;
   [key: string]: unknown;
@@ -83,6 +97,7 @@ export interface WhatsAppMessage {
   photo?: string | null; photoAlt?: string | null; processingNote?: string; processedAt?: string; reportId?: string;
   areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; replyToMessageId?: string; clarificationThreadId?: string;
   clarificationReplyMessageId?: string; clarificationRequestedAt?: string; clarificationRequestedBy?: string;
+  matchSuggestion?: MessageMatchSuggestion;
   demoPhotoHistory?: { photo: string; photoAlt?: string }[]; vo?: boolean; demo?: boolean; origin?: string; channel?: string;
   [key: string]: unknown;
 }
@@ -123,6 +138,7 @@ export interface ProjectWorkflow {
   sourceItems: WorkItem[]; items: WorkItem[]; reports: SiteReport[]; history: HistoryEntry[];
   baselines: ContractBaseline[]; locked: boolean; version: number; lockedAt?: string;
   voReviews: VOReview[]; claimDrafts: ClaimDraft[]; claimTracking?: ClaimTracking[]; messageClarifications?: MessageClarification[];
+  messageMatchReviews?: MessageMatchReview[];
   whatsappMessages?: WhatsAppMessage[]; drawingMapping?: DrawingMapping; contractVersion?: ContractVersionMetadata; contractTotalReviews?: ContractTotalReview[];
 }
 export interface Project extends ProjectWorkflow {

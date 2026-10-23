@@ -5,6 +5,7 @@ import { getWhatsAppMessages } from './whatsapp.ts';
 import { needsProgressClarification } from './report-status.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
 import { getMessageReviewStatus } from './message-inbox.ts';
+import { getMessageMatchContext } from './message-match.ts';
 
 type EvidenceSource = SiteReport | WhatsAppMessage;
 export interface DrawingEvidenceEntry { id: string; messageId: string | null; reportId: string | null; sourceLabel: string; kind: string; status: string; label: string; tone: string; sender: string; date: string; text: string; photo: string | null; photoAlt: string; itemId: string | null; matchKind: 'saved-area' | 'area-code' | 'area-alias' | 'work-item'; matchLabel: string }
@@ -110,7 +111,16 @@ function stateFor(project: Project, report: SiteReport | null, message: WhatsApp
 function evidenceEntry(project: Project, area: DrawingArea, report: SiteReport | null, message: WhatsAppMessage | null | undefined): DrawingEvidenceEntry | null {
   const source = report || message;
   if (!source) return null;
-  const matchKind = matchArea(project, area, source, report ? message || null : null);
+  let routingSource = source;
+  // A suggestion is not an area assignment. Only an explicitly saved current
+  // review may route an inbox-only suggestion; content still comes from the
+  // original below. Once processed, the report's frozen area takes precedence.
+  if (!report && message && Object.hasOwn(message, 'matchSuggestion')) {
+    const match = getMessageMatchContext(project, message.id);
+    if (!match.review || !match.effectiveMessage) return null;
+    routingSource = match.effectiveMessage;
+  }
+  const matchKind = matchArea(project, area, routingSource, report ? message || null : null);
   if (!matchKind) return null;
   const kind = report ? report.vo || report.kind === 'vo' ? 'vo'
     : report.kind === 'clarification' || needsProgressClarification(report) ? 'clarification' : 'progress'
@@ -121,7 +131,7 @@ function evidenceEntry(project: Project, area: DrawingArea, report: SiteReport |
     kind, ...stateFor(project, report, message, kind),
     sender: originalText(source.sender, 'Site worker'), date: originalText(source.date),
     text: originalText(report ? report.message : message?.text), photo: safePhoto(source.photo),
-    photoAlt: originalText(source.photoAlt, 'Site photo attached to this update'), itemId: identifier(source.itemId),
+    photoAlt: originalText(source.photoAlt, 'Site photo attached to this update'), itemId: identifier(routingSource.itemId),
     matchKind, matchLabel: matchLabels[matchKind],
   };
 }
