@@ -59,12 +59,12 @@ export function FormField({ label, children, hint, error, optional, required, su
 export function FormActions({ secondary, children, className = '' }) {
   return <div className={`form-actions ${className}`}>{secondary && <div className="form-actions-secondary">{secondary}</div>}<div className="form-actions-main">{children}</div></div>;
 }
-export function Modal({ title, description, onClose, children, footer }) {
+export function Modal({ title, description, onClose, children, footer, onCloseAutoFocus }) {
   const [portalContainer, setPortalContainer] = useState(null);
   const opener = useRef(typeof document === 'undefined' ? null : document.activeElement);
   return <div className="ui-overlay-host" ref={setPortalContainer}>
     <Dialog open onOpenChange={(open) => { if (!open) onClose?.(); }}>
-      {portalContainer && <DialogContent portalContainer={portalContainer} className="modal" overlayClassName="modal-backdrop" showCloseButton={false} {...(!description ? { 'aria-describedby': undefined } : {})} onCloseAutoFocus={(event) => { event.preventDefault(); if (opener.current?.isConnected) opener.current.focus?.(); }}>
+      {portalContainer && <DialogContent portalContainer={portalContainer} className="modal" overlayClassName="modal-backdrop" showCloseButton={false} {...(!description ? { 'aria-describedby': undefined } : {})} onCloseAutoFocus={(event) => { onCloseAutoFocus?.(event); if (event.defaultPrevented) return; event.preventDefault(); if (opener.current?.isConnected) opener.current.focus?.(); }}>
         <div className="modal-header"><div><DialogTitle>{title}</DialogTitle>{description && <DialogDescription>{description}</DialogDescription>}</div><DialogClose asChild><Button className="ghost icon" aria-label="Close dialog"><X size={18} /></Button></DialogClose></div>
         <div className="modal-body">{children}</div>{footer && <div className="modal-footer">{footer}</div>}
       </DialogContent>}

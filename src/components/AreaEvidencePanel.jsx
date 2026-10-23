@@ -23,7 +23,7 @@ export function AreaEvidencePanel({ project, area, onOpenEvidence }) {
         <p className="drawing-evidence-message">{entry.text || 'Message text not recorded.'}</p>
         {entry.matchKind === 'work-item' && entry.matchLabel && !visible.slice(0, index).some((previous) => previous.matchKind === 'work-item' && previous.matchLabel === entry.matchLabel) && <p className="drawing-evidence-match">{entry.matchLabel}</p>}
         {entry.photo ? <EvidencePhoto key={`${entry.id}:${entry.photo}`} entry={entry} onOpen={() => setPhotoEntryId(entry.id)} /> : <p className="drawing-evidence-no-photo"><ImageOff size={13} />No photo attached</p>}
-        {onOpenEvidence && (entry.messageId || entry.reportId) && <Button className="ghost" icon={ArrowUpRight} onClick={() => onOpenEvidence(entry, area.id)}>{entry.messageId ? 'Open original update' : 'Review site report'}</Button>}
+        {onOpenEvidence && (entry.messageId || entry.reportId) && <Button className="ghost" icon={ArrowUpRight} onClick={() => onOpenEvidence(entry, area.id)}>{entry.messageId ? 'Open original update' : entry.kind === 'vo' ? 'Review extra work' : 'Review site report'}</Button>}
       </article>)}</div>
       {entries.length > 3 && <Button className="ghost drawing-evidence-history" icon={showAll ? ChevronUp : ChevronDown} aria-expanded={showAll} aria-controls={listId} onClick={() => setShowAll((current) => !current)}>{showAll ? 'Show latest 3 updates' : `Show all ${entries.length} updates`}</Button>}
     </>}

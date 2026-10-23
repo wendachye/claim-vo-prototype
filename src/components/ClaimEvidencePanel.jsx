@@ -31,6 +31,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
   const [photoFailed, setPhotoFailed] = useState(false);
   const id = useId();
   const evidence = record(row?.evidence) ? row.evidence : null;
+  const manual = evidence?.channel === 'manual-vo-mock';
   const unavailable = !record(row) || !['work', 'vo'].includes(kind)
     || (row.projectId && row.projectId !== projectId)
     || (evidence?.projectId && evidence.projectId !== projectId);
@@ -58,9 +59,9 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
             <div className="claim-evidence-context"><Badge tone="blue">{saved ? `Saved version ${revision}` : 'Current assessment'}</Badge><span>{month(period)} · Cutoff {date(cutoff)}</span></div>
             <p className="claim-evidence-context-note">{saved ? 'Evidence captured with this saved claim version.' : 'Evidence supporting this assessment at its cutoff.'}</p>
             <section className="claim-evidence-section" aria-label="Original update">
-              <h3>Original update</h3>
+              <h3>{manual ? 'Manual entry' : 'Original update'}</h3>
               {evidence ? <>
-                <dl className="claim-evidence-fields"><Field label="Sender">{text(evidence.sender)}</Field><Field label="Reported">{dateTime(evidence.date)}</Field><Field label="Area / location">{[evidence.area, evidence.location].filter(Boolean).join(' · ') || 'Not recorded'}</Field></dl>
+                <dl className="claim-evidence-fields"><Field label={manual ? 'Entered by' : 'Sender'}>{text(evidence.sender)}</Field><Field label={manual ? 'Recorded' : 'Reported'}>{dateTime(evidence.date)}</Field><Field label="Area / location">{[evidence.area, evidence.location].filter(Boolean).join(' · ') || 'Not recorded'}</Field>{manual && <Field label="Reported instruction / reference">{text(evidence.reportedInstructionReference)}</Field>}</dl>
                 <blockquote>{text(evidence.message, 'No original message was saved with this report.')}</blockquote>
               </> : <p className="claim-evidence-empty">No original report was saved for this item.</p>}
               {photo && !photoFailed ? <figure className="claim-evidence-photo"><img src={photo} alt={evidence.photoAlt || 'Photo saved with the original site update'} onError={() => setPhotoFailed(true)} /><figcaption>{generated ? 'Generated demo photo · not actual project evidence' : 'Saved site attachment'} · review alongside the original message</figcaption></figure> : <div className="claim-evidence-photo-empty"><ImageOff size={20} aria-hidden="true" /><span>{photoFailed ? 'Photo could not be displayed. The saved message and review remain available.' : 'No photo was saved with this item.'}</span></div>}

@@ -30,6 +30,8 @@ function evidenceFor(row, kind) {
     evidenceDateConfirmation: row.evidenceDateConfirmation ?? null,
     approvalReference: row.approvalReference ?? null, approvalDate: row.approvalDate ?? null,
     approver: row.approver ?? null, approvalStatus: kind === 'vo' ? row.status ?? null : null,
+    ...(evidence.channel === 'manual-vo-mock' ? { channel: evidence.channel,
+      reportedInstructionReference: evidence.reportedInstructionReference ?? null } : {}),
   };
 }
 
@@ -165,11 +167,13 @@ export function toClaimCSV(pack) {
     'Evidence reference': joined(evidence.reportId && `Report: ${evidence.reportId}`,
       evidence.sourceMessageId && `Message: ${evidence.sourceMessageId}`,
       evidence.approvalReference && `Approval: ${evidence.approvalReference}`),
-    'Evidence date': joined(evidence.date && `Reported: ${evidence.date}`,
+    'Evidence date': joined(evidence.date && `${evidence.channel === 'manual-vo-mock' ? 'Recorded' : 'Reported'}: ${evidence.date}`,
       evidence.verifiedAt && `Verified: ${evidence.verifiedAt}`, evidence.approvalDate && `Approved: ${evidence.approvalDate}`),
     'Reviewer / approver': joined(evidence.reviewer, evidence.approver),
     'Message / photo': joined(evidence.message, photoReference(evidence.photo)),
-    'Review notes': joined(evidence.sender && `Sender: ${evidence.sender}`,
+    'Review notes': joined(evidence.channel === 'manual-vo-mock' && 'Source: Manual entry · local demo',
+      evidence.reportedInstructionReference && `Reported instruction/reference: ${evidence.reportedInstructionReference}`,
+      evidence.sender && `${evidence.channel === 'manual-vo-mock' ? 'Entered by' : 'Sender'}: ${evidence.sender}`,
       evidence.sourcePage != null && `Contract page: ${evidence.sourcePage}`,
       evidence.evidenceDateConfirmation?.confirmed && `Undated progress confirmed by QS as of ${evidence.evidenceDateConfirmation.asOf}`),
   });

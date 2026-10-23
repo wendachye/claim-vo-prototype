@@ -1,19 +1,21 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { ChevronRight, CircleAlert, Flag, MapPin, MessageSquare, Search, X } from 'lucide-react';
+import { ChevronRight, CircleAlert, Flag, MapPin, MessageSquare, Plus, Search, X } from 'lucide-react';
 import { VO_STATUS_LABELS, getVOClaimEligibility } from '../data/vo.js';
 import { useBufferedState } from './useFormBuffer.js';
 import { VOCaseReview, voTone as tone, voAmountLabel as amountLabel } from './VOCaseReview.jsx';
+import { ManualVOForm } from './ManualVOForm.jsx';
 import { Badge, Button, FormField, Modal, PageHeader, Input, NativeSelect } from './ui.jsx';
 import './vo-review.css';
 
 const reviewStatusLabel = (status) => status === 'approved' ? 'Price approved' : VO_STATUS_LABELS[status];
 
-export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }) {
+export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }) {
   const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [photo, setPhoto] = useState(null);
   const [reviewOpen, setReviewOpen] = useState(Boolean(initialCaseId));
+  const [createOpen, setCreateOpen] = useState(false);
   const searchId = useId();
   const caseRefs = useRef(new Map());
   const headingRef = useRef(null);
@@ -68,16 +70,27 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
     }
     return result;
   }
+  async function createEntry(values) {
+    const result = await onCreate?.(values);
+    if (['updated', 'unchanged'].includes(result?.outcome) && result.caseId) {
+      setSearch(''); setFilter('all'); setSelectedId(result.caseId); setPhoto(null);
+      focusReview.current = true;
+      setCreateOpen(false); setReviewOpen(true);
+      onSelect?.(result.caseId);
+    }
+    return result;
+  }
   const openCount = cases.filter((entry) => !['approved', 'rejected'].includes(entry.status) || entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible).length;
   const filterCount = (status) => cases.filter((entry) => status === 'all' || entry.status === status).length;
   const titleForList = (entry) => entry.title === `Possible extra work · ${entry.report.area}` ? 'Possible extra work' : entry.title || 'Flagged extra work';
   const priceForList = (entry) => { const value = entry.status === 'approved' ? entry.approvedValue : entry.proposedValue; return value == null || value === '' ? 'Price unknown' : amountLabel(value, currency); };
 
   return <div className={`vo-view${reviewOpen ? ' vo-review-open' : ''}`}>
-    <PageHeader title="Extra work (VO)" description="Check the scope, instruction, price and claim eligibility." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} />
+    <PageHeader title="Extra work (VO)" description="Check the scope, instruction, price and claim eligibility." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} actions={onCreate && <Button className="primary" icon={Plus} onClick={() => setCreateOpen(true)}>Add extra work</Button>} />
+    {createOpen && <ManualVOForm project={project} onClose={() => setCreateOpen(false)} onSave={createEntry} />}
     {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This extra-work case is not available in the selected project.</span><Button onClick={onClearCaseSelection}>Show all extra work</Button></div>}
 
-    {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>{project.items?.length ? 'Flag extra work from Site updates. Its message and photo will appear here for review.' : 'Add and review a contract work list before recording site updates and extra work.'}</p>{!project.items?.length && onReviewContract ? <Button icon={ChevronRight} onClick={onReviewContract}>Add a contract</Button> : <Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button>}</div> : <>
+    {!cases.length ? <div className="project-empty empty-state"><Flag size={30} /><h3>No flagged extra work for this project</h3><p>{onCreate ? 'Add extra work from a site instruction, or flag it from Site updates.' : project.items?.length ? 'Flag extra work from Site updates. Its message and photo will appear here for review.' : 'Add and review a contract work list before recording site updates and extra work.'}</p>{!project.items?.length && onReviewContract ? <Button icon={ChevronRight} onClick={onReviewContract}>Add a contract</Button> : <Button icon={MessageSquare} onClick={() => onOpenWhatsApp?.()}>Open site updates</Button>}</div> : <>
       <div className="vo-list-controls">
         <div className="vo-filter-fields">
           <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find extra work</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search VO records" placeholder="Search work, references or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" aria-label="Clear VO search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>

@@ -19,6 +19,8 @@ VO reviews marked **Price approved** still need an explicit claim check. Existin
 
 History, message details and older claim versions are expandable. This remains a browser-local demo with no live AI, WhatsApp or external submission.
 
+Use **Extra work → Add extra work** to record a manual instruction for the selected project. Enter a short work description and original details, with an optional site area/location, reported instruction reference, contract comparison link and bundled demo photo. **Add for review** opens the exact new case in the existing scope, instruction, price and claim checks. Manual entries are labelled separately from WhatsApp evidence; prices start unknown and creation does not change progress or saved claims. Original notes, author/time and attachment stay with the case. Unfinished entries remain separate by project while browsing; save before refreshing. Only explicitly selected mapped areas receive the new case's drawing flag.
+
 ## UI conventions
 
 Page headers, destination-labelled back links, form fields and action rows use shared components in `src/components/ui.jsx` and the common sizing/spacing rules in `layout-system.css`. Return links sit above detail titles; wizard step-back actions stay at the lower left. Inputs, labels, optional/unit markers, hints, validation errors and attachment buttons share one control scale. Modal close controls and the printed claim document retain their existing behavior.

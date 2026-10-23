@@ -104,7 +104,7 @@ function evidenceEntry(project, area, report, message) {
     : message.kind === 'vo' ? 'vo' : message.kind === 'clarification' || message.status === 'clarification' ? 'clarification' : 'progress';
   return {
     id: `${report ? 'report' : 'message'}:${source.id}`, messageId: message?.id || null, reportId: report?.id || null,
-    sourceLabel: message || report?.channel === 'whatsapp-mock' ? 'WhatsApp message' : 'Site update',
+    sourceLabel: report?.channel === 'manual-vo-mock' ? 'Manual entry' : message || report?.channel === 'whatsapp-mock' ? 'WhatsApp message' : 'Site update',
     kind, ...stateFor(project, report, message, kind),
     sender: originalText(source.sender, 'Site worker'), date: originalText(source.date),
     text: originalText(report ? report.message : message.text), photo: safePhoto(source.photo),
