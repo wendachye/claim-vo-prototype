@@ -1,0 +1,10 @@
+.wa-progress-check{margin:16px 0;padding:12px 14px;border:1px solid #dbeafe;border-radius:7px;background:#f8fbff;color:#334155}
+.wa-progress-check-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.wa-progress-check h3{display:flex;align-items:center;gap:7px;margin:0;color:#1d4ed8;font-size:12px;line-height:1.5}
+.wa-progress-check-message{margin:6px 0 0;font-size:13px;line-height:1.6;font-weight:600}
+.wa-progress-check-guidance{margin:3px 0 0;color:#475569;font-size:12px;line-height:1.6}
+.wa-progress-check.warning{border-color:#fde1ac;background:#fffcf5}
+.wa-progress-check.warning h3{color:#92400e}
+.wa-progress-check .wa-progress-check-link{color:#1d4ed8;white-space:normal;justify-content:flex-start;text-align:left}
+.wa-progress-check .wa-progress-check-link:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.wa-progress-check p{overflow-wrap:anywhere}

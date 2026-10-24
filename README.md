@@ -109,6 +109,14 @@ The original S.I.T. project is the main showcase in the project picker and All p
 
 The main S.I.T. showcase also includes synthetic voice notes, a mistaken match and shared-area clarification, using D.5 cantilever brackets split into two simulated, unplaced 90-piece zones. Existing source rows, messages, reports, progress and saved claims stay unchanged. Changed or already-used D.5 scopes are skipped with an explanation. Opening these examples in the main showcase stays in that project. Its original saved claim supports preparation, tracking and query/revision; completed/incomplete comparison records remain optional Demo examples. Recovery/re-extraction stays optional so it never replaces the checked S.I.T. contract automatically.
 
+## Progress checks before processing
+
+WhatsApp review shows one compact **Progress check** after the work item and area are confirmed. It explains an unchanged cumulative total, an earlier update with a newer report, or a percentage below the current reported/verified total. Allocated areas compare their own progress; whole-item observations stay separate. **View latest report** opens the exact same-scope Site progress record, supports reload and provides **Back to message**. Viewing the comparison changes no records.
+
+Repeated totals keep their original evidence and remain cumulative. The existing processing flow holds older updates for clarification. Lower verified completion still requires a supervisor’s reviewed correction and reason; the panel does not approve or reject a report automatically. Existing saved claim snapshots and exports remain unchanged.
+
+Use **Messages → Demo options → Try progress checks** to append three labelled mock inbox examples to the selected project, using an existing dated scope with known progress. Review each match before processing. Repeating the action reopens the existing examples without replacing edits, creating another project or changing completion. If no suitable report exists, verify a site update first. The older example keeps its earlier simulated source timestamp separate from its received time.
+
 ## Mock voice-note review
 
 Use **Site updates → Demo options → Try voice-note demo** for a separate project with two synthetic recordings. The clear WEST cladding update has a deliberate `wail`/`wall` transcript typo; the EAST update says “another 10%” without a cumulative total. Audio is generated for demonstration; no live transcription is connected.
