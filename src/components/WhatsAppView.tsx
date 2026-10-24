@@ -1,7 +1,7 @@
 import type { Project, WhatsAppMessage, SiteReport, VOCase, DrawingMapping, WorkItem } from '../types/domain';
 import type { ClarificationResult, WhatsAppClarificationProps } from './WhatsAppClarification';
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ImagePlus, ListChecks, LockKeyhole, MapPin, MessageSquare, Mic, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, CircleAlert, FileText, Flag, ImageOff, ImagePlus, ListChecks, LockKeyhole, MapPin, MessageSquare, Mic, Plus, Search, ShieldCheck, X, ZoomIn } from 'lucide-react';
 import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, formatMoney, formatNumber, Input, SelectField } from './ui';
 import { getVOCases, getVOClaimEligibility } from '../data/vo';
 import { getMessageReport as messageReport } from '../data/whatsapp';
@@ -19,6 +19,8 @@ import { MessageMatchReviewPanel, MessageMatchReviewDetails } from './MessageMat
 import { getMessageMatchContext } from '../data/message-match';
 import { getVoiceNoteContext } from '../data/voice-notes';
 import { VoiceNoteReview, VoiceNoteEvidenceDetails } from './VoiceNoteReview';
+import { DemoMessageForm } from './DemoMessageForm';
+import type { DemoMessageInput } from '../data/demo-message-intake';
 import './whatsapp.css';
 import { ActionMenu } from './ActionMenu';
 
@@ -36,9 +38,9 @@ function DemoPhoto({ src, alt, className = '', onOpen }: { src?: string | null; 
 }
 
 interface DemoPhotoRecord { photo: string; photoAlt?: string }
-interface WhatsAppViewProps { project: Project; messages?: WhatsAppMessage[]; initialMessageId?: string | null; onProcess?: (message: WhatsAppMessage) => void; onSaveMatch?: (messageId:string,fields:{itemId:string;areaId:string;reason:string})=>{outcome:string;error?:string}|undefined; onStartMatchDemo?:()=>void; onStartVoiceDemo?:()=>void; onSaveTranscript?:(messageId:string,values:{transcript:string;reason:string;sourceKey:string})=>{outcome:string;error?:string}|undefined; onReview?: (report: SiteReport) => void; onSaveClarificationRequest?: WhatsAppClarificationProps['onSaveRequest']; onSaveClarificationReply?: WhatsAppClarificationProps['onSaveReply']; onOpenCompletion?: (itemId?: string | null, areaId?: string, messageId?: string) => void; onOpenContract?: () => void; onOpenContractItem?: (id: string) => void; onOpenVO?: (id: string) => void; onOpenDrawing?: (areaId?: string) => void; onAddAreaMessages?: () => void; onRefreshDemoPhotos?: () => void; onSelectMessage?: (id: string) => void; onClearMessageSelection?: () => void; onBackToDrawing?: () => void; onBackToOverview?: () => void }
+interface WhatsAppViewProps { onSaveDemoMessage?: (values: DemoMessageInput) => { outcome: string; messageId?: string; error?: string } | undefined; project: Project; messages?: WhatsAppMessage[]; initialMessageId?: string | null; onProcess?: (message: WhatsAppMessage) => void; onSaveMatch?: (messageId:string,fields:{itemId:string;areaId:string;reason:string})=>{outcome:string;error?:string}|undefined; onStartMatchDemo?:()=>void; onStartVoiceDemo?:()=>void; onSaveTranscript?:(messageId:string,values:{transcript:string;reason:string;sourceKey:string})=>{outcome:string;error?:string}|undefined; onReview?: (report: SiteReport) => void; onSaveClarificationRequest?: WhatsAppClarificationProps['onSaveRequest']; onSaveClarificationReply?: WhatsAppClarificationProps['onSaveReply']; onOpenCompletion?: (itemId?: string | null, areaId?: string, messageId?: string) => void; onOpenContract?: () => void; onOpenContractItem?: (id: string) => void; onOpenVO?: (id: string) => void; onOpenDrawing?: (areaId?: string) => void; onAddAreaMessages?: () => void; onRefreshDemoPhotos?: () => void; onSelectMessage?: (id: string) => void; onClearMessageSelection?: () => void; onBackToDrawing?: () => void; onBackToOverview?: () => void }
 
-export function WhatsAppView({ project, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview, onSaveMatch, onStartMatchDemo, onStartVoiceDemo, onSaveTranscript }: WhatsAppViewProps) {
+export function WhatsAppView({ project, onSaveDemoMessage, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToOverview, onSaveMatch, onStartMatchDemo, onStartVoiceDemo, onSaveTranscript }: WhatsAppViewProps) {
   const voCases: VOCase[] = getVOCases(project);
   const caseFor = (report?: SiteReport | null) => voCases.find((entry) => entry.id === report?.id);
   const unresolvedArea = (message: WhatsAppMessage, report?: SiteReport | null) => !report && !getMessageClarification(project, message.id)?.reply && (getAreaLinkStatus(project, message).ambiguous || getAreaLinkStatus(project, message).blocked);
@@ -50,6 +52,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
   const [selectedId, setSelectedId] = useState(() => initialMessageId || orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id)))?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [addMessageOpen, setAddMessageOpen] = useState(false);
   const [matchEditing, setMatchEditing] = useState<{messageId:string;editing:boolean}|null>(null);
   const [voiceEditing,setVoiceEditing]=useState<{messageId:string;editing:boolean}|null>(null);
   const [photo, setPhoto] = useState<{ src?: string | null; alt?: string | null } | null>(null);
@@ -151,6 +154,14 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
     setSearch(''); setFilter('all'); chooseMessage(message);
   }
 
+  function saveIncomingMessage(values: DemoMessageInput) {
+    const result = onSaveDemoMessage?.(values);
+    if (result && ['updated', 'duplicate'].includes(result.outcome) && result.messageId) {
+      setSearch(''); setFilter('all'); setSelectedId(result.messageId); setPhoto(null); setReviewOpen(true);
+    }
+    return result;
+  }
+
   function backToMessages() {
     restoreInboxFocus.current = true;
     setReviewOpen(false);
@@ -171,11 +182,11 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
   const filterCount = (key: string) => messages.filter((message) => inFilter(key, message, messageReport(project, message))).length;
 
   return <div className={`whatsapp-view${reviewOpen ? ' wa-review-open' : ''}`}>
-    <PageHeader title="WhatsApp messages" description="Check a message, add reported progress, then verify it separately." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} />
+    <PageHeader title="WhatsApp messages" description="Check a message, add reported progress, then verify it separately." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} actions={onSaveDemoMessage && <Button className="primary" icon={Plus} onClick={() => setAddMessageOpen(true)}>Add demo message</Button>} />
     {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This update is not available in the selected project.</span><Button onClick={onClearMessageSelection}>Show all messages</Button></div>}
     {areaMessageUpdate.available && areaMessageUpdate.skipped.length > 0 && <details className="wa-sample-help"><summary>Some area samples need review</summary><ul>{areaMessageUpdate.skipped.map((entry, index) => <li key={`${entry.areaCode}-${index}`}><strong>{entry.areaCode}</strong> · {entry.reason}</li>)}</ul>{onOpenDrawing && <Button className="ghost" onClick={() => onOpenDrawing()}>Review area mapping</Button>}</details>}
 
-    {!messages.length ? <div className="project-empty empty-state"><MessageSquare size={32} /><h3>No demo messages for this project</h3><p>{project.items.length ? 'Choose a demo project in the project dropdown to try site updates.' : 'Add contract work first, or choose a demo project to try site updates.'}</p><Button icon={FileText} onClick={() => onOpenContract?.()}>Review contract</Button></div> : <>
+    {!messages.length ? <div className="project-empty empty-state"><MessageSquare size={32} /><h3>No demo messages for this project</h3><p>{project.items.length ? 'Add a demo message to review a new update for this project.' : 'Add contract work first, then add a demo message for this project.'}</p><Button icon={FileText} onClick={() => onOpenContract?.()}>Review contract</Button></div> : <>
       <div className="wa-list-controls">
         <div className="wa-filter-fields">
           <div className="form-field"><label className="form-field-label" htmlFor={searchId}>Find message</label><div className="search-box"><Search size={16} aria-hidden="true"/><Input id={searchId} aria-label="Search site updates" placeholder="Search messages, work items or areas…" value={search} onChange={(event) => setSearch(event.target.value)}/>{search && <button type="button" className="wa-clear-search" aria-label="Clear message search" onClick={() => setSearch('')}><X size={14}/></button>}</div></div>
@@ -210,6 +221,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
           <div className="wa-panel-back wa-back-inbox"><BackButton onClick={backToMessages}>Back to messages</BackButton></div>
           <header className="wa-panel-header"><div><h2 id="wa-review-heading" ref={reviewHeadingRef} tabIndex={-1}>{selectedSummary?.title}</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><Badge tone={status?.tone}>{status?.label === 'To check' ? 'Needs verification' : status?.label === 'Approved' ? 'Price approved' : status?.label}</Badge></header>
           <div className="wa-review-body">
+            {selected.channel === 'whatsapp-intake-mock' && <p className="wa-selected-filter-note">Mock incoming message · saved in this browser</p>}
             {selectionOutsideFilters && <p className="wa-selected-filter-note" role="status">Selected message is outside these filters.</p>}
             {report?.voiceNote ? <VoiceNoteEvidenceDetails evidence={report.voiceNote}/> : voiceContext && <VoiceNoteReview key={selected.id} project={project} messageId={selected.id} onSave={onSaveTranscript} onEditingChange={editing=>setVoiceEditing({messageId:selected.id,editing})}/>}
             {selected.originalVoiceNote && !report?.voiceNote && <VoiceNoteEvidenceDetails evidence={selected.originalVoiceNote}/>}
@@ -268,7 +280,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
             </section>}
             <div className={`area-mapping-reference${areaLink?.conflict ? ' conflict' : ''}`}><div>{areaLink?.area ? <><strong>Area {areaLink.area.code} · {areaLink.area.name}</strong><p>{areaLink.linkedItems.length ? `Drawing links: ${areaLink.linkedItems.map((entry: WorkItem)=>entry.ref || entry.id).join(', ')}` : 'No contract work items linked yet.'}</p>{areaLink.conflict && <p>This message names a different work item. Confirm the area or item before changing progress.</p>}</> : <span>This message has no saved drawing-area link.</span>}</div><a className="area-mapping-link" href={areaLink?.area ? `#drawing?area=${encodeURIComponent(areaLink.area.id)}` : '#drawing'} onClick={event=>{if(onOpenDrawing){event.preventDefault();onOpenDrawing(areaLink?.area?.id);}}}>View area map<ArrowRight size={13}/></a></div>
             </div></details>
-            <details className="wa-message-details"><summary>Message details</summary><p><strong>Message:</strong> {selected.id}{report && <><br /><strong>Report:</strong> {report.id}</>}<br /><strong>Interpretation:</strong> Predefined demo fields; AI is not connected.</p>{selected.processingNote && <p>{selected.processingNote}</p>}</details>
+            <details className="wa-message-details"><summary>Message details</summary><p><strong>Message:</strong> {selected.id}{report && <><br /><strong>Report:</strong> {report.id}</>}<br /><strong>Interpretation:</strong> {selected.channel === 'whatsapp-intake-mock' ? 'Formatted text parsed locally; AI is not connected.' : 'Predefined demo fields; AI is not connected.'}{selected.channel === 'whatsapp-intake-mock' && typeof selected.receivedAt === 'string' && <><br /><strong>Received:</strong> {time(selected.receivedAt)}</>}</p>{selected.processingNote && <p>{selected.processingNote}</p>}</details>
 
           </div>
 
@@ -278,6 +290,7 @@ export function WhatsAppView({ project, messages = [], onProcess, onReview, onSa
 
     </>}
 
+    {addMessageOpen && <DemoMessageForm project={project} onSave={saveIncomingMessage} onClose={() => setAddMessageOpen(false)} />}
     {photo && <div className="wa-photo-modal"><Modal title="Demo site photo" description="Generated illustration · not evidence from the actual project" onClose={() => setPhoto(null)} footer={<Button onClick={() => setPhoto(null)}>Done</Button>}><img src={photo.src || undefined} alt={photo.alt || 'Generated site photograph for the prototype'} /></Modal></div>}
   </div>;
 }

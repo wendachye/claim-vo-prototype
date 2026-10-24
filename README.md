@@ -83,6 +83,14 @@ Review reconciles gross value, retention held, cumulative net and prior submitte
 
 Existing gross-only drafts keep their original calculation until **Set claim basis** is chosen for a new revision. Saved versions, evidence, preview/CSV/PDF and tracker amounts retain the basis captured with that version; incomplete settings can be saved for later but cannot be prepared.
 
+## Add a demo inbox message
+
+In **Site updates → Messages**, choose **Add demo message**. Enter formatted text for the selected project, or use **Use example**, and optionally choose one bundled demo photo. The format is `PROJECT | Location | Area | Item ID | COMPLETE=50% TOTAL`; the completion field can also start on the next line. Use the contract item ID (such as `WI-016`) and a saved area code or alternate name. Interpretation is a local format parser, not AI or a live WhatsApp connection.
+
+**Preview message** shows the unchanged text/photo and the interpreted contract item, site area and cumulative completion. Invalid format or a different project must be corrected first. Unknown or shared area names and unclear completion go to clarification. Changing the text, photo or project mapping requires another preview. **Save to inbox** adds one new mock message and opens its exact record; it creates no progress report, approval or claim value. Ready messages still need **Confirm match → Add progress update → Supervisor review**. Existing evidence, saved claims and other projects stay unchanged.
+
+Cancel or close keeps unfinished entries separate by project while browsing; save before refreshing. Successful saves clear the entry buffer, and retrying the same saved entry never duplicates its message. Demo photos are explicitly labelled generated illustrations.
+
 ## Review a suggested message match
 
 New mock free-text suggestions offer **Review match** inside the WhatsApp panel. Check the suggested work item and site area against the original message/photo, or use **Edit match** to choose another measured item and compatible area. A changed suggestion needs a short correction reason. The reported percentage stays fixed; unclear or incremental completion and conflicting explicit references still require the separate worker clarification flow.

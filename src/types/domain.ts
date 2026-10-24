@@ -114,6 +114,8 @@ export interface WhatsAppMessage {
   matchSuggestion?: MessageMatchSuggestion;
   audio?: VoiceNoteAudio; originalTranscript?: string; voiceSourceKey?: string;
   originalVoiceNote?: VoiceNoteEvidence;
+  demoIntake?: { version: 1; submissionId: string; input: { projectId: string; text: string; photoId: string };
+    previewKey: string; receivedAt: string; status: 'ready' | 'clarification'; issues: string[] };
   demoPhotoHistory?: { photo: string; photoAlt?: string }[]; vo?: boolean; demo?: boolean; origin?: string; channel?: string;
   [key: string]: unknown;
 }

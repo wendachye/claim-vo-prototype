@@ -1,0 +1,23 @@
+.demo-message-form { display:grid; gap:18px; }
+.demo-message-steps { display:flex; gap:22px; margin:0; padding:0; list-style:none; color:#94a3b8; font-size:12px; }
+.demo-message-steps [aria-current='step'] { color:#2563eb; font-weight:600; }
+.demo-message-compose-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:-8px; color:#64748b; font-size:12px; }
+.demo-message-compose-heading strong { color:#475569; font-weight:500; }
+.demo-message-note { color:#64748b; font-size:12px; line-height:1.75; margin:0; }
+.demo-message-preview { display:grid; gap:16px; min-width:0; }
+.demo-message-preview-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+.demo-message-preview-heading h3 { font-size:14px; font-weight:600; color:#334155; margin:0; }
+.demo-message-original { margin:0; padding:14px; border:1px solid var(--border); border-radius:7px; background:#f8fafc; color:#334155; font-size:13px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
+.demo-message-photo { margin:0; }
+.demo-message-photo img { display:block; width:100%; max-height:180px; object-fit:cover; border:1px solid var(--border); border-radius:7px; }
+.demo-message-photo figcaption { display:flex; align-items:center; gap:6px; margin-top:6px; color:#64748b; font-size:11px; line-height:1.6; }
+.demo-message-summary { margin:0; display:grid; gap:12px; }
+.demo-message-summary > div { display:grid; grid-template-columns:115px minmax(0,1fr); gap:14px; font-size:12px; line-height:1.7; }
+.demo-message-summary dt { color:#64748b; }
+.demo-message-summary dd { margin:0; color:#334155; overflow-wrap:anywhere; }
+.demo-message-issues { border-left:2px solid #f59e0b; padding-left:12px; color:#92400e; font-size:12px; line-height:1.8; }
+.demo-message-issues p { margin:0 0 4px; font-weight:500; }
+.demo-message-issues ul { margin:0; padding-left:17px; }
+.demo-message-error { color:#b91c1c; font-size:13px; line-height:1.8; margin:0; }
+.modal-footer .demo-message-actions { width:100%; margin:0; padding:0; border:0; }
+@media (max-width:420px) { .demo-message-summary > div { grid-template-columns:1fr; gap:2px; } }
