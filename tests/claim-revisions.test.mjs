@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { beforeEach } from 'node:test';
 import { createProject, loadWorkspace, resetProject, WORKSPACE_STORE } from '../src/data/projects.ts';
 import { saveClaimDraft, markClaimPrepared } from '../src/data/claims.ts';
 import { getClaimTracking, normalizeClaimTracking, recordClaimStage } from '../src/data/claim-tracking.ts';
 import { getClaimRevisionContext, saveClaimRevision } from '../src/data/claim-revisions.ts';
 import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
+
+beforeEach(t => t.mock.timers.enable({ apis: ['Date'], now: new Date('2026-10-23T04:00:00Z') }));
 
 function fixture(code = 'QUERY') {
   const project = createProject({ code, name: 'Mock claim query test', country: 'Singapore' });

@@ -109,6 +109,10 @@ The original S.I.T. project is the main showcase in the project picker and All p
 
 The main S.I.T. showcase also includes synthetic voice notes, a mistaken match and shared-area clarification, using D.5 cantilever brackets split into two simulated, unplaced 90-piece zones. Existing source rows, messages, reports, progress and saved claims stay unchanged. Changed or already-used D.5 scopes are skipped with an explanation. Opening these examples in the main showcase stays in that project. Its original saved claim supports preparation, tracking and query/revision; completed/incomplete comparison records remain optional Demo examples. Recovery/re-extraction stays optional so it never replaces the checked S.I.T. contract automatically.
 
+## Project dashboard
+
+Project overview summarises the selected project's declared contract value, fully verified measured items, extra-work cases and latest saved claim. S.I.T. remains labelled as a partial schedule. The Monthly claims and Extra work panels link directly to their saved records, with the compact next action and last three activities retained. Summaries are read-only: claim revisions are not added together, certification and recorded receipts stay separate, and approved VO prices are distinct from claim eligibility. Empty or unknown values are labelled without inventing progress or payments.
+
 ## Progress checks before processing
 
 WhatsApp review shows one compact **Progress check** after the work item and area are confirmed. It explains an unchanged cumulative total, an earlier update with a newer report, or a percentage below the current reported/verified total. Allocated areas compare their own progress; whole-item observations stay separate. **View latest report** opens the exact same-scope Site progress record, supports reload and provides **Back to message**. Viewing the comparison changes no records.
