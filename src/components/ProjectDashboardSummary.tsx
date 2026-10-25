@@ -1,5 +1,4 @@
 import type { AttentionTarget } from '../types/domain';
-import type { ReactNode } from 'react';
 import type { getProjectDashboard } from '../data/project-dashboard';
 import { ArrowRight } from 'lucide-react';
 import { Badge, Button, formatMoney } from './ui';
@@ -10,30 +9,10 @@ type Dashboard = ReturnType<typeof getProjectDashboard>;
 const money = (value: number | null, currency: string | null) => value === null ? 'Not recorded' : `${currency || 'Currency not recorded'} ${formatMoney(value)}`;
 const claimTone = (status: string) => status === 'paid' ? 'green' : status === 'queried' ? 'amber' : ['prepared', 'submitted', 'certified'].includes(status) ? 'blue' : 'slate';
 
-export function ProjectSummaryMetric({ step, dashboard }: { step: string; dashboard: Dashboard }) {
-  const amount = (value: number | null, currency: string | null) => value === null ? 'Not recorded'
-    : <><span className="overview-currency">{currency || 'Currency unknown'}</span>{formatMoney(value)}</>;
-  if (step === 'contract') return <span className="overview-step-metric">
-    {amount(dashboard.contract.declaredValue, dashboard.contract.currency)}
-    <small>Declared contract value{dashboard.contract.partialSchedule && ' · partial schedule'}</small>
-  </span>;
-  if (step === 'site') return <span className="overview-step-metric">
-    {dashboard.site.completed}<span className="overview-currency"> / {dashboard.site.total}</span>
-    <small>Measured items fully verified{dashboard.site.unknown > 0 && ` · ${dashboard.site.unknown} unknown`}</small>
-    {dashboard.site.total > 0 && <span className="overview-site-bar" aria-hidden="true"><span style={{width:`${dashboard.site.completed / dashboard.site.total * 100}%`}} /></span>}
-  </span>;
-  if (step === 'vo') return <span className="overview-step-metric">{dashboard.vo.total}<small>Extra-work {dashboard.vo.total === 1 ? 'case' : 'cases'}</small></span>;
-  return <span className="overview-step-metric">
-    {dashboard.latestClaim ? amount(dashboard.latestClaim.amount, dashboard.latestClaim.currency) : 'No amount yet'}
-    <small>Latest saved claim{dashboard.latestClaim?.netAmount && ' · net'}</small>
-  </span>;
-}
-
-export function ProjectDashboardSummary({ dashboard, onNavigate, onOpenRecord, children }: {
-  dashboard: Dashboard; onNavigate: (route: string) => void; onOpenRecord?: (target: AttentionTarget) => void; children?: ReactNode;
+export function ProjectDashboardSummary({ dashboard, onNavigate, onOpenRecord }: {
+  dashboard: Dashboard; onNavigate: (route: string) => void; onOpenRecord?: (target: AttentionTarget) => void;
 }) {
   return <div className="dashboard-summaries">
-    <div className="dashboard-main-column">
     <section className="dashboard-panel" aria-labelledby="dashboard-claims-heading">
       <header className="dashboard-panel-header"><div><h2 id="dashboard-claims-heading">Monthly claims</h2><p>Latest saved claim for each month</p></div><Button className="ghost" aria-label="View all monthly claims" onClick={() => onNavigate('claims')}>View all<ArrowRight size={14} /></Button></header>
       {dashboard.claims.length ? <ul className="dashboard-records">{dashboard.claims.map(claim => <li key={claim.id}>
@@ -45,8 +24,6 @@ export function ProjectDashboardSummary({ dashboard, onNavigate, onOpenRecord, c
       </li>)}</ul> : <div className="dashboard-empty"><strong>No saved claims yet</strong><p>Prepare a claim from verified work and eligible extra work.</p><Button className="ghost" onClick={() => onNavigate('claims')}>Prepare a claim<ArrowRight size={14} /></Button></div>}
       {!!dashboard.claims.length && <p className="dashboard-panel-note">Amounts belong to individual saved claims. Status and payments are simulated.</p>}
     </section>
-    {children}
-    </div>
     <section className="dashboard-panel" aria-labelledby="dashboard-vo-heading">
       <header className="dashboard-panel-header"><div><h2 id="dashboard-vo-heading">Extra work</h2><p>Price approval and claim readiness</p></div><Button className="ghost" aria-label="View all extra work" onClick={() => onNavigate('vo')}>View all<ArrowRight size={14} /></Button></header>
       {dashboard.vo.total ? <>

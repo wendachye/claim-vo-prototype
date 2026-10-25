@@ -11,9 +11,9 @@ import './vo-review.css';
 
 const reviewStatusLabel = (status: string) => status === 'approved' ? 'Price approved' : (VO_STATUS_LABELS as Readonly<Record<string, string>>)[status];
 
-interface VOReviewViewProps { project: Project; cases?: VOCase[]; initialCaseId?: string | null; onSelect?: (id: string) => void; onAction?: VOCaseReviewProps['onAction']; onCreateConfirmation?: VOCaseReviewProps['onCreateConfirmation']; onConfirmationReply?: VOCaseReviewProps['onConfirmationReply']; onCreate?: ComponentProps<typeof ManualVOForm>['onSave']; onOpenWhatsApp?: () => void; onOpenContract?: VOCaseReviewProps['onOpenContract']; onReviewContract?: () => void; onOpenClaims?: (caseId: string) => void; onBackToDrawing?: () => void; onBackToOverview?: () => void; onClearCaseSelection?: () => void }
+interface VOReviewViewProps { project: Project; cases?: VOCase[]; initialCaseId?: string | null; onSelect?: (id: string) => void; onAction?: VOCaseReviewProps['onAction']; onCreateConfirmation?: VOCaseReviewProps['onCreateConfirmation']; onConfirmationReply?: VOCaseReviewProps['onConfirmationReply']; onCreate?: ComponentProps<typeof ManualVOForm>['onSave']; onOpenWhatsApp?: () => void; onOpenContract?: VOCaseReviewProps['onOpenContract']; onReviewContract?: () => void; onOpenClaims?: (caseId: string) => void; onBackToDrawing?: () => void; onBackToOverview?: () => void; overviewBackLabel?: string; onClearCaseSelection?: () => void }
 
-export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onCreateConfirmation, onConfirmationReply, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, onClearCaseSelection }: VOReviewViewProps) {
+export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onCreateConfirmation, onConfirmationReply, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToOverview, overviewBackLabel = 'Back to overview', onClearCaseSelection }: VOReviewViewProps) {
   const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -90,7 +90,7 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
   const priceForList = (entry: VOCase) => { const value = entry.status === 'approved' ? entry.approvedValue : entry.proposedValue; return value == null ? 'Price unknown' : amountLabel(value, currency); };
 
   return <div className={`vo-view${reviewOpen ? ' vo-review-open' : ''}`}>
-    <PageHeader title="Extra work (VO)" description="Check the scope, instruction, price and claim eligibility." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? 'Back to overview' : 'Back to drawing'} actions={onCreate && <Button className="primary" icon={Plus} onClick={() => setCreateOpen(true)}>Add extra work</Button>} />
+    <PageHeader title="Extra work (VO)" description="Check the scope, instruction, price and claim eligibility." onBack={onBackToOverview || onBackToDrawing} backLabel={onBackToOverview ? overviewBackLabel : 'Back to drawing'} actions={onCreate && <Button className="primary" icon={Plus} onClick={() => setCreateOpen(true)}>Add extra work</Button>} />
     {createOpen && <ManualVOForm project={project} onClose={() => setCreateOpen(false)} onSave={createEntry} />}
     {unavailable && <div className="notice warning"><CircleAlert size={16}/><span>This extra-work case is not available in the selected project.</span><Button onClick={onClearCaseSelection}>Show all extra work</Button></div>}
 

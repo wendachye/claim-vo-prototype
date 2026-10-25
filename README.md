@@ -111,7 +111,7 @@ The main S.I.T. showcase also includes synthetic voice notes, a mistaken match a
 
 ## Project dashboard
 
-Project overview summarises the selected project's declared contract value, fully verified measured items, extra-work cases and latest saved claim. S.I.T. remains labelled as a partial schedule. The Monthly claims and Extra work panels link directly to their saved records, with the compact next action and last three activities retained. Summaries are read-only: claim revisions are not added together, certification and recorded receipts stay separate, and approved VO prices are distinct from claim eligibility. Empty or unknown values are labelled without inventing progress or payments.
+The separate **Dashboard** sidebar module summarises the selected project's monthly claims, payment status and extra-work approvals. It has no workflow-step cards; those stay in Project overview. Monthly claims and Extra work link directly to saved records, with **Back to dashboard** preserved after reload. Project overview retains the workflow cards, compact next action and last three activities. Summaries are read-only: claim revisions are not added together, certification and recorded receipts stay separate, and approved VO prices are distinct from claim eligibility. Empty or unknown values are labelled without inventing progress or payments.
 
 ## Progress checks before processing
 

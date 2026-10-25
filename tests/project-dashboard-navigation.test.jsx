@@ -37,14 +37,15 @@ function fixture(change = value => value) {
   return { project: loaded.projects.find(entry => entry.id === project.id), other: loaded.projects.find(entry => entry.id === other.id) };
 }
 
-function mount() {
-  window.history.replaceState(null, '', '#projects');
+function mount(hash = '#dashboard') {
+  window.history.replaceState(null, '', hash);
   return render(<App />);
 }
 
-async function backToOverview(user) {
-  await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
-  await screen.findByRole('heading', { name: 'Project overview', exact: true });
+async function backToDashboard(user) {
+  await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+  await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+  expect(location.hash).toBe('#dashboard');
 }
 
 beforeEach(() => {
@@ -68,6 +69,39 @@ afterEach(() => {
 });
 
 describe('selected-project dashboard record links', () => {
+  it('keeps the default workflow overview separate and opens Dashboard from its own sidebar module and direct link', async () => {
+    fixture();
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    let view = mount('');
+    await screen.findByRole('heading', { name: 'Project overview', exact: true });
+    expect(screen.queryByRole('region', { name: 'Monthly claims', exact: true })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Extra work', exact: true })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Recent activity', exact: true })).toBeTruthy();
+    expect(screen.getByRole('navigation', { name: 'Project steps', exact: true })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    expect(location.hash).toBe('#dashboard');
+    expect(screen.getByRole('button', { name: 'Dashboard', exact: true }).getAttribute('aria-current')).toBe('page');
+    expect(claimPanel()).toBeTruthy();
+    expect(voPanel()).toBeTruthy();
+    expect(screen.queryByRole('region', { name: 'Recent activity', exact: true })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Project steps', exact: true })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Project dashboard summary', exact: true })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Project workflow', exact: true })).toBeNull();
+    view.unmount(); view = render(<App />);
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    expect(claimPanel()).toBeTruthy();
+    expect(voPanel()).toBeTruthy();
+    expect(screen.queryByRole('navigation', { name: 'Project dashboard summary', exact: true })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Project workflow', exact: true })).toBeNull();
+    expect(workspace().projects).toEqual(before);
+    await user.click(screen.getByRole('button', { name: 'Overview', exact: true }));
+    await screen.findByRole('heading', { name: 'Project overview', exact: true });
+    expect(screen.queryByRole('region', { name: 'Monthly claims', exact: true })).toBeNull();
+    expect(workspace().projects).toEqual(before);
+  });
+
   it('opens saved claim and VO records beyond the last three activities, preserving exact evidence through reload and return', async () => {
     const { project } = fixture(value => {
       value.whatsappMessages.filter(message => message.status === 'new').slice(0, 3).forEach((message, index) => {
@@ -85,20 +119,20 @@ describe('selected-project dashboard record links', () => {
     await user.click(within(claimPanel()).getByRole('button', { name: /Open October 2026 claim, version 1, Draft/ }));
     await screen.findByRole('heading', { name: 'Claim preview', exact: true });
     expect(params().get('draft')).toBe(draft.id);
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     expect(document.querySelector('.claim-pack-document').textContent).toContain(draft.id);
     view.unmount(); view = render(<App />);
     expect(document.querySelector('.claim-pack-document').textContent).toContain(draft.id);
-    await backToOverview(user);
+    await backToDashboard(user);
 
     await user.click(within(voPanel()).getByRole('button', { name: `Open extra work: ${extra.title}`, exact: true }));
     await screen.findByRole('heading', { name: extra.title, exact: true });
     expect(params().get('case')).toBe(extra.id);
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     expect(document.querySelector('.vo-detail').textContent).toContain(extra.report.message);
     view.unmount(); render(<App />);
     expect(document.querySelector('.vo-detail').textContent).toContain(extra.report.message);
-    await backToOverview(user);
+    await backToDashboard(user);
     expect(workspace().projects).toEqual(before);
     expect(buildClaimPack(workspace().projects.find(entry => entry.id === project.id), draft.id)).toEqual(pack);
   });
@@ -124,13 +158,31 @@ describe('selected-project dashboard record links', () => {
     await user.click(within(panel).getByRole('button', { name: 'Open October 2026 claim, version 1, Part paid', exact: true }));
     await screen.findByRole('heading', { name: 'Record payment', exact: true });
     expect(params().get('draft')).toBe(draft.id);
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     view.unmount(); render(<App />);
     expect(screen.getByRole('heading', { name: 'Record payment', exact: true })).toBeTruthy();
-    await backToOverview(user);
+    await backToDashboard(user);
     expect(claimPanel().textContent).toContain('Balance SGD 1,500.00');
     expect(workspace().projects).toEqual(before);
     expect(buildClaimPack(workspace().projects.find(entry => entry.id === project.id), draft.id)).toEqual(pack);
+  });
+
+  it('opens the ordinary claims and extra-work modules from View all without altering the dashboard records', async () => {
+    fixture();
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount();
+    await user.click(screen.getByRole('button', { name: 'View all monthly claims', exact: true }));
+    await screen.findByRole('heading', { name: 'Monthly claims', exact: true });
+    expect(location.hash.split('?')[0]).toBe('#claims');
+    await user.click(screen.getByRole('button', { name: 'Dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    await user.click(screen.getByRole('button', { name: 'View all extra work', exact: true }));
+    await screen.findByRole('heading', { name: 'Extra work (VO)', exact: true });
+    expect(location.hash.split('?')[0]).toBe('#vo');
+    await user.click(screen.getByRole('button', { name: 'Dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    expect(workspace().projects).toEqual(before);
   });
 
   it('switches dashboard summaries with the project and gives an empty project truthful next actions without losing saved records', async () => {
@@ -143,6 +195,8 @@ describe('selected-project dashboard record links', () => {
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}`, exact: true }));
     await chooseProjectOption(user, other);
     await waitFor(() => expect(workspace().activeProjectId).toBe(other.id));
+    expect(location.hash).toBe('#dashboard');
+    expect(screen.getByRole('button', { name: 'Dashboard', exact: true }).getAttribute('aria-current')).toBe('page');
     expect(claimPanel().textContent).toContain('No saved claims yet');
     expect(voPanel().textContent).toContain('No extra work recorded');
     expect(within(claimPanel()).queryByRole('button', { name: /Open October 2026 claim/ })).toBeNull();
@@ -150,7 +204,8 @@ describe('selected-project dashboard record links', () => {
     await user.click(within(claimPanel()).getByRole('button', { name: 'Prepare a claim', exact: true }));
     await screen.findByRole('heading', { name: 'Monthly claims', exact: true });
     expect(workspace().projects).toEqual(before);
-    await user.click(screen.getByRole('button', { name: 'Overview', exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
     await user.click(screen.getByRole('button', { name: `Project: ${other.name}`, exact: true }));
     await chooseProjectOption(user, project);
     await waitFor(() => expect(workspace().activeProjectId).toBe(project.id));
