@@ -14,7 +14,7 @@ afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 it('shows the unique matched area beside the unchanged source before explicit processing',async()=>{
   const user=userEvent.setup(),project=fixture(),source=project.whatsappMessages[0],onProcess=vi.fn(),onOpenDrawing=vi.fn(),before=structuredClone(project);
   render(<WhatsAppView project={project} messages={project.whatsappMessages} initialMessageId={source.id} onProcess={onProcess} onOpenDrawing={onOpenDrawing}/>);
-  expect(screen.getByText('Matched site area')).toBeTruthy();expect(screen.getByText('WEST · Block A — west wall')).toBeTruthy();
+  expect(within(screen.getByRole('region',{name:'Matched work and area'})).getByText('Site area')).toBeTruthy();expect(screen.getByText('WEST · Block A — west wall')).toBeTruthy();
   await user.click(screen.getByRole('button',{name:'View area',exact:true}));expect(onOpenDrawing).toHaveBeenCalledWith(project.drawingMapping.areas[0].id);
   await user.click(screen.getByRole('button',{name:'Add progress update',exact:true}));expect(onProcess).toHaveBeenCalledWith(source);
   expect(project).toEqual(before);

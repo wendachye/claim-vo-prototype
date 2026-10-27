@@ -1,3 +1,4 @@
+import { chooseDrawingArea } from './drawing-select-helpers.mjs';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -7,12 +8,11 @@ import { createDemoProject } from '../src/data/demo-project.ts';
 import { getDrawingMapping, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.ts';
 import { getAreaProgress } from '../src/data/drawing-progress.ts';
 import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
-import { chooseSelect } from './select-helpers.mjs';
 
 const now = new Date('2026-10-24T10:00:00+08:00');
 const projectIds = new Set();
 const summary = area => screen.getByRole('region', { name: `Area ${area.code} completion`, exact: true });
-const picker = () => screen.getByRole('combobox', { name: 'Choose site area', exact: true });
+const picker = () => screen.getByRole('button', { name: 'Choose site area', exact: true });
 const quantityInput = item => screen.getByRole('spinbutton', { name: `Quantity in this area for ${item.ref}`, exact: true });
 
 function fixture() {
@@ -71,10 +71,10 @@ describe('simple area quantity mapping', () => {
     await user.click(screen.getByRole('button', { name: 'Save area links', exact: true }));
     await waitFor(() => expect(document.querySelector('.drawing-area-editor')).toBeNull());
     expect(getDrawingMapping(view.current()).areas.find(area => area.id === west.id).workItemQuantities).toEqual({ [item.id]: 720 });
-    expect(summary(west).textContent).toContain('720 m² assigned here');
+    expect(within(summary(west)).getByText('Quantity in this area', { exact: true }).nextElementSibling.textContent).toBe('720 m²');
     expect(getAreaProgress(view.current(), west.id).items[0].completion).toBeNull();
-    await chooseSelect(user, picker(), east.id);
-    expect(summary(east).textContent).toContain('Quantity not assigned here');
+    await chooseDrawingArea(user, picker(), east.id);
+    expect(within(summary(east)).getByText('Quantity in this area', { exact: true }).nextElementSibling.textContent).toBe('Not allocated');
     await user.click(within(summary(east)).getByRole('button', { name: 'Edit area mapping', exact: true }));
     await user.type(quantityInput(item), '481');
     expect(screen.getByText('Contract 1,200 m² · Elsewhere 720 · Remaining -1 m²')).toBeTruthy();
@@ -100,8 +100,8 @@ describe('simple area quantity mapping', () => {
     await user.clear(screen.getByRole('textbox', { name: /^Area name/ }));
     await user.type(screen.getByRole('textbox', { name: /^Area name/ }), 'West work area');
     await user.type(quantityInput(item), '720');
-    await chooseSelect(user, picker(), east.id);
-    await chooseSelect(user, picker(), west.id);
+    await chooseDrawingArea(user, picker(), east.id);
+    await chooseDrawingArea(user, picker(), west.id);
     await user.click(within(summary(west)).getByRole('button', { name: 'Edit area mapping', exact: true }));
     expect(screen.getByRole('textbox', { name: /^Area name/ }).value).toBe('West work area');
     expect(quantityInput(item).value).toBe('720');

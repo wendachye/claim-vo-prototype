@@ -88,7 +88,7 @@ describe('inline contract total difference review', () => {
     expect(readFormBuffer('TOTAL-REVIEW-ONE', 'contract:total-review:ONE-SCOPE')).toBeUndefined();
     expect(screen.getByText(saved.reason)).toBeTruthy();
     expect(screen.getByText(/Recorded by Demo QS/)).toBeTruthy();
-    expect(screen.getByText('Difference reviewed')).toBeTruthy();
+    expect(screen.getByText('Total difference reviewed')).toBeTruthy();
     expect(screen.getByText('SGD -10.00')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Edit reason', exact: true })).toBeTruthy();
   });

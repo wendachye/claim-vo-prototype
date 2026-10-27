@@ -159,8 +159,8 @@ describe('site progress separates worker reports from supervisor verification', 
     const user = userEvent.setup();
     mount(`#completion?report=${encodeURIComponent(report.id)}`);
     const dialog = await screen.findByRole('dialog');
-    const completion = within(dialog).getByRole('spinbutton', { name: 'Verified cumulative completion (%)', exact: true });
-    expect(completion.value).toBe('50');
+    expect(within(dialog).queryByRole('spinbutton')).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Confirm', exact: true }).getAttribute('aria-pressed')).toBe('true');
     await user.click(within(dialog).getByRole('button', { name: 'Verify progress', exact: true }));
     const note = within(dialog).getByRole('textbox', { name: 'Review note or correction reason', exact: true });
     expect(document.activeElement).toBe(note);
@@ -191,7 +191,8 @@ describe('site progress separates worker reports from supervisor verification', 
     const dialog = await screen.findByRole('dialog');
     const verify = within(dialog).getByRole('button', { name: 'Verify progress', exact: true });
     expect(verify.disabled).toBe(true);
-    expect(within(dialog).getByRole('spinbutton', { name: 'Verified cumulative completion (%)', exact: true }).disabled).toBe(true);
+    expect(within(dialog).queryByRole('spinbutton')).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Correct', exact: true }).disabled).toBe(true);
     expect(dialog.textContent).toMatch(/contract/i);
     await user.click(verify);
     expect(workspace().projects).toEqual(before);
@@ -222,4 +223,77 @@ describe('site progress separates worker reports from supervisor verification', 
     }
     expect(workspace().projects).toEqual(before);
   });
+
+  it('shows original evidence before totals and decision, with simple confirmation fields hidden', async () => {
+    const { project } = fixture();
+    const report = reportFor(project, 'WI-004');
+    const before = workspace().projects;
+    mount(`#completion?report=${encodeURIComponent(report.id)}`);
+    const dialog = await screen.findByRole('dialog');
+    const evidence = dialog.querySelector('.site-report-evidence');
+    const totals = within(dialog).getByRole('region', { name: 'Completion totals', exact: true });
+    const decision = within(dialog).getByRole('region', { name: 'Supervisor decision', exact: true });
+    expect(evidence.open).toBe(true);
+    expect(evidence.compareDocumentPosition(totals) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(totals.compareDocumentPosition(decision) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dialog.textContent).toContain('Whole work item total');
+    expect(within(dialog).queryByRole('spinbutton')).toBeNull();
+    expect(within(dialog).queryByRole('textbox', { name: 'Review note or correction reason', exact: true })).toBeNull();
+    expect(workspace().projects).toEqual(before);
+  });
+
+  it('requires a reason for Can’t verify and retains source evidence, progress and saved claims', async () => {
+    const { project, other } = fixture();
+    const report = reportFor(project, 'WI-004');
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount(`#completion?report=${encodeURIComponent(report.id)}`);
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Can’t verify', exact: true }));
+    const note = within(dialog).getByRole('textbox', { name: 'Review note or correction reason', exact: true });
+    expect(document.activeElement).toBe(note);
+    expect(within(dialog).queryByRole('spinbutton')).toBeNull();
+    expect(within(dialog).queryByRole('button', { name: 'Verify progress', exact: true })).toBeNull();
+    await user.click(within(dialog).getByRole('button', { name: 'Save clarification', exact: true }));
+    expect(document.activeElement).toBe(note);
+    expect(note.getAttribute('aria-invalid')).toBe('true');
+    expect(workspace().projects).toEqual(before);
+    await user.type(note, 'Need a wider photo of the stair bay and its cumulative total.');
+    await user.click(within(dialog).getByRole('button', { name: 'Save clarification', exact: true }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const saved = selectedProject();
+    expect(saved.items).toEqual(project.items);
+    const changed = saved.reports.find(entry => entry.id === report.id);
+    expect(changed.status).toBe('needsClarification');
+    expect(changed.reviewReason).toBe(note.value);
+    expect(sourceEvidence(changed)).toEqual(sourceEvidence(report));
+    for (const key of ['claimDrafts', 'claimTracking', 'whatsappMessages', 'voReviews', 'baselines']) expect(saved[key]).toEqual(project[key]);
+    expect(workspace().projects.find(entry => entry.id === other.id)).toEqual(other);
+  });
+
+  it('requires a reason for an explicit correction and resets the hidden total when returning to Confirm', async () => {
+    const { project } = fixture();
+    const report = reportFor(project, 'WI-004');
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount(`#completion?report=${encodeURIComponent(report.id)}`);
+    const dialog = await screen.findByRole('dialog');
+    await user.click(within(dialog).getByRole('button', { name: 'Correct', exact: true }));
+    const completion = within(dialog).getByRole('spinbutton', { name: 'Verified cumulative completion (%)', exact: true });
+    expect(document.activeElement).toBe(completion);
+    await user.click(within(dialog).getByRole('button', { name: 'Verify progress', exact: true }));
+    expect(document.activeElement).toBe(within(dialog).getByRole('textbox', { name: 'Review note or correction reason', exact: true }));
+    expect(workspace().projects).toEqual(before);
+    await user.clear(completion);
+    await user.type(completion, '35');
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm', exact: true }));
+    expect(within(dialog).queryByRole('spinbutton')).toBeNull();
+    expect(within(dialog).queryByRole('textbox', { name: 'Review note or correction reason', exact: true })).toBeNull();
+    await user.click(within(dialog).getByRole('button', { name: 'Verify progress', exact: true }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    const saved = selectedProject();
+    expect(saved.reports.find(entry => entry.id === report.id).approvedCompletion).toBe(report.completion);
+    expect(saved.claimDrafts).toEqual(project.claimDrafts);
+  });
+
 });

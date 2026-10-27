@@ -60,7 +60,7 @@ describe('compact WhatsApp match review', () => {
     const user = userEvent.setup();
     render(<MessageMatchReviewPanel project={project} message={message} onSave={onSave} />);
     expect(screen.getByRole('region', { name: 'Review match' }).textContent).toContain('50% cumulative');
-    expect(screen.getByText('Mock suggestion · review against the original below.')).toBeTruthy();
+    expect(screen.getByText('Mock suggestion · compare with the original above.')).toBeTruthy();
     expect(screen.queryByRole('spinbutton')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Confirm match', exact: true }));
     expect(onSave).toHaveBeenCalledWith(message.id, { itemId: 'WORK-1', areaId: areas[0].id, reason: '' });

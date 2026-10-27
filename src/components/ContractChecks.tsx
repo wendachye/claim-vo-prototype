@@ -2,9 +2,9 @@ import type { FormEvent } from 'react';
 import type { Project } from '../types/domain';
 import type { getContractChecks } from '../data/contract-checks';
 import type { getContractTotalReview } from '../data/contract-total-review';
-interface ContractChecksProps { project: Project; checks: ReturnType<typeof getContractChecks>; totalReview?: ReturnType<typeof getContractTotalReview>; open?: boolean; onOpenChange?: (open: boolean) => void; onOpenItem?: (id: string) => void; onSaveTotalReview?: (reason: string, scopeKey: string) => { outcome: string; error?: string } | Promise<{ outcome: string; error?: string }>; onReviewEditingChange?: (editing: boolean) => void; reviewRequested?: number }
+interface ContractChecksProps { presentation?: 'compact' | 'details'; showPartialLabel?: boolean; project: Project; checks: ReturnType<typeof getContractChecks>; totalReview?: ReturnType<typeof getContractTotalReview>; open?: boolean; onOpenChange?: (open: boolean) => void; onOpenItem?: (id: string) => void; onSaveTotalReview?: (reason: string, scopeKey: string) => { outcome: string; error?: string } | Promise<{ outcome: string; error?: string }>; onReviewEditingChange?: (editing: boolean) => void; reviewRequested?: number }
 import { useEffect, useId, useRef, useState } from 'react';
-import { ArrowUpRight, Check, ChevronDown, ListChecks } from 'lucide-react';
+import { ArrowUpRight, Check, ChevronDown, CircleAlert } from 'lucide-react';
 import { clearFormBuffer, readFormBuffer } from '../data/form-buffer.ts';
 import { useBufferedState } from './useFormBuffer';
 import { Badge, Button, FormActions, FormField, Textarea, formatMoney } from './ui';
@@ -14,7 +14,7 @@ const knownAmount = (value: unknown): value is number => typeof value === 'numbe
 const money = (value: unknown, currency?: string | null) => knownAmount(value) ? `${currency ? `${currency} ` : ''}${formatMoney(value)}` : 'Unknown';
 const reviewDate = (value: string | null | undefined) => value && !Number.isNaN(new Date(value).getTime()) ? new Date(value).toLocaleString('en-SG', { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : 'Date not recorded';
 
-export function ContractChecks({ project, checks, totalReview, open, onOpenChange, onOpenItem, onSaveTotalReview, onReviewEditingChange, reviewRequested = 0 }: ContractChecksProps) {
+export function ContractChecks({ project, checks, totalReview, open, onOpenChange, onOpenItem, onSaveTotalReview, onReviewEditingChange, reviewRequested = 0, showPartialLabel = true, presentation = 'compact' }: ContractChecksProps) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
@@ -33,7 +33,7 @@ export function ContractChecks({ project, checks, totalReview, open, onOpenChang
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => { setExpanded(false); }, [project.id]);
   useEffect(() => { setEditing(false); setError(''); setSaving(submissions.current.has(identity)); returnFocus.current = false; }, [identity]);
-  const isOpen = open ?? expanded;
+  const isOpen = presentation === 'details' || (open ?? expanded);
   const issues = checks.issues || [];
   const itemCount = checks.itemIssueCount || 0;
   const totals = checks.totals || {};
@@ -45,7 +45,8 @@ export function ContractChecks({ project, checks, totalReview, open, onOpenChang
   const reviewed = totalNeedsReview && totalReview?.status === 'reviewed';
   const requiresReview = totalNeedsReview && !partial && totalReview?.required === true;
   const canReview = requiresReview && !project.locked && checks.canConfirm === true;
-  const status = itemCount ? `${itemCount} ${itemCount === 1 ? 'item' : 'items'} to check` : totalNeedsReview ? reviewed ? 'Difference reviewed' : 'Total needs review' : 'No item issues';
+  const hasIssues = itemCount > 0 || (totalNeedsReview && !reviewed);
+  const status = itemCount ? `${itemCount} ${itemCount === 1 ? 'item needs' : 'items need'} review` : totalNeedsReview ? reviewed ? 'Total difference reviewed' : 'Total needs review' : 'No issues found';
 
   useEffect(() => {
     if (!reviewRequested || !canReview) return;
@@ -95,15 +96,15 @@ export function ContractChecks({ project, checks, totalReview, open, onOpenChang
     onOpenChange?.(next);
   }
 
-  return <section className="contract-checks" id="contract-checks" tabIndex={-1} aria-label="Contract checks">
-    <button type="button" className="contract-checks-toggle" aria-expanded={isOpen} aria-controls={contentId} onClick={toggle}>
-      <ListChecks size={17} aria-hidden="true" />
-      <span className="contract-checks-title">Contract checks</span>
-      <span className={`contract-checks-status${itemCount || (totalNeedsReview && !reviewed) ? ' has-issues' : ''}`}>{status}</span>
-      {partial && <Badge className="contract-checks-partial">Partial schedule</Badge>}
-      <ChevronDown className="contract-checks-chevron" size={16} aria-hidden="true" />
-    </button>
+  return <section className={`contract-checks${presentation === 'details' ? ' contract-checks-details' : ''}`} id="contract-checks" tabIndex={-1} aria-label="Contract checks">
+    {presentation === 'compact' && <button type="button" className={`contract-checks-toggle${hasIssues ? ' has-issues' : ''}`} aria-label={`Contract checks: ${status}`} aria-expanded={isOpen} aria-controls={contentId} onClick={toggle}>
+      {hasIssues ? <CircleAlert size={16} aria-hidden="true" /> : <Check size={16} aria-hidden="true" />}
+      <span className="contract-checks-status">{status}</span>
+      {partial && showPartialLabel && <Badge className="contract-checks-partial">Partial schedule</Badge>}
+      <ChevronDown className="contract-checks-chevron" size={14} aria-hidden="true" />
+    </button>}
     {isOpen && <div className="contract-checks-body" id={contentId}>
+      {presentation === 'details' && partial && showPartialLabel && <Badge className="contract-checks-partial">Partial schedule</Badge>}
       {project.locked && <p className="contract-checks-note">Current values; confirmed baseline unchanged.</p>}
       {issues.length > 0 ? <ul className="contract-checks-issues" aria-label="Items to check">{issues.map((issue) => <li key={issue.id || issue.itemId}>
         <Button className="ghost contract-checks-item" aria-label={`Review checks for ${issue.itemId}`} onClick={() => issue.itemId && onOpenItem?.(issue.itemId)}>

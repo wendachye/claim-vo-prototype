@@ -54,7 +54,9 @@ describe('voice-only source evidence wording', () => {
   it('shows frozen voice evidence and sender details in desktop review without claiming it is text-only', () => {
     const project = processed(fixture()), report = project.reports[0], item = project.items.find(entry => entry.id === report.itemId);
     const view = render(<ReportDrawer project={project} projectCode={project.code} item={item} report={report} locked onApprove={vi.fn()}/>);
-    expect(screen.getByText(/Check the recording, transcript and any clarification below/)).toBeTruthy();
+    const recording = view.container.querySelector('.wa-voice-saved-evidence');
+    expect(recording.open).toBe(true);
+    expect(recording.compareDocumentPosition(view.container.querySelector('.site-report-decision')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const source = view.container.querySelector('.site-report-evidence');
     expect(source.open).toBe(false); expect(source.textContent).toContain('Sender & update details');
     expect(within(source).getByText(report.sender)).toBeTruthy(); expect(source.querySelector('blockquote')).toBeNull();

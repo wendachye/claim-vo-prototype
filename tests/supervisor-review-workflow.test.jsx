@@ -94,13 +94,13 @@ describe('mobile supervisor review uses the existing project verification workfl
     expect(screen.getByRole('img').getAttribute('src')).toBe(report.photo);
     expect(screen.queryByRole('button', { name: 'Choose project', exact: true })).toBeNull();
     expect(screen.queryByText('All projects', { exact: true })).toBeNull();
-    expect(screen.queryByRole('navigation', { name: 'Project steps', exact: true })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Project modules', exact: true })).toBeNull();
     expect(screen.queryByText(/SGD|retention|claim amount/i)).toBeNull();
     expect(workspace().projects).toEqual(before);
     await user.click(screen.getByRole('button', { name: 'Back to Site progress', exact: true }));
     const returned = await screen.findByRole('dialog');
     expect(returned.textContent).toContain(report.message);
-    for (const [key, value] of Object.entries(scope)) expect(params().get(key)).toBe(value);
+    for (const [key, value] of Object.entries({ ...scope, from: 'dashboard' })) expect(params().get(key)).toBe(value);
     expect(workspace().projects).toEqual(before);
   });
 

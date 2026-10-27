@@ -59,9 +59,18 @@ const combo = name => screen.getByRole('combobox', { name: new RegExp(`^${name}`
 const textbox = name => screen.getByRole('textbox', { name: new RegExp(`^${name}`) });
 
 async function replace(user, element, value) { await user.clear(element); if (value) await user.type(element, value); }
+async function openWorkReview(user) {
+  const details = document.querySelector('.vo-work-review');
+  if (details && !details.open) await user.click(details.querySelector('summary'));
+}
+async function reviewAction(user, label) {
+  await user.click(screen.getByRole('button', { name: 'Review actions', exact: true }));
+  await user.click(screen.getByRole('menuitem', { name: label, exact: true }));
+}
 
-describe('four separate VO review checks', () => {
-  it('puts the contract comparison beside the decision while preserving the disclosed original message and photo', async () => {
+
+describe('simple VO review preserves separate commercial checks', () => {
+  it('puts open original evidence before the grouped work review while preserving contract comparison and source records', async () => {
     const project = fixture();
     const before = structuredClone(project);
     const onPhoto = vi.fn();
@@ -69,23 +78,22 @@ describe('four separate VO review checks', () => {
     const action = vi.fn();
     const user = userEvent.setup();
     const view = render(<Harness initial={project} onPhoto={onPhoto} onOpenContract={onOpenContract} onAction={action}/>);
-    for (const name of ['Contract scope', 'Instruction', 'Price approval', 'Claim eligibility']) {
+    for (const name of ['Contract scope', 'Instruction', 'Price approval', 'Claim readiness']) {
       expect(screen.getByRole('region', { name, exact: true })).toBeTruthy();
     }
     const contract = screen.getByRole('region', { name: 'Contract scope' });
     expect(contract.textContent).toContain('A.1 / 1a · Original façade scaffold');
     expect(contract.textContent).toContain('Original scope includes listed guardrails and working decks.');
     expect(contract.textContent).toContain('Source page 27');
-    await user.click(view.container.querySelector('.vo-work-details > summary'));
-    await user.click(view.container.querySelector('.vo-work-details > summary'));
+    const workDetails = view.container.querySelector('.vo-work-details');
+    if (!workDetails.open) await user.click(workDetails.querySelector('summary'));
     await chooseSelect(user, combo('Contract item for comparison'), 'B');
     expect(contract.textContent).toContain('B.1 / 1b · Internal working platform');
     await user.click(within(contract).getByRole('button', { name: 'Check contract' }));
     expect(onOpenContract).toHaveBeenCalledWith('B', caseId);
     const evidence = view.container.querySelector('.vo-evidence-details');
-    expect(evidence.open).toBe(false);
-    await user.click(evidence.querySelector('summary'));
     expect(evidence.open).toBe(true);
+    expect(evidence.compareDocumentPosition(view.container.querySelector('.vo-work-review')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(evidence).getByText(originalMessage)).toBeTruthy();
     expect(within(evidence).getByRole('img', { name: 'Mock access platform evidence' })).toBeTruthy();
     await user.click(within(evidence).getByRole('button', { name: 'Enlarge VO evidence photo' }));
@@ -137,7 +145,7 @@ describe('four separate VO review checks', () => {
     expect(entry.status).toBe('approved');
     expect(entry.approvedValue).toBe(0);
     expect(screen.getByRole('region', { name: 'Price approval' }).textContent).toContain('SGD 0.00');
-    expect(screen.getByRole('region', { name: 'Claim eligibility' }).textContent).toContain('Checks needed');
+    expect(screen.getByRole('region', { name: 'Claim readiness' }).textContent).toContain('Checks needed');
     expect(getVOClaimEligibility(entry).eligible).toBe(false);
     expect(screen.queryByRole('button', { name: 'Review in monthly claim' })).toBeNull();
     expect(latest.claimDrafts).toEqual(project.claimDrafts);
@@ -150,6 +158,8 @@ describe('four separate VO review checks', () => {
     const openClaims = vi.fn();
     const user = userEvent.setup();
     render(<Harness initial={project} onOpenClaims={openClaims} onState={value => { latest = value; }}/>);
+    expect(document.querySelector('.vo-work-review').open).toBe(false);
+    await openWorkReview(user);
     expect(combo('Instruction evidence').getAttribute('data-value')).toBe('notRecorded');
     expect(combo('Extra-work verification').getAttribute('data-value')).toBe('notVerified');
     expect(combo('Claim decision').getAttribute('data-value')).toBe('needsReview');
@@ -205,7 +215,7 @@ describe('four separate VO review checks', () => {
     await user.click(screen.getByRole('button', { name: 'Save claim checks' }));
     expect(latest).toEqual(original);
     expect(screen.getByRole('button', { name: 'Edit claim checks' })).toBeTruthy();
-    await user.click(screen.getByText('Reopen this decision', { exact: true }));
+    await reviewAction(user, 'Reopen review');
     const reason = textbox('Reason to reopen');
     const note = 'Recheck the changed scope after receiving a revised instruction.';
     await user.type(reason, note);
@@ -247,6 +257,7 @@ describe('four separate VO review checks', () => {
     await chooseSelect(user, combo('Claim decision'), 'eligible');
     await user.click(screen.getByRole('button', { name: 'Save claim checks' }));
     expect(screen.getByText('Document the instruction before making this work eligible.')).toBeTruthy();
+    expect(document.querySelector('.vo-work-review').open).toBe(true);
     expect(action).not.toHaveBeenCalled();
     await chooseSelect(user, combo('Claim decision'), 'excluded');
     await user.type(textbox('Eligibility note'), 'Approval evidence needs clarification before claiming.');
@@ -256,4 +267,89 @@ describe('four separate VO review checks', () => {
     expect(screen.queryByRole('button', { name: 'Review in monthly claim' })).toBeNull();
     expect(latest.claimDrafts).toEqual(project.claimDrafts);
   });
+  it('reveals a required decision note without changing records until the explicit secondary action is saved', async () => {
+    const project = fixture();
+    const before = structuredClone(project);
+    const action = vi.fn();
+    let latest = project;
+    const user = userEvent.setup();
+    render(<Harness initial={project} onAction={action} onState={value => { latest = value; }}/>);
+    expect(screen.queryByRole('textbox', { name: /^Review note/ })).toBeNull();
+    await reviewAction(user, 'Need information');
+    const note = textbox('Review note');
+    expect(document.activeElement).toBe(note);
+    expect(action).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Need information', exact: true }));
+    expect(screen.getByText('Add a note explaining this decision.')).toBeTruthy();
+    expect(action).not.toHaveBeenCalled();
+    await user.type(note, 'Confirm the written instruction and exact extra-work scope.');
+    await user.click(screen.getByRole('button', { name: 'Cancel action', exact: true }));
+    expect(latest).toEqual(before);
+    expect(action).not.toHaveBeenCalled();
+    await reviewAction(user, 'Need information');
+    expect(textbox('Review note').value).toBe('Confirm the written instruction and exact extra-work scope.');
+    await user.click(screen.getByRole('button', { name: 'Need information', exact: true }));
+    expect(getVOCases(latest)[0].status).toBe('clarification');
+    for (const field of ['items', 'reports', 'claimDrafts']) expect(latest[field]).toEqual(before[field]);
+    expect(project).toEqual(before);
+  });
+
+  it('shows a closed outcome and retained evidence without exposing an unfinished current review', async () => {
+    const source = fixture();
+    const result = updateVOReview(source, caseId, 'reject', {
+      scopeDisposition: 'existingScope', scopeAssessment: 'The original scaffold scope includes this access adjustment.',
+      reviewNote: 'Already included in the agreed scaffold work; no separate charge.',
+    });
+    expect(result.outcome).toBe('updated');
+    const project = result.project;
+    const before = structuredClone(project);
+    const action = vi.fn();
+    const user = userEvent.setup();
+    const view = render(<Harness initial={project} onAction={action}/>);
+    const closed = screen.getByRole('region', { name: 'Review closed', exact: true });
+    expect(closed.textContent).toContain('Already included in the agreed scaffold work; no separate charge.');
+    expect(closed.textContent).toMatch(/excluded/i);
+    expect(view.container.querySelector('.vo-evidence-details').open).toBe(true);
+    expect(view.container.querySelector('.vo-work-review').open).toBe(false);
+    expect(screen.getByRole('region', { name: 'Contract scope', exact: true }).closest('.vo-work-review')).toBe(view.container.querySelector('.vo-work-review'));
+    expect(screen.queryByRole('combobox', { name: /^Scope decision/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ready for approval', exact: true })).toBeNull();
+    await openWorkReview(user);
+    expect(screen.getByRole('region', { name: 'Contract scope', exact: true }).textContent).toContain('The original scaffold scope includes this access adjustment.');
+    expect(action).not.toHaveBeenCalled();
+    expect(project).toEqual(before);
+    expect(project.claimDrafts).toEqual(source.claimDrafts);
+  });
+
+  it('restores an unfinished secondary decision with its reason after returning to the same case', async () => {
+    const project = fixture('pendingApproval');
+    const before = structuredClone(project);
+    const action = vi.fn();
+    const user = userEvent.setup();
+    const view = render(<Harness initial={project} onAction={action}/>);
+    await reviewAction(user, 'Reject');
+    await user.type(textbox('Review note'), 'The extra platform is included in the existing instruction.');
+    view.unmount();
+    render(<Harness initial={project} onAction={action}/>);
+    expect(textbox('Review note').value).toBe('The extra platform is included in the existing instruction.');
+    expect(screen.getByRole('button', { name: 'Reject', exact: true })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Record approval', exact: true })).toBeNull();
+    expect(action).not.toHaveBeenCalled();
+    expect(project).toEqual(before);
+  });
+
+  it('retains a legacy closing note when no decision history is available', () => {
+    const source = fixture();
+    const result = updateVOReview(source, caseId, 'reject', { reviewNote: 'Legacy closing note: included access work.' });
+    const project = result.project;
+    expect(result.outcome).toBe('updated');
+    const review = project.voReviews.find(entry => entry.id === caseId);
+    review.history = [];
+    review.scopeAssessment = '';
+    const before = structuredClone(project);
+    render(<Harness initial={project}/>);
+    expect(screen.getByRole('region', { name: 'Review closed' }).textContent).toContain('Legacy closing note: included access work.');
+    expect(project).toEqual(before);
+  });
+
 });

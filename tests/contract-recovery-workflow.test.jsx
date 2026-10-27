@@ -43,7 +43,7 @@ function mount() {
 }
 
 async function openUpload(user) {
-  const trigger = screen.queryByRole('button', { name: 'More options', exact: true });
+  const trigger = screen.queryByRole('button', { name: 'Contract actions', exact: true });
   if (trigger && trigger.getAttribute('aria-expanded') !== 'true') {
     await user.click(trigger);
     await user.click(screen.getByRole('menuitem', { name: 'Upload contract', exact: true }));

@@ -71,7 +71,7 @@ describe('workflow navigation cleanup', () => {
     expect(location.hash.split('?')[0]).toBe('#vo');
     expect(params().get('case')).toBe(cases[0].id);
     expect(params().get('area')).toBe(areas.find(area => `Area ${area.code}` === cases[0].report.area).id);
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     expect(params().has('filter')).toBe(false);
     expect(params().has('item')).toBe(false);
     expect(screen.getByRole('region', { name: cases[0].title }).textContent).toContain(cases[0].report.message);
@@ -91,7 +91,7 @@ describe('workflow navigation cleanup', () => {
     expect(location.hash.split('?')[0]).toBe('#vo');
     expect(params().get('case')).toBe(cases[1].id);
     expect(params().get('area')).toBe(areas.find(area => `Area ${area.code}` === cases[1].report.area).id);
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     expect(params().has('filter')).toBe(false);
     expect(screen.getByRole('region', { name: cases[1].title }).textContent).toContain(cases[1].report.message);
     expect(workspace().projects).toEqual(before);

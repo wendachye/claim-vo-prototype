@@ -23,7 +23,7 @@ describe('compact contract checks panel', () => {
     const onOpenItem = vi.fn();
     render(<ContractChecks project={current} checks={result} onOpenItem={onOpenItem} />);
     expect(toggle().getAttribute('aria-expanded')).toBe('false');
-    expect(screen.getByText('1 item to check')).toBeTruthy();
+    expect(screen.getByText('1 item needs review')).toBeTruthy();
     expect(screen.queryByText('Quantity is missing.')).toBeNull();
     fireEvent.click(toggle());
     expect(toggle().getAttribute('aria-expanded')).toBe('true');
@@ -38,6 +38,23 @@ describe('compact contract checks panel', () => {
     expect(screen.queryByRole('list', { name: 'Items to check' })).toBeNull();
   });
 
+  it('renders confirmed details read-only without another status toggle or a new confirmation action', () => {
+    const current = project({ locked: true });
+    const result = checks({
+      issues: [], issueCount: 0, itemIssueCount: 0, canConfirm: true, partial: true,
+      totals: { currency: 'SGD', recordedTotal: 100, calculatedTotal: 100, declaredTotal: 1000, difference: -900, complete: true, partial: true, comparison: 'partial' },
+    });
+    const before = structuredClone({ current, result });
+    render(<ContractChecks project={current} checks={result} presentation="details" open={false} />);
+    expect(screen.queryByRole('button', { name: /^Contract checks/ })).toBeNull();
+    expect(screen.getByText('Partial schedule')).toBeTruthy();
+    expect(screen.getByText('Current values; confirmed baseline unchanged.')).toBeTruthy();
+    expect(screen.getByText('SGD -900.00')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /Confirm|Save|Review total difference/ })).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect({ current, result }).toEqual(before);
+  });
+
   it('labels the selected S.I.T. rows as partial and keeps their declared-value difference neutral', () => {
     const current = project({ items: Array.from({ length: 18 }, (_, index) => ({ id: `SIT-${index}` })) });
     render(<ContractChecks project={current} open checks={checks({
@@ -48,7 +65,7 @@ describe('compact contract checks panel', () => {
     expect(screen.getByText('Selected work total')).toBeTruthy();
     expect(screen.getByText(/18 selected rows/).textContent).toContain('Their total is not expected to match the full contract value.');
     expect(screen.getByText('SGD -900.00')).toBeTruthy();
-    expect(screen.getByText('No item issues')).toBeTruthy();
+    expect(screen.getByText('No issues found')).toBeTruthy();
     expect(screen.queryByText('Total needs review')).toBeNull();
     expect(screen.queryByText(/work-list total differs/)).toBeNull();
     expect(document.querySelector('.contract-checks-total-difference')).toBeNull();
@@ -75,7 +92,7 @@ describe('compact contract checks panel', () => {
       scopeNote: 'Full schedule recorded.',
     })} />);
     expect(toggle().textContent).toContain('Total needs review');
-    expect(screen.queryByText('No item issues', { exact: true })).toBeNull();
+    expect(screen.queryByText('No issues found', { exact: true })).toBeNull();
     expect(screen.getByText('SGD -10.00')).toBeTruthy();
     expect(screen.getByText(/The work-list total differs from the declared contract value/)).toBeTruthy();
     expect(screen.getByText(/Quantity × rate total:/).textContent).toContain('SGD 100.00');

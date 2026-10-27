@@ -1,9 +1,9 @@
 import type { FormEvent } from 'react';
-import type { ContractDetails, WorkItem, InputNumber } from '../types/domain';
+import type { ContractDetails, WorkItem, InputNumber, DrawingArea } from '../types/domain';
 interface ContractItemValues { description: string; quantity: string; rate: string; unit: string; location: string }
-interface ContractEditorProps { item: WorkItem | null; checkIssue?: { messages: string[] }; locked?: boolean; onSave?: (values: ContractItemValues) => void; onNext?: () => void; nextLabel?: string; contract?: ContractDetails; sourceItems?: WorkItem[]; projectId?: string; revision?: number }
+interface ContractEditorProps { item: WorkItem | null; checkIssue?: { messages: string[] }; locked?: boolean; onSave?: (values: ContractItemValues) => void; onNext?: () => void; nextLabel?: string; contract?: ContractDetails; sourceItems?: WorkItem[]; projectId?: string; revision?: number; relatedAreas?: DrawingArea[]; onOpenMessage?: () => void }
 import { useId } from 'react';
-import { AlertTriangle, ArrowRight, Check, FileText, Lock } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, FileText, Lock, MessageSquare } from 'lucide-react';
 import { contract as sampleContract, initialItems } from '../data/contract.ts';
 import { contractFormValues as formFor, contractFormScope } from '../data/form-buffer.ts';
 import { claimBasisProduct } from '../data/claim-basis.ts';
@@ -35,7 +35,7 @@ function formatMonth(value: string | null | undefined) {
   return MONTHS[Number(month) - 1] ? `${MONTHS[Number(month) - 1]} ${year}` : value;
 }
 
-export function ContractEditor({ item, checkIssue, locked = false, onSave, onNext, nextLabel, contract = sampleContract, sourceItems, projectId, revision = 1 }: ContractEditorProps) {
+export function ContractEditor({ item, checkIssue, locked = false, onSave, onNext, nextLabel, contract = sampleContract, sourceItems, projectId, revision = 1, relatedAreas = [], onOpenMessage }: ContractEditorProps) {
   const inputId = useId();
   const formScope = contractFormScope(item, revision, locked);
   const [form, setForm] = useBufferedState(projectId || contract.id || contract.reference || 'sample-contract', formScope, () => formFor(item));
@@ -54,7 +54,6 @@ export function ContractEditor({ item, checkIssue, locked = false, onSave, onNex
   const printed = Array.isArray(projectSourceItems) ? projectSourceItems.find((sourceItem) => sourceItem.id === item.id) : undefined;
   const sourceKind = contract?.sourceKind ?? (contract === sampleContract ? 'provided' : 'none');
   const currency = contract?.currency || (contract === sampleContract ? 'SGD' : 'Currency not specified');
-  const sourceLabel = contract.demoImport ? 'Demo PDF' : sourceKind === 'illustrative' ? 'Demo schedule' : 'Printed source';
   const manualRecovery = item.extractionRecovery?.method === 'manual';
   const requiresReview = item.needsReview || Boolean(checkIssue);
   const hasSourceQuantity = printed?.quantity != null && String(printed.quantity) !== '' && Number.isFinite(Number(printed.quantity));
@@ -103,13 +102,10 @@ export function ContractEditor({ item, checkIssue, locked = false, onSave, onNex
   const sourceContext = contract.demoImport ? 'Demo PDF'
     : sourceKind === 'provided' ? 'Supplied schedule'
       : sourceKind === 'illustrative' ? 'Demo schedule' : 'Demo values';
-  const amountNote = included
-    ? 'Included in other rates. No separate charge.'
-    : rateOnly
-      ? 'Actual work or hours need separate measurement and approval.'
-      : printed
-        ? `${sourceLabel}: ${money(printed.amount)}${matchesPrintedAmount ? ' · matches current entries' : ' · compare current entries'}`
-        : 'Source amount unavailable for this item.';
+  const sourceIncluded = printed?.pricingType === 'included';
+  const sourceRateOnly = printed?.pricingType === 'rateOnly';
+  const sourceAmount = printed ? sourceIncluded ? 'Included' : sourceRateOnly ? 'Rate only' : money(printed.amount) : '—';
+  const workAmount = included ? 'Included' : rateOnly ? 'Rate only' : money(calculatedAmount);
 
   return (
     <form className='review-editor contract-item-editor' onSubmit={saveItem} noValidate>
@@ -119,13 +115,13 @@ export function ContractEditor({ item, checkIssue, locked = false, onSave, onNex
           <p>{item.ref} <span aria-hidden='true'>·</span> {sourceContext}</p>
         </div>
         <Badge tone={locked ? 'green' : requiresReview ? 'amber' : 'green'}>
-          {locked ? 'Contract confirmed' : requiresReview ? 'Needs review' : 'Reviewed'}
+          {locked && <Lock size={12} aria-hidden='true' />}{locked ? 'Contract confirmed' : requiresReview ? 'Needs review' : 'Reviewed'}
         </Badge>
       </div>
 
       <div className='editor-body'>
         {hasEdits && <p className='contract-item-unsaved' role='status'>Unsaved changes stay while you browse. Confirm this item before refreshing.</p>}
-        {locked ? <p className='contract-item-context'><Lock size={14} aria-hidden='true' /><span>Read only. To edit, choose More options → Edit contract.</span></p> : <p className='contract-item-context'><FileText size={14} aria-hidden='true' /><span>Compare the values with the source before confirming this item.</span></p>}
+        {!locked && <p className='contract-item-context'><FileText size={14} aria-hidden='true' /><span>Compare the values with the source before confirming this item.</span></p>}
 
         {item.needsReview && (
           <div className='notice warning contract-quantity-warning' role='note'>
@@ -149,34 +145,36 @@ export function ContractEditor({ item, checkIssue, locked = false, onSave, onNex
 
         {!item.needsReview && checkIssue && <div className='notice warning contract-quantity-warning' role='note'><AlertTriangle size={17} aria-hidden='true' /><div><strong>Check saved values</strong>{checkIssue.messages.map((message,index)=><p key={`${index}-${message}`}>{message}</p>)}</div></div>}
 
-        {locked ? <>
-          <div className='contract-readonly-work'><h3>{form.description}</h3><p>{item.subsection ?? item.section}</p></div>
-          <dl className='contract-readonly-values'>
-            <div><dt>Contract quantity</dt><dd>{formatQuantity(form.quantity)} <span>{form.unit}</span></dd>{rateOnly ? <p>Rate-reference quantity; not actual hours.</p> : printed && <p>{sourceLabel}: {formatQuantity(printed.quantity)} {printed.unit}</p>}</div>
-            <div><dt>Unit rate</dt><dd>{included ? 'Included' : money(form.rate)}</dd>{!included && <p>{printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : `per ${form.unit}`}</p>}</div>
-          </dl>
-          <div className={`contract-line-amount${matchesPrintedAmount ? ' matches' : ''}`}><span>Line amount</span><strong>{included ? 'Included' : rateOnly ? 'Rate only' : money(calculatedAmount)}</strong><p>{amountNote}</p></div>
-        </> : <div className='field-grid contract-item-fields'>
-          <FormField className='field-full' label='Work description' id={`${inputId}-description`} hint={item.subsection ?? item.section}>
-            <textarea id={`${inputId}-description`} className='form-textarea' rows={3} value={form.description} onChange={(event) => changeField('description', event.target.value)} />
-          </FormField>
-          <FormField className={item.needsReview ? 'contract-quantity-field' : ''} label='Contract quantity' id={`${inputId}-quantity`} hint={rateOnly
-            ? 'Rate-reference quantity; not authorised work or actual hours.'
-            : printed
-              ? `${sourceLabel}: ${formatQuantity(printed.quantity)} ${printed.unit ?? ''} · ${printed.quantityBasis ?? item.quantityBasis ?? 'provisional'}`
-              : 'Source quantity unavailable for this item.'}>
-            <input id={`${inputId}-quantity`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.quantity} onChange={(event) => changeField('quantity', event.target.value)} />
-          </FormField>
-          <FormField label='Unit' id={`${inputId}-unit`} hint='Keep the source unit.'>
-            <SelectField id={`${inputId}-unit`} className='form-select' value={form.unit} onChange={(event) => changeField('unit', event.target.value)}>
-              {unitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
-            </SelectField>
-          </FormField>
-          <FormField label='Unit rate' suffix={currency} id={`${inputId}-rate`} hint={included ? 'Included scope has no separate source rate.' : printed ? `${sourceLabel}: ${money(printed.rate)} per ${printed.unit ?? form.unit}` : 'Source rate unavailable for this item.'}>
-            <input id={`${inputId}-rate`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.rate} placeholder={included ? 'Included in other rates' : 'Enter rate'} disabled={included} onChange={(event) => changeField('rate', event.target.value)} />
-          </FormField>
-          <div className={`contract-line-amount${matchesPrintedAmount ? ' matches' : ''}`}><span>Line amount</span><strong>{included ? 'Included' : rateOnly ? 'Rate only' : money(calculatedAmount)}</strong><p>{amountNote}</p></div>
-        </div>}
+        {locked ? <div className='contract-readonly-work'><h3>{form.description}</h3><p>{item.subsection ?? item.section}</p></div> : <FormField className='contract-item-description' label='Work description' id={`${inputId}-description`} hint={item.subsection ?? item.section}>
+          <textarea id={`${inputId}-description`} className='form-textarea' rows={3} value={form.description} onChange={(event) => changeField('description', event.target.value)} />
+        </FormField>}
+
+        <div className='contract-value-comparison-wrap'>
+          <table className='contract-value-comparison' aria-label='Contract value comparison'>
+            <thead><tr><th scope='col'>Value</th><th scope='col'>From contract</th><th scope='col'>Work-list value</th></tr></thead>
+            <tbody>
+              <tr><th scope='row'>Quantity</th><td>{printed ? <>{formatQuantity(printed.quantity)} <span>{printed.unit}</span>{!rateOnly && <small>{printed.quantityBasis ?? item.quantityBasis ?? 'provisional'}</small>}</> : '—'}</td><td>{locked ? <>{formatQuantity(form.quantity)} <span>{form.unit}</span></> : <div className='contract-comparison-quantity-inputs'>
+                <FormField className={item.needsReview ? 'contract-quantity-field contract-comparison-input' : 'contract-comparison-input'} label='Contract quantity' id={`${inputId}-quantity`}>
+                  <input id={`${inputId}-quantity`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.quantity} onChange={(event) => changeField('quantity', event.target.value)} />
+                </FormField>
+                <FormField className='contract-comparison-input' label='Unit' id={`${inputId}-unit`}>
+                  <SelectField id={`${inputId}-unit`} className='form-select' value={form.unit} onChange={(event) => changeField('unit', event.target.value)}>
+                    {unitOptions.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                  </SelectField>
+                </FormField>
+              </div>}</td></tr>
+              <tr><th scope='row'>Unit rate<small>{currency}</small></th><td>{printed ? sourceIncluded ? 'Included' : money(printed.rate) : '—'}</td><td>{locked ? included ? 'Included' : money(form.rate) : <FormField className='contract-comparison-input' label='Unit rate' suffix={currency} id={`${inputId}-rate`}>
+                <input id={`${inputId}-rate`} className='form-input' type='number' min='0' step='any' inputMode='decimal' value={form.rate} placeholder={included ? 'Included in other rates' : 'Enter rate'} disabled={included} onChange={(event) => changeField('rate', event.target.value)} />
+              </FormField>}</td></tr>
+              <tr className='contract-comparison-amount-row'><th scope='row'>Line amount</th><td>{sourceAmount}</td><td><div className={`contract-line-amount${matchesPrintedAmount ? ' matches' : ''}`}><strong>{workAmount}</strong>{!included && !rateOnly && printed && <span>{matchesPrintedAmount ? 'Matches source' : 'Compare with source'}</span>}</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        {(included || rateOnly || !printed) && <p className='contract-value-note'>{included ? 'Included in other rates. No separate charge.' : rateOnly ? 'Rate-reference quantity; not actual hours. Actual work or hours need separate measurement and approval.' : 'Source values are unavailable for this item.'}</p>}
+        {(relatedAreas.length > 0 || onOpenMessage) && <nav className='contract-item-related' aria-label='Related site records'>
+          <span>Related records</span><div>{relatedAreas.map(area => <a key={area.id} className='area-mapping-link' href={`#drawing?area=${encodeURIComponent(area.id)}`} title={area.name} aria-label={`View area ${area.code} mapping`}>Area {area.code}</a>)}
+          {onOpenMessage && <Button className='ghost' icon={MessageSquare} aria-label={`Open site update for ${item.ref}`} onClick={onOpenMessage}>Site update</Button>}</div>
+        </nav>}
 
         <details className='contract-item-source'>
           <summary>Source &amp; scope details <span>{item.ref}</span></summary>
@@ -198,10 +196,10 @@ export function ContractEditor({ item, checkIssue, locked = false, onSave, onNex
         </details>
       </div>
 
-      <FormActions className='editor-footer' secondary={<div className='editor-summary'>
-        <strong>{locked ? 'Read-only contract' : item.ref}</strong>
-        <span>{locked ? 'Create a revision to edit.' : 'Confirm after checking the source.'}</span>
-      </div>}>
+      <FormActions className='editor-footer' secondary={!locked ? <div className='editor-summary'>
+        <strong>{item.ref}</strong>
+        <span>Confirm after checking the source.</span>
+      </div> : undefined}>
         {!locked && onNext && <Button onClick={onNext}>{nextLabel || 'Skip item'}</Button>}
         <Button type='submit' className='primary' icon={locked ? ArrowRight : Check} disabled={locked ? !onNext : !onSave}>
           {locked ? nextLabel || 'Next item' : 'Confirm item'}

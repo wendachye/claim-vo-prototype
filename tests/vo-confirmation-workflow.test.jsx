@@ -26,6 +26,15 @@ const requests = () => selectedProject().voConfirmationRequests || [];
 const currentRequest = () => requests().at(-1);
 const textbox = name => screen.getByRole('textbox', { name: new RegExp(`^${name}`) });
 const approvalValue = () => screen.getByRole('spinbutton', { name: /^Approved value/ });
+async function reviewAction(user, label) {
+  await user.click(screen.getByRole('button', { name: 'Review actions', exact: true }));
+  await user.click(screen.getByRole('menuitem', { name: label, exact: true }));
+}
+async function openReviewNote(user) {
+  if (!screen.queryByRole('textbox', { name: /^Review note/ })) await reviewAction(user, 'Add review note');
+  return textbox('Review note');
+}
+
 
 function updated(result) {
   if (result.outcome !== 'updated') throw new Error(result.error || `Expected updated, received ${result.outcome}`);
@@ -171,7 +180,7 @@ describe('customer confirmation stays separate from the existing QS approval wor
     await user.clear(approvalValue()); await user.type(approvalValue(), '77');
     await user.type(textbox('Approval reference'), 'UNFINISHED-QS-REFERENCE');
     await user.type(textbox('Approved by'), 'Unfinished QS approver');
-    await user.type(textbox('Review note'), 'Keep this unrelated QS note.');
+    await user.type(await openReviewNote(user), 'Keep this unrelated QS note.');
     await saveRequest(user);
     await saveReply(user, 'priceApproved');
     expect(approvalValue().value).toBe('77');
@@ -252,6 +261,7 @@ describe('customer confirmation stays separate from the existing QS approval wor
     const view = mount(caseId);
     await saveRequest(user); await saveReply(user, 'priceApproved');
     const first = structuredClone(currentRequest());
+    await reviewAction(user, 'Need information');
     await user.type(textbox('Review note'), 'Customer clarified a larger separate work face.');
     await user.click(screen.getByRole('button', { name: 'Need information', exact: true }));
     await waitFor(() => expect(entryFor(selectedProject(), caseId).status).toBe('clarification'));

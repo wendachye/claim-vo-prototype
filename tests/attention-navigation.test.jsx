@@ -93,7 +93,7 @@ afterEach(() => {
 });
 
 describe('Needs attention opens exact selected-project records and reflects completed work', () => {
-  it('keeps the overview short while View tasks and the bell open the same project queue with keyboard dismissal', async () => {
+  it('opens the selected-project queue from the Dashboard bell with keyboard dismissal', async () => {
     const { project } = fixture({ query: true });
     const tasks = getProjectAttention(project);
     const task = tasks.find((entry) => entry.target.messageId);
@@ -104,7 +104,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(screen.queryByRole('group', { name: 'Filter attention tasks' })).toBeNull();
     expect(document.querySelector('.attention-list')).toBeNull();
     expect(bell().getAttribute('aria-label')).toBe(`Needs attention, ${tasks.length} pending tasks`);
-    await user.click(screen.getByRole('button', { name: 'View tasks', exact: true }));
+    await user.click(bell());
     await screen.findByRole('dialog', { name: 'Project notifications' });
     expect(within(queue()).queryByRole('group', { name: 'Filter attention tasks' })).toBeNull();
     expect(tasks.filter((entry) => within(queue()).queryByRole('button', { name: actionName(entry), exact: true }))).toHaveLength(Math.min(3, tasks.length));
@@ -137,8 +137,8 @@ describe('Needs attention opens exact selected-project records and reflects comp
     const user = userEvent.setup();
     mount('#contract');
     await openNotifications(user);
-    await user.click(within(mainNav()).getByRole('button', { name: 'Overview', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview' });
+    await user.click(within(mainNav()).getByRole('button', { name: 'Dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(notifications()).toBeNull();
     await openNotifications(user);
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
@@ -168,13 +168,13 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(dialog.textContent).toContain(report.message);
     expect(params().get('report')).toBe(report.id);
     expect(params().get('item')).toBe('WI-001');
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     expect(readWorkspace().projects).toEqual(before);
     view.unmount(); render(<App />);
     expect(screen.getByRole('dialog').textContent).toContain(report.message);
     await user.click(screen.getByRole('button', { name: 'Verify progress', exact: true }));
-    await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview' });
+    await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(getProjectAttention(selectedProject()).some((entry) => entry.id === task.id)).toBe(false);
     await openNotifications(user);
     expect(within(queue()).queryByRole('button', { name: actionName(task), exact: true })).toBeNull();
@@ -198,8 +198,8 @@ describe('Needs attention opens exact selected-project records and reflects comp
     await user.type(screen.getByRole('textbox', { name: 'Approval reference' }), 'ATTENTION-APPROVAL');
     await user.type(screen.getByRole('textbox', { name: 'Approved by' }), 'Demo approver');
     await user.click(screen.getByRole('button', { name: 'Record approval', exact: true }));
-    await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview' });
+    await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(getProjectAttention(selectedProject()).find((entry) => entry.id === task.id)?.kind).toBe('vo-eligibility');
     expect(getVOCases(selectedProject()).find((entry) => entry.id === caseId).status).toBe('approved');
     expect(selectedProject().claimDrafts).toEqual(project.claimDrafts);
@@ -252,8 +252,8 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(params().get('draft')).toBe(saved.draft.id);
     await user.click(screen.getByRole('button', { name: 'Use demo details', exact: true }));
     await user.click(screen.getByRole('button', { name: 'Record payment', exact: true }));
-    await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview' });
+    await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(getClaimTracking(selectedProject(), saved.draft.id).status).toBe('paid');
     expect(getProjectAttention(selectedProject()).some((entry) => [sourceId, saved.draft.id].includes(entry.target.draftId))).toBe(false);
     expect(selectedProject().claimDrafts.find((entry) => entry.id === sourceId)).toEqual(original);
@@ -287,8 +287,8 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(readWorkspace().projects).toEqual(before);
     await user.click(screen.getByRole('button', { name: 'Back to choose work', exact: true }));
     expect(screen.getByLabelText('Claim period').value).toBe('2026-11');
-    await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview' });
+    await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(getProjectAttention(selectedProject()).some((entry) => entry.id === task.id)).toBe(true);
     expect(readWorkspace().projects).toEqual(before);
 
@@ -300,7 +300,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     expect(readWorkspace().projects).toEqual(before);
   });
 
-  it('clears an overview task link on project switch and never opens a foreign report', async () => {
+  it('clears a dashboard task link on project switch and never opens a foreign report', async () => {
     const { project, other } = fixture();
     const before = readWorkspace().projects;
     const foreign = getItemProgressReview(other, other.items.find((entry) => entry.id === 'WI-001')).report;
@@ -319,9 +319,9 @@ describe('Needs attention opens exact selected-project records and reflects comp
     await screen.findByRole('heading', { name: 'WhatsApp messages' });
     expect(params().has('message')).toBe(false);
     expect(params().has('from')).toBe(false);
-    expect(screen.queryByRole('button', { name: 'Back to overview', exact: true })).toBeNull();
-    await user.click(within(mainNav()).getByRole('button', { name: 'Overview', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview' });
+    expect(screen.queryByRole('button', { name: 'Back to dashboard', exact: true })).toBeNull();
+    await user.click(within(mainNav()).getByRole('button', { name: 'Dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(readWorkspace().activeProjectId).toBe(other.id);
     expect(getProjectAttention(selectedProject()).every((entry) => entry.projectId === other.id)).toBe(true);
     expect(readWorkspace().projects).toEqual(before);

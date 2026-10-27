@@ -71,7 +71,9 @@ describe('claim status navigation uses the selected project and exact saved revi
     await screen.findByRole('heading', { name: 'Claim status' });
     expect(draftParam()).toBe(draftId);
     expect(screen.getByRole('region', { name: 'Claim status summary' }).textContent).toContain(draftId);
-    expect(screen.getByText('October 2026 · Version 2')).toBeTruthy();
+    expect(screen.getByText('October 2026')).toBeTruthy();
+    await user.click(screen.getByText('Saved claim details'));
+    expect(screen.getByText('Version', { exact: true }).nextElementSibling.textContent).toBe('2');
     await user.click(screen.getByRole('button', { name: 'Preview saved claim' }));
     await screen.findByRole('heading', { name: 'Claim preview' });
     expect(draftParam()).toBe(draftId);

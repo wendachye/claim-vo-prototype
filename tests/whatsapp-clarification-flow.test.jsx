@@ -249,8 +249,10 @@ describe('mock WhatsApp clarification replies stay linked to the original and re
     const pending = getMessageClarification(selectedProject(), source.id);
     const itemsBeforeFlag = structuredClone(selectedProject().items);
     await user.click(screen.getByRole('button', { name: 'Verify clarified progress', exact: true }));
-    await user.type(screen.getByRole('textbox', { name: 'Review note or correction reason' }), 'The supervisor identified a separate scope requiring QS review.');
+    await user.click(screen.getByText('Other review actions', { exact: true }));
     await user.click(screen.getByRole('button', { name: 'Flag possible VO', exact: true }));
+    await user.type(screen.getByRole('textbox', { name: 'Review note or correction reason' }), 'The supervisor identified a separate scope requiring QS review.');
+    await user.click(screen.getByRole('button', { name: 'Flag for QS review', exact: true }));
     expect(new URLSearchParams(location.hash.split('?')[1]).get('case')).toBe(pending.report.id);
     expect(getMessageClarification(selectedProject(), source.id).stage).toBe('vo-review');
 

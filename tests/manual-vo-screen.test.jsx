@@ -41,7 +41,7 @@ async function fill(user, dialog, title = 'Separate additional access platform')
 }
 
 describe('manual entry in the existing VO screen', () => {
-  it('makes Add extra work available in the empty register and opens the existing four-check review after saving', async () => {
+  it('makes Add extra work available in the empty register and opens the evidence-first work review after saving', async () => {
     const initial = fixture('MANUAL-SCREEN-EMPTY');
     const onState = vi.fn();
     const onSelect = vi.fn();
@@ -59,10 +59,10 @@ describe('manual entry in the existing VO screen', () => {
     expect(onSelect).toHaveBeenLastCalledWith(entry.id);
     const heading = screen.getByRole('heading', { name: 'Separate additional access platform', exact: true });
     await waitFor(() => expect(document.activeElement).toBe(heading));
-    for (const name of ['Contract scope', 'Instruction', 'Price approval', 'Claim eligibility']) expect(screen.getByRole('region', { name, exact: true })).toBeTruthy();
+    for (const name of ['Contract scope', 'Instruction', 'Price approval', 'Claim readiness']) expect(screen.getByRole('region', { name, exact: true })).toBeTruthy();
     expect(screen.getByText('Price unknown')).toBeTruthy();
     expect(entry).toMatchObject({ status: 'flagged', proposedValue: null, approvedValue: null, instructionStatus: 'reported', claimEligibility: 'needsReview' });
-    await user.click(screen.getByText('Manual entry & photo', { exact: true }));
+    expect(document.querySelector('.vo-evidence-details').open).toBe(true);
     expect(screen.getByText('QS manually recorded the reported site instruction. Scope and approval still need review.')).toBeTruthy();
     expect(screen.getByText('No photo attached')).toBeTruthy();
     expect(saved.items).toEqual(initial.items);

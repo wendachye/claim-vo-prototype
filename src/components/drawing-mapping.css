@@ -10,7 +10,7 @@
 .drawing-file-bar > div { flex:1; min-width:0; }
 .drawing-file-bar strong { display:block; overflow-wrap:anywhere; font-size:13px; font-weight:550; }
 .drawing-file-bar span:not(.badge) { display:block; margin-top:4px; color:#64748b; font-size:12px; line-height:1.6; }
-.drawing-workspace { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(360px,1fr); align-items:start; gap:20px; }
+.drawing-workspace { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(370px,1fr); align-items:start; gap:20px; }
 .drawing-contract-coverage { margin:0 0 20px; padding:16px 18px; border:1px solid var(--border); border-radius:9px; background:#fff; }
 .drawing-contract-coverage > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
 .drawing-contract-coverage h2 { margin:0; color:#334155; font-size:14px; font-weight:600; }
@@ -216,7 +216,7 @@
 .area-mapping-reference { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:12px; border:1px solid var(--border); border-radius:8px; color:#64748b; font-size:12px; line-height:1.7; background:#fbfcfe; }
 .area-mapping-reference p { flex:1; min-width:180px; margin:0; }
 .area-mapping-reference.conflict { border-color:#f2d7a8; background:#fffbf2; color:#9a6928; }
-@media screen and (max-width:1100px) { .drawing-workspace { grid-template-columns:minmax(0,1fr); } .drawing-area-panel { grid-row:1; } .drawing-plan-scroll { max-height:600px; } }
+@media screen and (max-width:1100px) { .drawing-workspace { grid-template-columns:minmax(0,1fr); } .drawing-area-panel { grid-row:auto; } .drawing-plan-scroll { max-height:600px; } }
 @media screen and (max-width:600px) { .drawing-empty-state { padding:36px 20px; } .drawing-file-bar { align-items:flex-start; flex-wrap:wrap; } .drawing-file-bar .badge { margin-left:30px; } .drawing-panel-heading { padding:16px; } .drawing-area-editor { padding:18px 16px; } .drawing-area-row { flex-wrap:wrap; } .drawing-area-row .badge { margin-left:46px; } .drawing-form-grid { grid-template-columns:minmax(0,1fr); } .drawing-pin-editor .drawing-form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .drawing-plan-scroll { min-height:190px; padding:10px; } .drawing-pin { min-width:42px; height:28px; padding:4px 5px; font-size:11px; } .drawing-pin svg { width:13px; height:13px; } .drawing-pdf-preview { height:440px; } }
 @media (prefers-reduced-motion:reduce) { .drawing-plan-panel, .drawing-area-panel { scroll-behavior:auto; } }
 
@@ -258,7 +258,9 @@
 }
 
 /* Area choice stays above the plan and its linked contract scope. */
-.drawing-area-navigation { margin:0 0 20px; border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden; scroll-margin-top:76px; }
+.drawing-area-navigation { display:flex; align-items:flex-end; gap:12px; margin:0 0 18px; scroll-margin-top:76px; }
+.drawing-area-navigation .drawing-area-picker { max-width:620px; }
+.drawing-area-navigation > .button { flex-shrink:0; }
 .drawing-area-navigation-top { display:flex; align-items:flex-end; gap:16px; padding:16px 18px; }
 .drawing-area-navigation-top > .button { flex-shrink:0; }
 .drawing-area-navigation .drawing-area-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
@@ -297,4 +299,62 @@
 @media screen and (max-width:600px) {
   .drawing-work-allocation { margin-left:26px; }
   .drawing-work-allocation .form-field { max-width:none; }
+}
+
+
+/* Keep area choice, quantities and explicit editing in one compact workspace. */
+.drawing-mobile-tabs { display:none; }
+.drawing-view-controls { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:10px 14px; }
+.drawing-view-controls .drawing-progress-controls, .drawing-view-controls .drawing-plan-tools { margin:0; padding:0; border:0; }
+.drawing-view-controls .drawing-progress-controls { gap:8px; }
+.drawing-view-controls .drawing-plan-tools { flex-shrink:0; }
+.drawing-basic-legend { padding:2px 16px 12px; gap:8px 16px; }
+.drawing-legend-details .drawing-progress-legend { padding:0 18px 12px; border:0; }
+.drawing-item-quantities { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:12px 0 4px; }
+.drawing-item-quantities > div { min-width:0; }
+.drawing-item-quantities dt { min-height:3em; color:#64748b; font-size:12px; line-height:1.5; }
+.drawing-item-quantities dd { margin:3px 0 0; overflow-wrap:anywhere; color:#334155; font-size:14px; font-weight:550; line-height:1.5; }
+.drawing-item-quantities .drawing-allocated-quantity { color:#3156c8; }
+.drawing-editor-details { margin:16px 0; border-top:1px solid #eef1f5; color:#64748b; font-size:13px; }
+.drawing-editor-details > summary { padding:12px 0; cursor:pointer; }
+.drawing-editor-details > .form-field { margin-top:0; }
+.drawing-selected-work { display:grid; gap:0; }
+.drawing-selected-work > .drawing-work-option { padding:14px 0; }
+.drawing-add-item { margin-top:12px; }
+.drawing-add-item-picker { margin-top:12px; padding:12px; border:1px solid var(--border); border-radius:8px; background:#fbfcfe; }
+.drawing-add-item-picker .drawing-work-search { margin:0 0 10px; }
+.drawing-add-item-picker .drawing-work-options { background:#fff; }
+.drawing-add-item-picker .drawing-work-option { padding:12px; }
+.drawing-area-select { position:relative; min-width:0; }
+.drawing-area-select-trigger { display:flex; align-items:center; gap:8px; width:100%; min-width:0; min-height:40px; padding:9px 12px; border:1px solid var(--border); border-radius:7px; background:#fff; color:#334155; font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.drawing-area-select-trigger > svg { flex-shrink:0; color:#64748b; }
+.drawing-area-select-trigger > span { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.drawing-area-select-trigger:focus-visible { outline:2px solid #2563eb; outline-offset:2px; }
+.drawing-area-select-popover { z-index:60; width:max(360px,var(--radix-popover-trigger-width)); max-width:calc(100vw - 32px); max-height:var(--radix-popover-content-available-height); overflow:hidden; padding:0; border:1px solid var(--border); border-radius:8px; background:#fff; color:#334155; box-shadow:0 10px 24px #0f172a1a,0 3px 6px #0f172a08; }
+.drawing-area-select-search { display:flex; align-items:center; gap:8px; padding:12px; border-bottom:1px solid var(--border); }
+.drawing-area-select-search > svg { flex-shrink:0; color:#64748b; }
+.drawing-area-select-search .form-input { min-width:0; width:100%; }
+.drawing-area-select-search > button { display:flex; flex-shrink:0; padding:6px; border:0; border-radius:5px; color:#64748b; background:transparent; cursor:pointer; }
+.drawing-area-select-list { max-height:min(320px,calc(var(--radix-popover-content-available-height) - 76px)); overflow-y:auto; padding:5px; }
+.drawing-area-select-option { display:flex; align-items:center; gap:10px; width:100%; padding:10px; border:0; border-radius:5px; background:#fff; color:#334155; font:inherit; font-size:13px; text-align:left; cursor:pointer; }
+.drawing-area-select-option > span { flex:1; min-width:0; }
+.drawing-area-select-option strong { display:block; font-weight:500; line-height:1.6; overflow-wrap:anywhere; }
+.drawing-area-select-option small { display:block; margin-top:2px; color:#64748b; font-size:12px; }
+.drawing-area-select-option.is-highlighted, .drawing-area-select-option:hover { background:#f1f5f9; }
+.drawing-area-select-option[aria-selected='true'] { background:#eff6ff; color:#1d4ed8; }
+.drawing-area-select-option > svg { flex-shrink:0; }
+.drawing-area-select-empty { margin:0; padding:18px; color:#64748b; font-size:13px; line-height:1.6; }
+@media screen and (max-width:1100px) {
+  .drawing-mobile-tabs { display:flex; gap:4px; padding:4px; margin:0 0 16px; border:1px solid var(--border); border-radius:8px; background:#fff; }
+  .drawing-mobile-tabs .button { flex:1; margin:0; border:0; background:transparent; color:#64748b; box-shadow:none; }
+  .drawing-mobile-tabs .button[aria-selected='true'] { background:#eff6ff; color:#1d4ed8; }
+  .drawing-workspace[data-mobile-panel='drawing'] > .drawing-area-panel, .drawing-workspace[data-mobile-panel='details'] > .drawing-plan-panel { display:none; }
+}
+@media screen and (max-width:600px) {
+  .drawing-area-navigation .drawing-area-picker { max-width:none; }
+  .drawing-view-controls { gap:10px; padding:12px 16px; }
+  .drawing-progress-items li { flex-wrap:wrap; }
+  .drawing-progress-items li > div { flex-basis:100%; }
+  .drawing-item-completion { display:flex; align-items:center; gap:8px; text-align:left; }
+  .drawing-item-completion small { margin:0; }
 }

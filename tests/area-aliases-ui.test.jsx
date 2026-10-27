@@ -1,3 +1,4 @@
+import { chooseDrawingArea } from './drawing-select-helpers.mjs';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -6,14 +7,17 @@ import { DrawingMappingView } from '../src/components/DrawingMappingView';
 import { createDemoProject } from '../src/data/demo-project.ts';
 import { getDrawingMapping, installDrawing, saveAreaMapping } from '../src/data/drawing-mapping.ts';
 import { clearProjectFormBuffers, writeFormBuffer } from '../src/data/form-buffer.ts';
-import { chooseSelect } from './select-helpers.mjs';
 
 const now = new Date('2026-10-24T10:00:00+08:00');
 const projectIds = new Set();
 const summary = area => screen.getByRole('region', { name: `Area ${area.code} completion`, exact: true });
 const aliasesInput = () => screen.getByRole('textbox', { name: /^Also known as/ });
-const picker = () => screen.getByRole('combobox', { name: 'Choose site area', exact: true });
-const edit = async (user, area) => user.click(within(summary(area)).getByRole('button', { name: 'Edit area mapping', exact: true }));
+const picker = () => screen.getByRole('button', { name: 'Choose site area', exact: true });
+const edit = async (user, area) => {
+  await user.click(within(summary(area)).getByRole('button', { name: 'Edit area mapping', exact: true }));
+  const names = screen.getByText('Alternate area names', { selector: 'summary' });
+  if (!names.parentElement.open) await user.click(names);
+};
 const save = async user => user.click(screen.getByRole('button', { name: 'Save area links', exact: true }));
 
 function fixture() {
@@ -86,11 +90,11 @@ describe('simple alternate area names field', () => {
     const item = project.items.find(entry => west.workItemIds.includes(entry.id) && entry.pricingType === 'measured');
     const quantity = () => screen.getByRole('spinbutton', { name: `Quantity in this area for ${item.ref}`, exact: true });
     await user.type(quantity(), '120');
-    await chooseSelect(user, picker(), east.id);
+    await chooseDrawingArea(user, picker(), east.id);
     await edit(user, east);
     expect(aliasesInput().value).toBe('');
     await user.type(aliasesInput(), 'East wall');
-    await chooseSelect(user, picker(), west.id);
+    await chooseDrawingArea(user, picker(), west.id);
     await edit(user, west);
     expect(aliasesInput().value).toBe('West wall, West façade');
     expect(quantity().value).toBe('120');
@@ -106,7 +110,7 @@ describe('simple alternate area names field', () => {
     expect(saved.aliases).toEqual(['West wall', 'West façade']);
     expect(saved.position).toEqual({ x: .5, y: .5 });
     expect(saved.workItemQuantities).toEqual({ [item.id]: 120 });
-    await chooseSelect(user, picker(), east.id);
+    await chooseDrawingArea(user, picker(), east.id);
     await edit(user, east);
     expect(aliasesInput().value).toBe('East wall');
   });
@@ -135,7 +139,10 @@ describe('simple alternate area names field', () => {
     const user = userEvent.setup();
     await edit(user, area);
     await user.type(aliasesInput(), Array.from({ length: 9 }, (_, index) => `Name ${index + 1}`).join(', '));
+    await user.click(screen.getByText('Alternate area names', { selector: 'summary' }));
+    expect(screen.getByText('Alternate area names', { selector: 'summary' }).parentElement.open).toBe(false);
     await save(user);
+    expect(screen.getByText('Alternate area names', { selector: 'summary' }).parentElement.open).toBe(true);
     expect(screen.getByRole('alert').textContent).toMatch(/up to 8 alternate area names/);
     expect(document.activeElement).toBe(aliasesInput());
     expect(view.onSave).not.toHaveBeenCalled();

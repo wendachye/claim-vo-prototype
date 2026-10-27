@@ -131,7 +131,7 @@
 
 /* Inbox controls share the labelled filter layout used in Site progress. */
 .wa-list-controls { margin-bottom:16px; }
-.wa-filter-fields { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(210px,1fr); gap:12px; }
+.wa-filter-fields { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(140px,.8fr) minmax(190px,1fr); gap:12px; }
 .wa-filter-fields .search-box { width:100%; }
 .wa-list-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; margin-top:10px; }
 .wa-list-tools > span { color:#64748b; font-size:12px; line-height:1.7; }
@@ -144,7 +144,7 @@
 .wa-message-title .badge { font-size:11px; line-height:1.5; white-space:normal; }
 .wa-message-area { display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:5px; color:#64748b; font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
 .wa-message-area > svg { flex-shrink:0; }
-.wa-message-excerpt { display:-webkit-box; margin:5px 0 7px; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:1; color:#64748b; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.wa-message-excerpt { display:-webkit-box; margin:3px 0 4px; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:1; color:#64748b; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
 .wa-message-meta { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:3px 10px; color:#64748b; font-size:11px; line-height:1.6; }
 .wa-message-meta > span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wa-message-meta time { margin-left:auto; white-space:nowrap; }
@@ -166,16 +166,16 @@
 }
 @media(max-width:760px) {
   .wa-filter-fields { grid-template-columns:minmax(0,1fr); }
-  .wa-message { min-height:0; padding:16px 15px; gap:10px; }
+  .wa-message { min-height:0; padding:12px 15px; gap:10px; }
   .wa-review .wa-panel-header { align-items:flex-start; }
 }
 @media(max-width:420px) {
-  .wa-message-thumb { width:46px; height:46px; }
+  .wa-message-thumb { width:40px; height:40px; }
   .wa-open-message { display:none; }
   .wa-message-title > strong { font-size:13px; }
 }
 
-/* One review decision, followed by the unchanged supporting evidence. */
+/* Original evidence precedes the suggested match and explicit review decision. */
 .wa-review-body > .wa-clarification { margin-top:0; padding-top:0; border-top:0; }
 .wa-selected-filter-note { margin:0 0 16px; color:#64748b; font-size:12px; line-height:1.7; }
 .wa-linked-work { display:flex; flex-direction:column; gap:5px; margin-bottom:16px; }
@@ -184,8 +184,8 @@
 .wa-this-update { display:flex; align-items:center; flex-wrap:wrap; gap:7px 12px; margin-top:14px; padding-bottom:13px; border-bottom:1px solid #dbeafe; }
 .wa-this-update > span, .wa-this-update > small { color:#64748b; font-size:12px; }
 .wa-this-update > strong { color:#334155; font-size:22px; font-weight:550; }
-.wa-review-body > .wa-review-footer { margin:0 0 18px; padding:16px 0; border-top:0; border-bottom:1px solid var(--border); background:transparent; }
-.wa-source-evidence { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.wa-review-body > .wa-review-footer { margin:14px 0 0; padding:14px 0 0; border-top:1px solid var(--border); border-bottom:0; background:transparent; }
+.wa-source-evidence { margin-bottom:18px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
 .wa-source-evidence > summary { display:flex; align-items:center; flex-wrap:wrap; gap:7px 9px; padding:14px; color:#475569; font-size:13px; cursor:pointer; list-style:none; }
 .wa-source-evidence > summary > svg { flex-shrink:0; color:#64748b; }
 .wa-source-evidence > summary > small { flex-basis:100%; margin-left:24px; order:1; color:#64748b; font-size:12px; line-height:1.7; }
@@ -197,4 +197,18 @@
 .wa-source-evidence summary:focus-visible { outline:2px solid #2563eb; outline-offset:-3px; border-radius:6px; }
 @media(min-width:1201px) {
   .wa-message-thumb { width:44px; height:44px; }
+}
+
+.wa-work-summary { margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+.wa-work-summary dl { display:grid; gap:10px; margin:0; }
+.wa-work-summary dt { margin-bottom:3px; color:#64748b; font-size:12px; }
+.wa-work-summary dd { margin:0; color:#334155; font-size:13px; font-weight:500; line-height:1.6; overflow-wrap:anywhere; }
+.wa-work-summary > .button { margin-top:6px; justify-self:start; }
+.whatsapp-view { container-type:inline-size; }
+@container (max-width:800px) {
+  .wa-filter-fields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .wa-filter-fields > :first-child { grid-column:1 / -1; }
+}
+@container (max-width:300px) {
+  .wa-filter-fields { grid-template-columns:minmax(0,1fr); }
 }

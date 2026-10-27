@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentProps, type FormEvent, type MouseEvent, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentProps, type FormEvent, type MouseEvent, type RefObject } from 'react';
 import { DragDropProvider, type DragDropManager, type DragStartEvent, type DragMoveEvent, type DragEndEvent } from '@dnd-kit/react';
 import { Feedback, KeyboardSensor, PointerActivationConstraints, PointerSensor } from '@dnd-kit/dom';
 import { DOMRectangle } from '@dnd-kit/dom/utilities';
@@ -16,6 +16,7 @@ import { useBufferedState } from './useFormBuffer';
 import { AreaEvidencePanel } from './AreaEvidencePanel';
 import { AreaVOPanel } from './AreaVOPanel';
 import { DraggableDrawingPin } from './DraggableDrawingPin';
+import { DrawingAreaPicker } from './DrawingAreaPicker';
 import { drawingPinPositionFromClient, getDraggedPinPosition } from '../data/drawing-pin';
 import type { DrawingPinBounds, DrawingPinPosition } from '../data/drawing-pin';
 import { BackButton, Badge, Button, FormActions, FormField, Modal, PageHeader, formatTime, Checkbox, Input, SelectField } from './ui';
@@ -90,7 +91,8 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   const [editing, setEditing] = useBufferedState(project.id, `drawing:editing:${drawing?.id || 'none'}`, false);
   const [basis, setBasis] = useBufferedState(project.id, 'drawing:progress-basis', 'verified');
   const [modal, setModal] = useState<'upload' | 'reattach' | 'remove' | null>(null);
-  const [browseAreas, setBrowseAreas] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<'drawing' | 'details'>(() => initialAreaId || !areas.length ? 'details' : 'drawing');
+  const surfaceId = useId();
   const [feedback, setFeedback] = useState<{ error?: boolean; message: string } | null>(null);
   const [placing, setPlacing] = useState(false);
   const [draftPosition, setDraftPosition] = useState<DrawingPinPosition | null>(null);
@@ -112,7 +114,8 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   const dragSnapshot = useRef<PinDragSnapshot | null>(null);
   const pinDragManager = useRef<DragDropManager | null>(null);
   const suppressPinClick = useRef(false);
-  const [scrollTarget, setScrollTarget] = useState<'editor' | 'status' | 'areas' | null>(null);
+  const [scrollTarget, setScrollTarget] = useState<'editor' | 'status' | 'areas' | 'drawing' | null>(null);
+  const [focusTarget, setFocusTarget] = useState<'editor' | 'status' | 'drawing' | null>(null);
   const selected = selectedId === 'new' ? null : areas.find((area) => area.id === selectedId) || (!selectedId ? areas[0] : null) || null;
   const unavailableArea = Boolean(selectedId && selectedId !== 'new' && !selected);
   const providedSource = drawing?.inputKind === 'provided' ? getProvidedDrawingSource(project) : null;
@@ -158,10 +161,16 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   useEffect(() => { setPlacing(false); pinSetter.current = null; }, [selected?.id, drawing?.id, showEditor]);
   useEffect(() => {
     if (!scrollTarget) return;
-    (scrollTarget === 'editor' ? editorRef : scrollTarget === 'status' ? progressRef : scrollTarget === 'areas' ? areaNavigationRef : areaPanelRef).current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    (scrollTarget === 'editor' ? editorRef : scrollTarget === 'status' ? progressRef : scrollTarget === 'areas' ? areaNavigationRef : viewerRef).current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     if (scrollTarget === 'areas') areaPickerRef.current?.focus({ preventScroll: true });
     setScrollTarget(null);
-  }, [scrollTarget, selectedId, showEditor]);
+  }, [scrollTarget, selectedId, showEditor, mobilePanel]);
+  useEffect(() => {
+    if (!focusTarget) return;
+    const target = focusTarget === 'editor' ? editorRef.current : focusTarget === 'status' ? progressRef.current : imageStageRef.current;
+    target?.focus({ preventScroll: true });
+    setFocusTarget(null);
+  }, [focusTarget, mobilePanel, selectedId, showEditor, placing]);
 
   function rememberAreaRoute(areaId: string | null | undefined) {
     if (window.location.hash.split('?')[0] === '#drawing') window.history.replaceState(null, '', `#drawing${areaId && areaId !== 'new' ? `?area=${encodeURIComponent(areaId)}` : ''}`);
@@ -175,7 +184,9 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   function chooseArea(areaId: string, fromPin = false) {
     cancelPinDrag();
     rememberAreaRoute(areaId);
-    setSelectedId(areaId); setEditing(areaId === 'new'); setFeedback(null); setPlacing(false); setDraftPosition(null); setBrowseAreas(false);
+    setSelectedId(areaId); setEditing(areaId === 'new'); setFeedback(null); setPlacing(false); setDraftPosition(null); setMobilePanel('details');
+    if (areaId === 'new') setFocusTarget('editor');
+    else if (fromPin && window.matchMedia('(max-width: 1100px)').matches) setFocusTarget('status');
     if (areaId === 'new' || (fromPin && window.matchMedia('(max-width: 1100px)').matches)) setScrollTarget(areaId === 'new' ? 'editor' : 'status');
   }
   function addContractAreas() {
@@ -189,7 +200,7 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   function placeAt(position: DrawingPinPosition) {
     pinSetter.current?.(position);
     setDraftPosition(position); setPlacing(false);
-    editorRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    setMobilePanel('details'); setScrollTarget('editor'); setFocusTarget('editor');
   }
   function placeFromClick(event: MouseEvent<HTMLDivElement>) {
     if (suppressPinClick.current || !placing || !imageReady || imageFailed) return;
@@ -234,21 +245,22 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
     if (!area || scopeFor(drawing, area) !== snapshot.scope) return;
     const position = getDraggedPinPosition(snapshot.position, snapshot.initialPoint, snapshot.currentPoint, snapshot.bounds, bounds);
     if (!position) return;
-    rememberAreaRoute(area.id); setSelectedId(area.id); setEditing(true); setBrowseAreas(false); setPlacing(false);
+    rememberAreaRoute(area.id); setSelectedId(area.id); setEditing(true); setPlacing(false); setMobilePanel('details');
     setPinCommand({ projectId: project.id, scope: snapshot.scope, position, sequence: (pinCommand?.sequence || 0) + 1 });
     setDraftPosition(position);
+    setScrollTarget('editor'); setFocusTarget('editor');
     setFeedback({ message: `Pin for ${area.code} moved in the preview. Save area links to confirm.` });
   }
   function requestPin(setter: (position: DrawingPinPosition) => void) {
     cancelPinDrag();
     pinSetter.current = setter; setPlacing(true); setFeedback(null);
-    viewerRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    setMobilePanel('drawing'); setScrollTarget('drawing'); setFocusTarget('drawing');
   }
   function savedArea(result: MappingResult, values: AreaValues) {
     const saved = (getDrawingMapping(result.project || project) as DrawingMapping).areas.find((area) => area.code.toUpperCase() === values.code.trim().toUpperCase());
     if (saved) { setSelectedId(saved.id); rememberAreaRoute(saved.id); }
     setFeedback({ message: result.outcome === 'unchanged' ? 'This area is already saved.' : `Area ${values.code.trim().toUpperCase()} saved. Its work links are ready to use.` });
-    setPlacing(false); setEditing(false); setDraftPosition(null); setScrollTarget('status');
+    setPlacing(false); setEditing(false); setDraftPosition(null); setMobilePanel('details'); setScrollTarget('status'); setFocusTarget('status');
   }
   async function install(input: DrawingInput) {
     const result = await onInstall?.(input);
@@ -279,24 +291,18 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
   }
 
   return <div className="drawing-mapping-view">
-    <PageHeader title="Drawing & areas" description="Choose a site area, then open the contract work linked to it." onBack={onBack} backLabel="Back to contract" actions={drawing && onOpenSiteUpdates && <Button icon={ArrowRight} onClick={onOpenSiteUpdates}>Site updates</Button>} />
+    <PageHeader title="Drawing & areas" description="Select an area to see its contract items and quantities." onBack={onBack} backLabel="Back to contract" />
     {feedback && <div className={`notice ${feedback.error ? 'warning' : 'success'}`} role={feedback.error ? 'alert' : 'status'}><Info size={16} /><span>{feedback.message}</span></div>}
     {!drawing ? <section className="drawing-empty-state"><div className="drawing-empty-icon"><MapPin size={30} /></div><h2>Add a site drawing</h2><p>Use your drawing or the fictional demo plan, then choose which work belongs to each area.</p><div className="drawing-empty-actions"><Button className="primary" icon={Upload} onClick={() => setModal('upload')}>Upload drawing</Button><Button icon={FileText} onClick={() => install(sampleInput())} disabled={!onInstall}>Use demo drawing</Button></div><small>PDF, PNG, JPEG or WebP up to 15 MB. No drawing recognition or measurement is performed.</small></section> : <>
-      {areas.length > 0 && <section className="drawing-area-navigation" ref={areaNavigationRef} aria-label="Choose a site area"><div className="drawing-area-navigation-top"><div className="drawing-area-picker"><FormField label="Site area"><SelectField ref={areaPickerRef} aria-label="Choose site area" value={selectedId === 'new' || unavailableArea ? '' : selected?.id || ''} onChange={(event) => chooseArea(event.target.value)}><option value="" disabled>Choose a site area</option>{areas.map((area) => {
-            return <option key={area.id} value={area.id}>{area.code} · {area.name}</option>;
-          })}</SelectField></FormField></div><Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button></div><details className="drawing-area-browser" open={browseAreas} onToggle={(event) => setBrowseAreas(event.currentTarget.open)}><summary>Browse all {areas.length} {areas.length === 1 ? 'area' : 'areas'}<span>{basisLabel} completion</span></summary>
-          <div className="drawing-area-list" aria-label="Mapped site areas">{areas.map((area) => {
-            const progress = areaProgress.get(area.id);
-            const flags = areaVOFlags.get(area.id);
-            const references = area.workItemIds.map((id) => project.items?.find((item) => item.id === id)).filter((item): item is DrawingWorkItem => Boolean(item)).map((item) => item.ref || item.id).join(' · ');
-            return <button type="button" key={area.id} className={`drawing-area-row${selected?.id === area.id && selectedId !== 'new' ? ' selected' : ''}`} aria-label={`Area ${area.code}: ${area.name}.${references ? ` Contract: ${references}.` : ''} ${basisLabel}: ${progress?.label || 'Not linked'}, ${pinDetail(progress)}. ${voDescription(flags)}`} aria-pressed={selected?.id === area.id && selectedId !== 'new'} onClick={() => chooseArea(area.id)}><span className="drawing-area-code">{area.code}<AreaVOMarker flags={flags} /></span><span className="drawing-area-copy"><strong>{area.name}</strong>{references && <small>Contract: {references}</small>}<small>{area.workItemIds.length ? `${area.workItemIds.length} linked work item${area.workItemIds.length === 1 ? '' : 's'} · ${pinDetail(progress)}` : 'Choose contract work items'}{drawing.kind === 'pdf' ? ` · Page ${area.page}` : !area.position ? ' · Pin not placed' : ''}</small></span><Badge tone={progress?.tone}>{progress?.label || 'Not linked'}</Badge></button>;
-          })}</div></details></section>}
-      <div className="drawing-workspace">
-        <section className="drawing-plan-panel" ref={viewerRef} aria-labelledby="drawing-plan-heading">
+      {areas.length > 0 && <section className="drawing-area-navigation" ref={areaNavigationRef} aria-label="Choose a site area"><div className="drawing-area-picker"><FormField label="Site area"><DrawingAreaPicker key={`${project.id}:${drawing.id}`} triggerRef={areaPickerRef} areas={areas} value={selectedId === 'new' || unavailableArea ? '' : selected?.id || ''} onSelect={chooseArea} imagePlan={Boolean(hasImage)} /></FormField></div><Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button></section>}
+      <div className="drawing-mobile-tabs" role="tablist" aria-label="Drawing views">{(['drawing', 'details'] as const).map((panel) => <Button key={panel} id={`${surfaceId}-${panel}-tab`} role="tab" aria-selected={mobilePanel === panel} aria-controls={`${surfaceId}-${panel}-panel`} tabIndex={mobilePanel === panel ? 0 : -1} onClick={() => setMobilePanel(panel)} onKeyDown={(event) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const next = event.key === 'Home' ? 'drawing' : event.key === 'End' ? 'details' : panel === 'drawing' ? 'details' : 'drawing'; setMobilePanel(next); document.getElementById(`${surfaceId}-${next}-tab`)?.focus(); } }}>{panel === 'drawing' ? 'Drawing' : 'Area details'}</Button>)}</div>
+      <div className="drawing-workspace" data-mobile-panel={mobilePanel}>
+        <section className="drawing-plan-panel" id={`${surfaceId}-drawing-panel`} role="tabpanel" ref={viewerRef} aria-labelledby="drawing-plan-heading">
           <header className="drawing-panel-heading"><div><h2 id="drawing-plan-heading">Drawing</h2><p>{providedSource ? 'Illustrative pins · exact positions unconfirmed.' : hasImage ? 'Select a pin to see its linked work.' : 'Link areas by name and PDF page.'}</p></div>{asset && <a className="button" href={asset} target="_blank" rel="noreferrer" aria-label="Open drawing in a new tab"><ArrowUpRight size={15} />Open drawing</a>}</header>
-          <div className="drawing-progress-controls"><span>Completion</span><div role="group" aria-label="Drawing completion basis"><Button className={basis === 'verified' ? 'primary' : ''} aria-pressed={basis === 'verified'} onClick={() => setBasis('verified')}>Verified</Button><Button className={basis === 'reported' ? 'primary' : ''} aria-pressed={basis === 'reported'} onClick={() => setBasis('reported')}>Reported</Button></div><p>{basis === 'verified' ? 'Checked by a supervisor.' : 'Reported from site; may still need supervisor review.'}</p></div>
-          <div className="drawing-progress-legend" aria-label="Completion and extra-work legend"><span><i className="not-started" />Not started</span><span><i className="in-progress" />In progress</span><span><i className="completed" />Completed</span><span><i className="unlinked" />Not linked</span><span><i className="unknown" />Needs update</span><span className="drawing-vo-legend"><Flag size={11} />Extra work to review</span><span className="drawing-vo-legend approved"><Check size={11} />Approved VO</span></div>
-          {hasImage && asset && !imageFailed && <><div className="drawing-plan-tools"><div><Button className="icon" aria-label="Zoom drawing out" disabled={zoom <= .75 || Boolean(pinDrag)} onClick={() => setZoom((value) => Math.max(.75, value - .25))}><Minus size={15} /></Button><span>{Math.round(zoom * 100)}%</span><Button className="icon" aria-label="Zoom drawing in" disabled={zoom >= 2.5 || Boolean(pinDrag)} onClick={() => setZoom((value) => Math.min(2.5, value + .25))}><Plus size={15} /></Button><Button className="icon" aria-label="Reset drawing zoom" disabled={zoom === 1 || Boolean(pinDrag)} onClick={() => setZoom(1)}><RotateCcw size={14} /></Button></div>{placing && <Button className="ghost" onClick={() => setPlacing(false)}>Cancel placement</Button>}</div><p className="drawing-pin-help">Drag a pin, then Save area links to confirm.<span className="sr-only" id="drawing-pin-help"> Keyboard: Space to pick up, arrow keys to move, Space to drop; Escape to cancel.</span></p></>}
+          <div className="drawing-view-controls"><div className="drawing-progress-controls"><span>Completion</span><div role="group" aria-label="Drawing completion basis"><Button className={basis === 'verified' ? 'primary' : ''} aria-pressed={basis === 'verified'} onClick={() => setBasis('verified')}>Verified</Button><Button className={basis === 'reported' ? 'primary' : ''} aria-pressed={basis === 'reported'} onClick={() => setBasis('reported')}>Reported</Button></div></div>
+          {hasImage && asset && !imageFailed && <div className="drawing-plan-tools"><div><Button className="icon" aria-label="Zoom drawing out" disabled={zoom <= .75 || Boolean(pinDrag)} onClick={() => setZoom((value) => Math.max(.75, value - .25))}><Minus size={15} /></Button><span>{Math.round(zoom * 100)}%</span><Button className="icon" aria-label="Zoom drawing in" disabled={zoom >= 2.5 || Boolean(pinDrag)} onClick={() => setZoom((value) => Math.min(2.5, value + .25))}><Plus size={15} /></Button><Button className="icon" aria-label="Reset drawing zoom" disabled={zoom === 1 || Boolean(pinDrag)} onClick={() => setZoom(1)}><RotateCcw size={14} /></Button></div>{placing && <Button className="ghost" onClick={() => { setPlacing(false); setMobilePanel('details'); setScrollTarget('editor'); setFocusTarget('editor'); }}>Cancel placement</Button>}</div>}</div>
+          <div className="drawing-progress-legend drawing-basic-legend" aria-label="Completion legend"><span><i className="not-started" />Not started</span><span><i className="in-progress" />In progress</span><span><i className="completed" />Completed</span></div>
+          <p className={showEditor ? 'drawing-pin-help' : 'sr-only'}>Drag a pin, then Save area links to confirm.<span className="sr-only" id="drawing-pin-help"> Keyboard: Space to pick up, arrow keys to move, Space to drop; Escape to cancel.</span></p>
           {placing && <p className="drawing-placement-instruction" role="status"><MapPin size={15} />Click the drawing to place the pin, or enter its position in the form.</p>}
           {!asset || imageFailed ? <div className="drawing-preview-missing"><ImageOff size={30} /><h3>{imageFailed ? 'Drawing preview could not load' : 'Reselect the file to view this drawing'}</h3><p>{permanentAsset ? 'Area names and work links are saved. Try opening the bundled drawing again.' : 'Area names and work links are saved. Your selected file preview ends when the page is refreshed.'}</p>{imageFailed ? permanentAsset ? <Button onClick={() => { setImageFailed(false); setImageReady(false); }}>Try preview again</Button> : <Button onClick={() => setModal('upload')}>Choose another drawing</Button> : <Button onClick={() => setModal('reattach')}>Reselect drawing</Button>}</div> : drawing.kind === 'pdf' ? <><iframe className="drawing-pdf-preview" src={asset} title={`Drawing PDF preview: ${drawing.fileName}`} /><p className="drawing-viewer-note">For PDFs, link areas by name and page. Image plans support pins.</p></> : <DragDropProvider key={`${project.id}:${drawing.id}`} sensors={pinSensors} plugins={pinPlugins} onDragStart={startPinDrag} onDragMove={movePinDrag} onDragEnd={finishPinDrag}><div className="drawing-plan-scroll"><div ref={imageStageRef} className={`drawing-image-stage${placing ? ' is-placing' : ''}${pinDrag ? ' is-dragging' : ''}`} style={{ width: `${zoom * 100}%` }} onClick={placeFromClick} role={placing ? 'button' : undefined} tabIndex={placing ? 0 : undefined} aria-label={placing ? 'Drawing pin placement. Click a position, press Enter for the centre, or enter a position in the form.' : undefined} onKeyDown={(event) => { if (placing && event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) { event.preventDefault(); placeAt({ x: .5, y: .5 }); } }}>
             <img src={asset} alt={drawing.kind === 'sample' ? 'Fictional warehouse site plan, with Blocks A and B and areas A1, A2, B1 and B2. Not to scale.' : providedSource ? `${suppliedReference ? 'Provided' : 'Fictional demo'} site drawing: ${drawing.fileName}. Area pins are illustrative manual links.` : `Selected site drawing: ${drawing.fileName}`} onLoad={() => setImageReady(true)} onError={() => { setImageFailed(true); setPlacing(false); }} draggable={false} />
@@ -310,12 +316,12 @@ export function DrawingMappingView({ project, previewUrl, initialAreaId, onBack,
             })}
             {imageReady && draftPosition && !selected && <span className="drawing-pin draft" style={{ left: `${draftPosition.x * 100}%`, top: `${draftPosition.y * 100}%` }}><MapPin size={16} /><span>New area</span></span>}
           </div></div></DragDropProvider>}
-          <details className="drawing-legend-details"><summary>About completion &amp; area links</summary><p>Colours show {basisLabel.toLowerCase()} completion. Enter an area quantity to track that portion separately. Link-only items keep whole-item progress until a quantity split is saved. Pins do not measure quantities.</p></details>
+          <details className="drawing-legend-details"><summary>About completion &amp; area links</summary><div className="drawing-progress-legend" aria-label="Completion and extra-work legend"><span><i className="not-started" />Not started</span><span><i className="in-progress" />In progress</span><span><i className="completed" />Completed</span><span><i className="unlinked" />Not linked</span><span><i className="unknown" />Needs update</span><span className="drawing-vo-legend"><Flag size={11} />Extra work to review</span><span className="drawing-vo-legend approved"><Check size={11} />Approved VO</span></div><p>Colours show {basisLabel.toLowerCase()} completion. Enter an area quantity to track that portion separately. Link-only items keep whole-item progress until a quantity split is saved. Pins do not measure quantities.</p></details>
         </section>
-        <section className="drawing-area-panel" ref={areaPanelRef} aria-labelledby="drawing-areas-heading">
-          <header className="drawing-panel-heading"><div><h2 id="drawing-areas-heading">{showEditor && !unavailableArea ? 'Area mapping' : 'Linked contract items'}</h2><p>{selected ? `${selected.code} · ${selected.name}` : 'Choose which contract work belongs to a site area.'}</p></div>{!areas.length && <Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button>}</header>
+        <section className="drawing-area-panel" id={`${surfaceId}-details-panel`} role="tabpanel" ref={areaPanelRef} aria-labelledby="drawing-areas-heading">
+          <header className="drawing-panel-heading"><div><h2 id="drawing-areas-heading">{showEditor && !unavailableArea ? 'Area mapping' : 'Linked contract items'}</h2><p>{selected ? `${selected.code} · ${selected.name}${drawing.kind === 'pdf' ? ` · Drawing page ${selected.page}` : ''}` : 'Choose which contract work belongs to a site area.'}</p></div>{!areas.length && <Button icon={Plus} onClick={() => chooseArea('new')}>Add area</Button>}</header>
           {!areas.length && <p className="drawing-no-areas">No areas yet. Add the first area and choose its contract work.</p>}
-          {unavailableArea ? <div className="drawing-area-unavailable" role="status"><CircleAlert size={22} /><p>This site area is not available in the selected project.</p><Button onClick={() => { setBrowseAreas(true); setScrollTarget('areas'); }}>Choose another area</Button></div> : showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} pinCommand={pinCommand} onPinCommandApplied={() => setPinCommand(null)} editorRef={editorRef} onCancel={() => { cancelPinDrag(); if (selectedId === 'new') { setSelectedId(areas[0]?.id || 'new'); rememberAreaRoute(areas[0]?.id); } setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); }} /> : <><AreaProgressSummary project={project} area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setScrollTarget('editor'); }} onOpenProgress={onOpenProgress} onOpenContractItem={onOpenContractItem} /><details className="drawing-related-section" key={`vo:${project.id}:${selected.id}`}><summary><Flag size={15} /><span>Extra work</span><small>{selectedVOFlags?.markerLabel || (selectedVOFlags?.totalCount ? `${selectedVOFlags.totalCount} in history` : 'None flagged')}</small></summary><AreaVOPanel area={selected} flags={selectedVOFlags} onOpenVO={onOpenVO} onOpenEvidence={onOpenEvidence} />{!selectedVOFlags?.totalCount && !selectedVOFlags?.newMessageCount && <p className="drawing-related-empty">No extra work flagged for this area.</p>}</details><details className="drawing-related-section" key={`evidence:${project.id}:${selected.id}`}><summary><MessageSquare size={15} /><span>Site updates &amp; photos</span><small>{selectedEvidence?.messageCount || 0} {selectedEvidence?.messageCount === 1 ? 'update' : 'updates'} · {selectedEvidence?.photoCount || 0} {selectedEvidence?.photoCount === 1 ? 'photo' : 'photos'}</small></summary><AreaEvidencePanel project={project} area={selected} onOpenEvidence={onOpenEvidence} /></details></>}
+          {unavailableArea ? <div className="drawing-area-unavailable" role="status"><CircleAlert size={22} /><p>This site area is not available in the selected project.</p><Button onClick={() => { setScrollTarget('areas'); }}>Choose another area</Button></div> : showEditor ? <AreaMappingEditor key={`${drawing.id}:${selected?.id || 'new'}:${selected?.updatedAt || ''}`} project={project} drawing={drawing} area={selectedId === 'new' ? null : selected} onSave={onSaveArea} onSaved={savedArea} onRemove={() => setModal('remove')} onRequestPin={requestPin} canPlacePin={Boolean(hasImage && asset && imageReady && !imageFailed)} onDraftPosition={setDraftPosition} pinCommand={pinCommand} onPinCommandApplied={() => setPinCommand(null)} editorRef={editorRef} onCancel={() => { cancelPinDrag(); if (selectedId === 'new') { setSelectedId(areas[0]?.id || 'new'); rememberAreaRoute(areas[0]?.id); } setEditing(false); setPlacing(false); setDraftPosition(null); setScrollTarget(selected ? 'status' : 'areas'); setFocusTarget(selected ? 'status' : null); }} /> : <><AreaProgressSummary project={project} area={selected} progress={selectedProgress} basisLabel={basisLabel} summaryRef={progressRef} onEdit={() => { setEditing(true); setMobilePanel('details'); setScrollTarget('editor'); setFocusTarget('editor'); }} onOpenProgress={onOpenProgress} onOpenContractItem={onOpenContractItem} /><details className="drawing-related-section" key={`vo:${project.id}:${selected.id}`}><summary><Flag size={15} /><span>Extra work</span><small>{selectedVOFlags?.markerLabel || (selectedVOFlags?.totalCount ? `${selectedVOFlags.totalCount} in history` : 'None flagged')}</small></summary><AreaVOPanel area={selected} flags={selectedVOFlags} onOpenVO={onOpenVO} onOpenEvidence={onOpenEvidence} />{!selectedVOFlags?.totalCount && !selectedVOFlags?.newMessageCount && <p className="drawing-related-empty">No extra work flagged for this area.</p>}</details><details className="drawing-related-section" key={`evidence:${project.id}:${selected.id}`}><summary><MessageSquare size={15} /><span>Site updates &amp; photos</span><small>{selectedEvidence?.messageCount || 0} {selectedEvidence?.messageCount === 1 ? 'update' : 'updates'} · {selectedEvidence?.photoCount || 0} {selectedEvidence?.photoCount === 1 ? 'photo' : 'photos'}</small></summary><AreaEvidencePanel project={project} area={selected} onOpenEvidence={onOpenEvidence} /></details></>}
         </section>
       </div>
       <details className="drawing-setup">
@@ -367,7 +373,7 @@ function AreaProgressSummary({ project, area, progress, basisLabel, summaryRef, 
   const sourceArea = project.contract?.sourceProfile === 'sit-loa-2021' && project.contract?.sourceKind === 'provided'
     && getSITAreaDefinitions().some((definition) => definition.code === area.code);
   const areas = (getDrawingMapping(project) as DrawingMapping).areas;
-  return <section className="drawing-area-progress" ref={summaryRef} aria-label={`Area ${area.code} completion`}>
+  return <section className="drawing-area-progress" tabIndex={-1} ref={summaryRef} aria-label={`Area ${area.code} completion`}>
     <div className="drawing-progress-heading"><div><h3>{progress.totalCount} linked {progress.totalCount === 1 ? 'item' : 'items'}</h3><p>{basisLabel} completion</p></div><Badge tone={progress.tone}>{progress.label}</Badge></div>
     {Boolean(area.aliases?.length) && <p className="drawing-progress-help">Also known as {area.aliases?.join(', ')}</p>}
     {sourceArea && !area.position && <p className="drawing-progress-help">Named contract area · exact position is not confirmed on the general site plan.</p>}
@@ -377,7 +383,8 @@ function AreaProgressSummary({ project, area, progress, basisLabel, summaryRef, 
         const sharedAreas = areas.filter((entry) => entry.id !== area.id && entry.workItemIds.includes(item.id));
         return <li key={item.id}><div>{onOpenContractItem && contractItem ? <Button className="ghost drawing-contract-item-link" aria-label={`View contract item ${contractItem.ref || item.id}`} onClick={() => onOpenContractItem(item.id, area.id)}><span><small>Ref. {contractItem.ref || item.id}</small><strong>{contractItem.description}</strong></span><ArrowUpRight size={15} /></Button> : <><small>Ref. {contractItem?.ref || item.id}</small><strong>{contractItem?.description || item.description}</strong></>}
           {contractItem?.sourcePage && <small>Source page {contractItem.sourcePage}{contractItem.pricingType === 'included' ? ' · Included' : contractItem.pricingType === 'rateOnly' ? ' · Rate only' : ''}</small>}
-          {item.trackingScope === 'area' ? <small className="drawing-allocated-quantity">{quantityText(item.allocationQuantity ?? null)} {contractItem?.unit} assigned here · {quantityText(item.contractQuantity ?? null)} {contractItem?.unit} in contract</small> : item.trackingScope === 'link-only' ? <small>Quantity not assigned here. Edit area mapping to track this area separately.</small> : sharedAreas.length > 0 && <small>Shared with {sharedAreas.map((entry) => entry.code).join(', ')} · one whole contract item.</small>}
+          <dl className="drawing-item-quantities"><div><dt>Contract quantity</dt><dd>{quantityText(contractItem?.quantity ?? null)}{contractItem?.quantity != null && ` ${contractItem.unit}`}</dd></div><div><dt>Quantity in this area</dt><dd className={item.trackingScope === 'area' ? 'drawing-allocated-quantity' : ''}>{contractItem?.pricingType === 'included' || contractItem?.pricingType === 'rateOnly' ? 'Link only' : item.trackingScope === 'area' && item.allocationQuantity != null ? `${quantityText(item.allocationQuantity)} ${contractItem?.unit || ''}` : 'Not allocated'}</dd></div></dl>
+          {item.trackingScope !== 'area' && sharedAreas.length > 0 && <small>Shared with {sharedAreas.map((entry) => entry.code).join(', ')} · one whole contract item.</small>}
           {sourceArea && item.id === 'WI-012' && contractItem?.pricingType === 'included' && <small>Included with B.1 platform work. Shared W3/W5 scope; its quantity is not split and no separate claim value is added.</small>}
           {item.reported !== item.verified && <small>{basisLabel === 'Verified' ? `Reported ${item.reported === null ? 'Not recorded' : completionText(item.reported)}` : `Verified ${item.verified === null ? 'Not recorded' : completionText(item.verified)}`}</small>}
         </div><span className={`drawing-item-completion status-${item.status}`}><strong>{item.completion === null ? '—' : completionText(item.completion)}</strong><small>{item.label}</small></span></li>;
@@ -409,15 +416,22 @@ function AreaMappingEditor({ project, drawing, area, onSave, onSaved, onRemove, 
   const [form, setForm] = useBufferedState(project.id, scope, () => clone(initial));
   const [error, setError] = useState('');
   const [workSearch, setWorkSearch] = useState('');
+  const [addingItems, setAddingItems] = useState(false);
+  const [areaDetailsOpen, setAreaDetailsOpen] = useState(false);
   const [errorField, setErrorField] = useState('');
   const [busy, setBusy] = useState(false);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const addItemRef = useRef<HTMLButtonElement | null>(null);
+  const workSearchRef = useRef<HTMLInputElement | null>(null);
   const busyRef = useRef(false);
   const mounted = useRef(true);
   const position = drawing.kind === 'pdf' ? null : positionFor(form);
   const dirty = JSON.stringify(form) !== JSON.stringify(initial);
-  const matchingItems = (project.items || []).filter((item) => !workSearch.trim() || [item.id, item.ref, item.description, item.location].some((value) => String(value || '').toLowerCase().includes(workSearch.trim().toLowerCase()))).sort((a, b) => Number(form.workItemIds.includes(b.id)) - Number(form.workItemIds.includes(a.id)));
+  const selectedItems = (project.items || []).filter((item) => form.workItemIds.includes(item.id));
+  const matchingItems = (project.items || []).filter((item) => !form.workItemIds.includes(item.id) && (!workSearch.trim() || [item.id, item.ref, item.description, item.location].some((value) => String(value || '').toLowerCase().includes(workSearch.trim().toLowerCase()))));
+  const itemChoicesId = `${project.id}-drawing-item-choices-${area?.id || 'new'}`;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => { if (addingItems) workSearchRef.current?.focus(); }, [addingItems]);
   useEffect(() => {
     if (!pinCommand || pinCommand.projectId !== project.id || pinCommand.scope !== scope) return;
     setForm((current) => ({ ...current, pinX: percentage(pinCommand.position.x), pinY: percentage(pinCommand.position.y) }));
@@ -427,7 +441,7 @@ function AreaMappingEditor({ project, drawing, area, onSave, onSaved, onRemove, 
   useEffect(() => { if (errorField) formRef.current?.querySelector<HTMLElement>(`[name="${errorField}"]`)?.focus(); }, [error, errorField]);
   const changeQuantity = (itemId: string, value: string) => { setForm((current) => ({ ...current, workItemQuantities: { ...current.workItemQuantities, [itemId]: value } })); setError(''); setErrorField(''); };
   const change = <K extends keyof AreaForm,>(field: K, value: AreaForm[K]) => { setForm((current) => ({ ...current, [field]: value })); setError(''); setErrorField(''); };
-  function problem(message: string, field = 'code') { if (field.startsWith('allocation-')) setWorkSearch(''); setError(message); setErrorField(field); formRef.current?.querySelector<HTMLElement>(`[name="${field}"]`)?.focus(); }
+  function problem(message: string, field = 'code') { if (field.startsWith('allocation-')) setWorkSearch(''); if (field === 'aliases') setAreaDetailsOpen(true); setError(message); setErrorField(field); formRef.current?.querySelector<HTMLElement>(`[name="${field}"]`)?.focus(); }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busyRef.current || !onSave) return;
@@ -460,26 +474,30 @@ function AreaMappingEditor({ project, drawing, area, onSave, onSaved, onRemove, 
     } catch { if (mounted.current) problem('This area could not be saved. Please try again.'); }
     finally { busyRef.current = false; if (mounted.current) setBusy(false); }
   }
-  return <form className="drawing-area-editor" onSubmit={save} ref={(node) => { formRef.current = node; editorRef.current = node; }} noValidate>
-    <div className="drawing-editor-back"><BackButton onClick={onCancel}>{area ? 'Back to area status' : 'Back to areas'}</BackButton></div>
+  const renderWorkItem = (item: DrawingWorkItem, checked: boolean) => {
+    const allocation = getItemAreaAllocation(project, item.id);
+    const elsewhereUnits = allocation.areas.filter((entry) => entry.areaId !== area?.id).reduce((total, entry) => total + Math.round(entry.quantity * 10000), 0);
+    const rawQuantity = form.workItemQuantities?.[item.id] || '';
+    const enteredQuantity = rawQuantity.trim() ? quantityFor(rawQuantity) : null;
+    const remaining = allocation.contractQuantity === null ? null : (Math.round(allocation.contractQuantity * 10000) - elsewhereUnits - Math.round((enteredQuantity || 0) * 10000)) / 10000;
+    return <div className="drawing-work-option" key={item.id}><label className="drawing-work-choice"><Checkbox checked={checked} onChange={(event) => { change('workItemIds', event.target.checked ? [...form.workItemIds, item.id] : form.workItemIds.filter((id) => id !== item.id)); if (event.target.checked) workSearchRef.current?.focus(); else addItemRef.current?.focus(); }} /><span><strong>{item.description}</strong><small>Ref. {item.ref} · {item.location}</small></span></label>{checked && (canSplitItem(item) ? <div className="drawing-work-allocation"><FormField label={`Quantity in this area · ${item.ref}`} optional suffix={item.unit} error={errorField === `allocation-${item.id}` ? error : undefined}><Input name={`allocation-${item.id}`} aria-label={`Quantity in this area for ${item.ref}`} type="number" inputMode="decimal" min="0" step="0.0001" value={rawQuantity} placeholder="Not allocated" onChange={(event) => changeQuantity(item.id, event.target.value)} /></FormField><p className={`drawing-allocation-summary${remaining !== null && remaining < 0 ? ' is-overallocated' : ''}`}>Contract {quantityText(allocation.contractQuantity)} {item.unit} · Elsewhere {quantityText(elsewhereUnits / 10000)} · Remaining {quantityText(remaining)} {item.unit}</p>{rawQuantity.trim() && !area?.workItemQuantities?.[item.id] && (item.reported !== null || item.verified !== null) && <p className="drawing-allocation-note">Separate area tracking uses new area reports; previous whole-item updates remain in history.</p>}</div> : <p className="drawing-allocation-note drawing-link-only">{item.pricingType === 'included' ? 'Included work · link only, no separate claim quantity.' : item.pricingType === 'rateOnly' ? 'Rate-only item · link only.' : 'Add a valid measured contract quantity before splitting this item.'}</p>)}</div>;
+  };
+  return <form className="drawing-area-editor" tabIndex={-1} onSubmit={save} ref={(node) => { formRef.current = node; editorRef.current = node; }} noValidate>
     <div className="drawing-editor-heading"><h3>{area ? `Area ${area.code}` : 'New area'}</h3>{area && <Button className="ghost" icon={Trash2} onClick={onRemove}>Remove</Button>}</div>
     {dirty && <p className="drawing-unsaved-note" role="status">{form.pinX !== initial.pinX || form.pinY !== initial.pinY ? 'Pin position is a preview. Save area links to confirm. ' : ''}Unfinished edits stay while you browse. Save before refreshing.</p>}
     <div className="drawing-form-grid">
       <FormField label="Area code" required error={errorField === 'code' ? error : undefined} hint="Use the same code in site updates, e.g. A1."><Input name="code" className="form-input" value={form.code} maxLength={20} onChange={(event) => change('code', event.target.value.toUpperCase())} placeholder="e.g. A1" /></FormField>
       {drawing.kind === 'pdf' && <FormField label="Drawing page" required error={errorField === 'page' ? error : undefined}><Input name="page" className="form-input" type="number" min="1" max="999" step="1" value={form.page} onChange={(event) => change('page', event.target.value)} /></FormField>}
       <FormField label="Area name" required className="drawing-field-full" error={errorField === 'name' ? error : undefined}><Input name="name" className="form-input" value={form.name} maxLength={100} onChange={(event) => change('name', event.target.value)} placeholder="e.g. Block A - west wall" /></FormField>
-      <FormField label="Also known as" optional className="drawing-field-full" error={errorField === 'aliases' ? error : undefined} hint="Names workers use in messages, separated by commas. Up to 8 names."><Input name="aliases" className="form-input" value={form.aliases || ''} onChange={(event) => change('aliases', event.target.value)} placeholder="e.g. West wall, West façade" /></FormField>
     </div>
+    <details className="drawing-editor-details" open={areaDetailsOpen || errorField === 'aliases'} onToggle={(event) => setAreaDetailsOpen(event.currentTarget.open)}><summary>Alternate area names</summary><FormField label="Also known as" optional error={errorField === 'aliases' ? error : undefined} hint="Names workers use in messages, separated by commas. Up to 8 names."><Input name="aliases" className="form-input" value={form.aliases || ''} onChange={(event) => change('aliases', event.target.value)} placeholder="e.g. West wall, West façade" /></FormField></details>
     {drawing.kind !== 'pdf' && <div className="drawing-pin-editor"><div><MapPin size={16} /><span>{position ? `Pin at ${percentage(position.x)}% across, ${percentage(position.y)}% down` : 'Pin not placed'}</span><Button onClick={() => onRequestPin((next) => setForm((current) => ({ ...current, pinX: percentage(next.x), pinY: percentage(next.y) })))} disabled={!canPlacePin}>{position ? 'Move pin' : 'Place pin'}</Button></div><details open={errorField === 'pinX' ? true : undefined}><summary>Enter a position instead</summary><div className="drawing-form-grid"><FormField label="Across drawing" suffix="%" error={errorField === 'pinX' ? error : undefined}><Input name="pinX" className="form-input" type="number" min="0" max="100" step="any" value={form.pinX} onChange={(event) => change('pinX', event.target.value)} /></FormField><FormField label="Down drawing" suffix="%"><Input name="pinY" className="form-input" type="number" min="0" max="100" step="any" value={form.pinY} onChange={(event) => change('pinY', event.target.value)} /></FormField></div>{position && <Button className="ghost" onClick={() => setForm((current) => ({ ...current, pinX: '', pinY: '' }))}>Clear pin position</Button>}</details></div>}
-    <fieldset className="drawing-work-choices"><legend>Link contract items</legend><p>Tick the work that belongs here. Enter its area quantity to track completion separately; leave blank for a link only.</p>{project.items?.length ? <><FormField className="drawing-work-search" label="Find contract work"><Input className="form-input" type="search" value={workSearch} onChange={(event) => setWorkSearch(event.target.value)} placeholder="Search reference, work or location…" /></FormField><p className="drawing-work-count" aria-live="polite">{form.workItemIds.length} selected · {matchingItems.length} shown</p><div className="drawing-work-options">{matchingItems.map((item) => {
-      const checked = form.workItemIds.includes(item.id);
-      const allocation = getItemAreaAllocation(project, item.id);
-      const elsewhereUnits = allocation.areas.filter((entry) => entry.areaId !== area?.id).reduce((total, entry) => total + Math.round(entry.quantity * 10000), 0);
-      const rawQuantity = form.workItemQuantities?.[item.id] || '';
-      const enteredQuantity = rawQuantity.trim() ? quantityFor(rawQuantity) : null;
-      const remaining = allocation.contractQuantity === null ? null : (Math.round(allocation.contractQuantity * 10000) - elsewhereUnits - Math.round((enteredQuantity || 0) * 10000)) / 10000;
-      return <div className="drawing-work-option" key={item.id}><label className="drawing-work-choice"><Checkbox checked={checked} onChange={(event) => change('workItemIds', event.target.checked ? [...form.workItemIds, item.id] : form.workItemIds.filter((id) => id !== item.id))} /><span><strong>{item.description}</strong><small>Ref. {item.ref} · {item.location}</small></span></label>{checked && (canSplitItem(item) ? <div className="drawing-work-allocation"><FormField label={`Quantity in this area · ${item.ref}`} optional suffix={item.unit} error={errorField === `allocation-${item.id}` ? error : undefined}><Input name={`allocation-${item.id}`} aria-label={`Quantity in this area for ${item.ref}`} type="number" inputMode="decimal" min="0" step="0.0001" value={rawQuantity} placeholder="Not split" onChange={(event) => changeQuantity(item.id, event.target.value)} /></FormField><p className={`drawing-allocation-summary${remaining !== null && remaining < 0 ? ' is-overallocated' : ''}`}>Contract {quantityText(allocation.contractQuantity)} {item.unit} · Elsewhere {quantityText(elsewhereUnits / 10000)} · Remaining {quantityText(remaining)} {item.unit}</p>{rawQuantity.trim() && !area?.workItemQuantities?.[item.id] && (item.reported !== null || item.verified !== null) && <p className="drawing-allocation-note">Separate area tracking uses new area reports; previous whole-item updates remain in history.</p>}</div> : <p className="drawing-allocation-note drawing-link-only">{item.pricingType === 'included' ? 'Included work · link only, no separate claim quantity.' : item.pricingType === 'rateOnly' ? 'Rate-only item · link only.' : 'Add a valid measured contract quantity before splitting this item.'}</p>)}</div>;
-    })}</div>{!matchingItems.length && <p className="drawing-search-empty">No matching work items. Clear the search to see all items; your selections are kept.</p>}</> : <div className="notice warning"><CircleAlert size={16} /><span>No contract work is available. Add the contract first; you can still save this area without work links.</span></div>}</fieldset>
+    <fieldset className="drawing-work-choices"><legend>Linked contract items</legend><p>Set the quantity for this area, or leave it blank for a link only.</p>{project.items?.length ? <>
+      <div className="drawing-selected-work" aria-label="Selected contract items">{selectedItems.map((item) => renderWorkItem(item, true))}</div>
+      {!selectedItems.length && <p className="drawing-search-empty">No contract items linked yet. Add the work that belongs to this area.</p>}
+      <Button ref={addItemRef} className="drawing-add-item" icon={Plus} aria-expanded={addingItems} aria-controls={addingItems ? itemChoicesId : undefined} onClick={() => setAddingItems((current) => !current)}>{addingItems ? 'Close item search' : 'Add item'}</Button>
+      {addingItems && <div className="drawing-add-item-picker" id={itemChoicesId} role="region" aria-label="Add contract items"><FormField className="drawing-work-search" label="Find contract work"><Input ref={workSearchRef} className="form-input" type="search" value={workSearch} onChange={(event) => setWorkSearch(event.target.value)} placeholder="Search reference, work or location…" /></FormField><p className="drawing-work-count" aria-live="polite">{matchingItems.length} available {matchingItems.length === 1 ? 'item' : 'items'}</p><div className="drawing-work-options">{matchingItems.map((item) => renderWorkItem(item, false))}</div>{!matchingItems.length && <p className="drawing-search-empty">{workSearch.trim() ? 'No matching items. Try another reference or clear the search.' : 'All contract items are already linked.'} Your selected items stay above.</p>}</div>}
+    </> : <div className="notice warning"><CircleAlert size={16} /><span>No contract work is available. Add the contract first; you can still save this area without work links.</span></div>}</fieldset>
     {error && !['code', 'name', 'aliases', 'page', 'pinX'].includes(errorField) && !errorField.startsWith('allocation-') && <p className="form-error" role="alert">{error}</p>}
     <FormActions secondary={<BackButton onClick={onCancel}>{area ? 'Back to area status' : 'Back to areas'}</BackButton>}><Button className="primary" type="submit" icon={Save} disabled={busy || !onSave}>{busy ? 'Saving…' : 'Save area links'}</Button></FormActions>
   </form>;

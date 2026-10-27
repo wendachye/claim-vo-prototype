@@ -213,3 +213,83 @@ test('latest saved claim follows overview recency while claim rows remain ordere
   assert.equal(overview.cards.find(entry => entry.id === 'claims').summary, 'Sep 2026 · v1');
   assert.deepEqual(backdated.project, before);
 });
+
+test('analytics counts every latest saved month once and compares only recorded months without adding claim values', () => {
+  let project = fixture();
+  project.lockedAt = '2026-01-01T00:00:00Z';
+  project.reports[0].date = '2026-01-15T01:00:00Z';
+  project.reports[0].verifiedAt = '2026-01-15T02:00:00Z';
+  const states = ['draft', 'prepared', 'submitted', 'queried', 'certified', 'paid', 'draft', 'draft'];
+  for (const [index, status] of states.entries()) {
+    const month = String(index + 1).padStart(2, '0');
+    const period = `2026-${month}`;
+    const result = saved(project, period, 40 + index);
+    project = result.project;
+    if (status === 'draft') continue;
+    const ready = markClaimPrepared(project, result.draft.id);
+    assert.equal(ready.outcome, 'updated', ready.error);
+    project = ready.project;
+    project.claimDrafts.find(entry => entry.id === result.draft.id).preparedAt = `2026-${month}-17T01:00:00Z`;
+    if (status === 'prepared') continue;
+    project = stage(project, result.draft.id, 'submitted', { date: `2026-${month}-18`, reference: `SUB-${month}` });
+    if (status === 'queried') project = stage(project, result.draft.id, 'query', { date: `2026-${month}-19`, reference: `QUERY-${month}`, note: 'Mock clarification of this saved assessment.' });
+    if (status === 'certified' || status === 'paid') project = stage(project, result.draft.id, 'certified', { date: `2026-${month}-19`, reference: `CERT-${month}`, value: (40 + index) * 10 });
+    if (status === 'paid') project = stage(project, result.draft.id, 'payment', { date: `2026-${month}-20`, reference: `PAY-${month}`, value: (40 + index) * 10 });
+  }
+  project = saved(project, '2026-01', 35).project;
+  // Unknown amount and historical currencies are retained, not guessed from a
+  // later project profile or converted into a zero-height monthly observation.
+  project.claimDrafts.find(entry => entry.period === '2026-08').snapshot.totals.currentValue = null;
+  project.claimDrafts.find(entry => entry.period === '2026-03').snapshot.currency = 'MYR';
+  const before = structuredClone(project);
+  const dashboard = getProjectDashboard(project);
+  assert.equal(dashboard.claims.length, 3);
+  assert.equal(dashboard.analytics.claimCount, 8);
+  assert.deepEqual(dashboard.analytics.claimStatuses, { draft: 3, prepared: 1, submitted: 1, queried: 1, certified: 1, paid: 1 });
+  assert.deepEqual(dashboard.analytics.claimHistory.map(entry => entry.period), ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08']);
+  assert.equal(dashboard.analytics.claimHistory[0].currency, 'MYR');
+  assert.equal(dashboard.analytics.claimHistory.at(-1).amount, null);
+  assert.equal(dashboard.analytics.claimHistory.find(entry => entry.period === '2026-06').paidValue, 450);
+  assert.equal(dashboard.analytics.claimHistory.find(entry => entry.period === '2026-05').paidValue, null);
+  assert.equal(Object.hasOwn(dashboard.analytics, 'claimTotal'), false);
+  assert.deepEqual(project, before);
+});
+
+test('analytics attention is bounded to genuine selected-project claim and VO follow-ups, excluding site work', () => {
+  const result = saved(fixture());
+  const project = result.project;
+  project.reports.push({ id: 'SITE-PENDING', projectId: project.id, projectCode: project.code, itemId: 'A', status: 'pending', completion: 75, date: '2026-10-24' });
+  approve(project, 'VO-CHECKS', 100);
+  approve(project, 'VO-READY', 200, true);
+  let analytics = getProjectDashboard(project).analytics;
+  assert.equal(analytics.attentionTotal, 2);
+  assert.deepEqual(analytics.attention.map(entry => entry.target), [
+    { route: 'vo', caseId: 'VO-CHECKS' }, { route: 'claims', draftId: result.draft.id },
+  ]);
+  for (let index = 0; index < 5; index++) project.reports.push({ id: `VO-FLAG-${index}`, projectId: project.id, vo: true, status: 'pending' });
+  const before = structuredClone(project);
+  const exports = project.claimDrafts.map(entry => toClaimCSV(buildClaimPack(project, entry.id).pack));
+  analytics = getProjectDashboard(project).analytics;
+  assert.equal(analytics.attentionTotal, 7);
+  assert.equal(analytics.attention.length, 4);
+  assert.ok(analytics.attention.every(entry => entry.projectId === project.id && ['claims', 'vo'].includes(entry.category)));
+  assert.ok(analytics.attention.every(entry => entry.target.route === 'vo'));
+  assert.deepEqual(analytics.voStatuses, { flagged: 5, clarification: 0, pendingApproval: 0, approved: 2, rejected: 0 });
+  assert.deepEqual(project, before);
+  assert.deepEqual(project.claimDrafts.map(entry => toClaimCSV(buildClaimPack(project, entry.id).pack)), exports);
+});
+
+test('analytics excludes ambiguous duplicate revisions, invalid statuses and foreign sources instead of inventing a draft state', () => {
+  const result = saved(fixture());
+  const project = result.project;
+  const baseline = getProjectDashboard(project).analytics;
+  project.claimDrafts.push({ ...structuredClone(project.claimDrafts[0]), id: 'UNKNOWN-STATUS', status: 'pending', period: '2026-11', snapshot: { ...structuredClone(project.claimDrafts[0].snapshot), period: '2026-11' } });
+  project.claimDrafts.push({ ...structuredClone(project.claimDrafts[0]), id: 'FOREIGN-ANALYTICS', projectId: 'OTHER' });
+  project.reports.push({ id: 'FOREIGN-VO-ANALYTICS', projectId: 'OTHER', vo: true, status: 'pending' });
+  assert.deepEqual(getProjectDashboard(project).analytics, baseline);
+  project.claimDrafts.push({ ...structuredClone(project.claimDrafts[0]), id: 'AMBIGUOUS-SAME-REVISION' });
+  const analytics = getProjectDashboard(project).analytics;
+  assert.equal(analytics.claimCount, 0);
+  assert.equal(analytics.claimHistory.length, 0);
+  assert.deepEqual(analytics.claimStatuses, { draft: 0, prepared: 0, submitted: 0, queried: 0, certified: 0, paid: 0 });
+});

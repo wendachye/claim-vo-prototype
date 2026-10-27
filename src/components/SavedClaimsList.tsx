@@ -48,25 +48,40 @@ export function SavedClaimsList({ project, groups, currency, dirtyPeriods, onCon
 
     return <article className={`claim-history-record${latest ? '' : ' older'}`} key={draft.id}>
       <div className="claim-history-main">
-        <div className="claim-history-title"><h3>{latest ? periodLabel(draft.period) : `Version ${draft.revision}`}</h3><Badge tone={['prepared', 'paid'].includes(status) ? 'green' : status === 'queried' && !queryContext?.revision ? 'amber' : status === 'draft' && !readyDraft ? 'slate' : 'blue'}>{statusLabel}</Badge>{latest && dirtyPeriods[draft.period] && status !== 'paid' && !blockedByIssued && <span className="claim-unsaved">{prepared ? 'Unfinished draft' : 'Unsaved edits'}</span>}</div>
-        <p className="claim-history-meta">{latest && <strong>Version {draft.revision}</strong>}{latest && ' · '}{itemCount} selected {itemCount === 1 ? 'item' : 'items'}<span className="claim-history-saved"> · Saved {formatTime(draft.createdAt)}</span></p>
+        <div className="claim-history-title"><h3>{latest ? periodLabel(draft.period) : `Version ${draft.revision}`}</h3></div>
+        <p className="claim-history-meta">{itemCount} selected {itemCount === 1 ? 'item' : 'items'}{!latest && <span className="claim-history-saved"> · Saved {formatTime(draft.createdAt)}</span>}</p>
       </div>
+      <div className="claim-history-status"><Badge tone={['prepared', 'paid'].includes(status) ? 'green' : status === 'queried' && !queryContext?.revision ? 'amber' : status === 'draft' && !readyDraft ? 'slate' : 'blue'}>{statusLabel}</Badge>{latest && dirtyPeriods[draft.period] && status !== 'paid' && !blockedByIssued && <span className="claim-unsaved">{prepared ? 'Unfinished draft' : 'Unsaved edits'}</span>}</div>
       <div className="claim-history-amount"><small>{prepared ? 'Claim amount' : 'This month'}{draft.snapshot?.claimBasis?.version === 1 && ' · net'}</small><strong><span>{draft.snapshot?.currency || currency}</span> {amount(draft.snapshot?.totals?.currentValue)}</strong></div>
-      {revisionSource && <p className="claim-history-revision">Revises version {revisionSource.revision} · Query {revisionContext!.query?.reference}</p>}
-      {queryContext?.revision && <p className="claim-history-revision">Revised in version {queryContext.revision.revision}. Original assessment retained.</p>}
-      {revisionSource && draft.revisionResponse && <details className="claim-history-response"><summary>QS response</summary><p>{draft.revisionResponse}</p></details>}
-      <div className="claim-history-footer">
-        {latest && <p className={`claim-history-next${prepareHelp ? ' needs-attention' : ''}`} id={prepareHelp ? helpId : undefined}>{nextStep}</p>}
-        <div className="claim-history-actions">
-          {canContinue && !prepareHelp && <Button icon={prepared ? Plus : Pencil} onClick={continueClaim}>{continueLabel}</Button>}
-          {previewAction}{blockedPrepareAction}{primaryDraftAction}{trackingAction}
-        </div>
+      <div className="claim-history-actions">
+        {canContinue && !prepareHelp && <Button className="claim-edit-icon" icon={prepared ? Plus : Pencil} aria-label={continueLabel} title={continueLabel} onClick={continueClaim} />}
+        {previewAction}{blockedPrepareAction}{primaryDraftAction}{trackingAction}
       </div>
+      {latest && (prepareHelp || blockedByIssued || status === 'queried') && <p className={`claim-history-next${prepareHelp ? ' needs-attention' : ''}`} id={prepareHelp ? helpId : undefined}>{nextStep}</p>}
+      {!latest && revisionSource && <p className="claim-history-revision">Revises version {revisionSource.revision} · Query {revisionContext!.query?.reference}</p>}
+      {!latest && queryContext?.revision && <p className="claim-history-revision">Revised in version {queryContext.revision.revision}. Original assessment retained.</p>}
+      {!latest && revisionSource && draft.revisionResponse && <details className="claim-history-response"><summary>QS response</summary><p>{draft.revisionResponse}</p></details>}
     </article>;
   }
 
-  return <div className="claim-history-list">{groups.map((group) => <section className="claim-history-group" key={group.period}>
-    {renderRecord(group.drafts[0])}
-    {group.drafts.length > 1 && <details className="claim-older-versions"><summary><History size={14} />{group.drafts.length - 1} earlier {group.drafts.length === 2 ? 'version' : 'versions'}</summary>{group.drafts.slice(1).map((draft) => renderRecord(draft, false))}</details>}
-  </section>)}</div>;
+  return <div className="claim-history-list">
+    {!!groups.length && <div className="claim-list-head" aria-hidden="true"><span>Month</span><span>Status</span><span>Amount</span><span>Actions</span></div>}
+    {groups.map((group) => {
+      const latest = group.drafts[0];
+      const revisionContext = latest.revisionOf ? getClaimRevisionContext(project, latest.revisionOf) : null;
+      const revisionSource = revisionContext && revisionContext.query?.id === latest.queryId ? revisionContext.source : null;
+      const queryContext = getClaimTracking(project, latest.id)?.status === 'queried' ? getClaimRevisionContext(project, latest.id) : null;
+      return <section className="claim-history-group" key={group.period}>
+        {renderRecord(latest)}
+        <details className="claim-older-versions"><summary><History size={14} />History<span>{group.drafts.length > 1 ? `${group.drafts.length - 1} earlier ${group.drafts.length === 2 ? 'version' : 'versions'}` : '1 version'}</span></summary>
+          <div className="claim-current-version"><p><strong>Version {latest.revision}</strong><span>Saved {formatTime(latest.createdAt)}</span></p>
+            {revisionSource && <p className="claim-history-revision">Revises version {revisionSource.revision} · Query {revisionContext!.query?.reference}</p>}
+            {queryContext?.revision && <p className="claim-history-revision">Revised in version {queryContext.revision.revision}. Original assessment retained.</p>}
+            {revisionSource && latest.revisionResponse && <details className="claim-history-response"><summary>QS response</summary><p>{latest.revisionResponse}</p></details>}
+          </div>
+          {group.drafts.slice(1).map((draft) => renderRecord(draft, false))}
+        </details>
+      </section>;
+    })}
+  </div>;
 }

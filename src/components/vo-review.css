@@ -1,4 +1,4 @@
-.vo-view { min-width:0; }
+.vo-view { min-width:0; container-type:inline-size; }
 .vo-workspace { display:grid; grid-template-columns:minmax(250px,290px) minmax(0,1fr); align-items:start; gap:18px; }
 .vo-register, .vo-detail { min-width:0; overflow:hidden; background:#fff; border:1px solid var(--border); border-radius:10px; }
 .vo-register, .vo-review-anchor { scroll-margin-top:62px; }
@@ -9,7 +9,7 @@
 .vo-panel-header p { margin-top:3px; color:#64748b; font-size:12px; line-height:1.5; }
 .vo-panel-header > svg { color:#64748b; }
 .vo-register-list { max-height:650px; overflow-y:auto; scrollbar-width:thin; }
-.vo-register-item { display:flex; align-items:flex-start; gap:12px; width:100%; padding:16px; color:#475569; border:0; border-bottom:1px solid #edf1f5; background:#fff; text-align:left; }
+.vo-register-item { display:flex; align-items:flex-start; gap:12px; width:100%; padding:13px 16px; color:#475569; border:0; border-bottom:1px solid #edf1f5; background:#fff; text-align:left; }
 .vo-register-item:last-child { border-bottom:0; }
 .vo-register-item:hover { background:#f8fafc; }
 .vo-register-item.selected { background:#eff6ff; box-shadow:inset 3px 0 #2563eb; }
@@ -127,7 +127,7 @@
 
 /* Shared labelled filters and concise case summaries match Site updates. */
 .vo-list-controls { margin-bottom:16px; }
-.vo-filter-fields { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(210px,1fr); gap:12px; }
+.vo-filter-fields { display:grid; grid-template-columns:minmax(0,1.6fr) minmax(140px,.8fr) minmax(190px,1fr); gap:12px; }
 .vo-filter-fields .search-box { width:100%; }
 .vo-filter-fields .search-box > button { display:flex; padding:2px; border:0; background:transparent; color:#64748b; }
 .vo-list-tools { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; margin-top:10px; }
@@ -137,11 +137,11 @@
 .vo-list-heading > span { color:#64748b; font-size:11px; font-weight:400; }
 .vo-register-copy { flex:1; min-width:0; }
 .vo-register-title { min-width:0; }
-.vo-register-title > strong { color:#1e293b; font-size:13px; font-weight:600; line-height:1.6; overflow-wrap:anywhere; }
+.vo-register-title > strong { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; color:#1e293b; font-size:13px; font-weight:600; line-height:1.6; overflow-wrap:anywhere; }
 .vo-register-summary .badge { font-size:11px; line-height:1.5; white-space:normal; }
-.vo-register-area { display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:6px; color:#64748b; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.vo-register-area { display:flex; align-items:center; flex-wrap:wrap; gap:4px; margin-top:4px; color:#64748b; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
 .vo-register-area > svg { flex-shrink:0; }
-.vo-register-summary { display:flex; align-items:center; flex-wrap:wrap; gap:6px 9px; margin-top:8px; }
+.vo-register-summary { display:flex; align-items:center; flex-wrap:wrap; gap:5px 8px; margin-top:5px; }
 .vo-register-price { color:#475569; font-size:12px; font-weight:500; line-height:1.6; overflow-wrap:anywhere; }
 .vo-case-thumbnail, .vo-case-icon { width:42px; height:42px; flex-shrink:0; border-radius:6px; object-fit:cover; }
 .vo-case-icon { display:grid; place-items:center; color:#64748b; background:#f1f5f9; }
@@ -157,11 +157,20 @@
 }
 @media(max-width:760px) {
   .vo-filter-fields { grid-template-columns:minmax(0,1fr); }
-  .vo-register-item { padding:16px 15px; gap:10px; }
+  .vo-register-item { padding:13px 15px; gap:10px; }
   .vo-detail .vo-panel-header { align-items:flex-start; }
 }
 @media(max-width:420px) {
   .vo-case-thumbnail, .vo-case-icon { width:42px; height:42px; }
   .vo-open-case { display:none; }
   .vo-register-title > strong { font-size:13px; }
+}
+
+.vo-selected-filter-note { margin:0 0 10px; color:#64748b; font-size:12px; line-height:1.7; }
+@container (max-width:800px) {
+  .vo-filter-fields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .vo-filter-fields > :first-child { grid-column:1 / -1; }
+}
+@container (max-width:300px) {
+  .vo-filter-fields { grid-template-columns:minmax(0,1fr); }
 }

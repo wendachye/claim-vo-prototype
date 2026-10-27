@@ -18,11 +18,11 @@ const reviewedAt = (value: string) => Number.isFinite(Date.parse(value)) ? forma
 const duration = (value: number) => Number.isFinite(value) && value > 0 ? `${Math.floor(value / 60)}:${String(Math.floor(value % 60)).padStart(2, '0')}` : '';
 
 /** Uses only a frozen evidence record; later message edits cannot change saved claims. */
-export function VoiceNoteEvidenceDetails({ evidence }: { evidence: VoiceNoteEvidence | null | undefined }) {
+export function VoiceNoteEvidenceDetails({ evidence, defaultOpen = false }: { evidence: VoiceNoteEvidence | null | undefined; defaultOpen?: boolean }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [evidence?.audio?.asset]);
   if (!isVoiceNoteEvidenceSnapshot(evidence)) return <p className="wa-voice-help">Saved voice-note evidence unavailable.</p>;
-  return <details className="wa-voice-history wa-voice-saved-evidence">
+  return <details className="wa-voice-history wa-voice-saved-evidence" open={defaultOpen || undefined}>
     <summary>Original voice note &amp; transcript</summary>
     <p className="wa-voice-help">Synthetic demo audio · Simulated transcript</p>
     {!failed ? <div className="wa-voice-player"><audio controls preload="metadata" aria-label="Saved original demo voice note" src={evidence.audio.asset} onError={() => setFailed(true)}>Your browser does not support audio playback.</audio></div>

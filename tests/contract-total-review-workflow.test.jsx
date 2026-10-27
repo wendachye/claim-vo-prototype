@@ -61,8 +61,12 @@ function mount() {
 }
 
 async function expandChecks(user) {
-  const summary = checksPanel().getByRole('button', { name: /^Contract checks/ });
-  if (summary.getAttribute('aria-expanded') !== 'true') await user.click(summary);
+  if (!document.querySelector('#contract-checks')) {
+    await moreOption(user, 'Contract checks');
+    await screen.findByRole('dialog', { name: 'Contract checks', exact: true });
+  }
+  const summary = checksPanel().queryByRole('button', { name: /^Contract checks:/ });
+  if (summary && summary.getAttribute('aria-expanded') !== 'true') await user.click(summary);
   return checksPanel();
 }
 
@@ -79,12 +83,13 @@ async function confirmWorkList(user) {
 }
 
 async function moreOption(user, name) {
-  const trigger = screen.getByRole('button', { name: 'More options', exact: true });
+  const trigger = screen.getByRole('button', { name: 'Contract actions', exact: true });
   if (trigger.getAttribute('aria-expanded') !== 'true') await user.click(trigger);
   await user.click(screen.getByRole('menuitem', { name, exact: true }));
 }
 
 async function switchProject(user, from, to) {
+  if (screen.queryByRole('dialog', { name: 'Contract checks', exact: true })) await user.keyboard('{Escape}');
   await user.click(screen.getByRole('button', { name: `Project: ${from.name}`, exact: true }));
   await chooseProjectOption(user, to);
   await waitFor(() => expect(workspace().activeProjectId).toBe(to.id));
@@ -147,7 +152,7 @@ describe('total difference review connects source checks to explicit baseline co
     expect(selectedProject().locked).toBe(false);
     expect(frozenWorkflow(selectedProject())).toEqual(before);
     expect(claims(selectedProject())).toEqual(savedClaims);
-    expect(checksPanel().getByText('Difference reviewed', { exact: true })).toBeTruthy();
+    expect(checksPanel().getByText('Total difference reviewed', { exact: true })).toBeTruthy();
     expect(checksPanel().getByText(reason, { exact: true })).toBeTruthy();
     await user.click(await screen.findByRole('button', { name: 'Confirm work list', exact: true }));
     const dialog = await screen.findByRole('dialog', { name: 'Confirm work list', exact: true });
@@ -265,7 +270,7 @@ describe('total difference review connects source checks to explicit baseline co
     const user = userEvent.setup();
     mount();
     const panel = await expandChecks(user);
-    expect(panel.getByText('Partial schedule', { exact: true })).toBeTruthy();
+    expect(screen.getByText('Partial schedule', { exact: true })).toBeTruthy();
     expect(panel.queryByRole('button', { name: 'Review total difference', exact: true })).toBeNull();
     expect(panel.queryByRole('textbox', { name: /Reason for total difference/ })).toBeNull();
     await confirmWorkList(user);
@@ -281,7 +286,9 @@ describe('total difference review connects source checks to explicit baseline co
     const panel = await expandChecks(user);
     expect(panel.queryByRole('button', { name: 'Review total difference', exact: true })).toBeNull();
     expect(panel.queryByRole('textbox', { name: /Reason for total difference/ })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Continue to site updates', exact: true })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Continue to site updates', exact: true })).toBeNull();
+    await user.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: 'Contract actions', exact: true })).toBeTruthy();
     view.unmount();
     mount();
     await expandChecks(user);

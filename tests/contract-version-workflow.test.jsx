@@ -51,7 +51,7 @@ function mount(hash = '#contract') {
 }
 
 async function moreOption(user, name) {
-  const trigger = screen.getByRole('button', { name: 'More options', exact: true });
+  const trigger = screen.getByRole('button', { name: 'Contract actions', exact: true });
   if (trigger.getAttribute('aria-expanded') !== 'true') await user.click(trigger);
   await user.click(screen.getByRole('menuitem', { name, exact: true }));
 }

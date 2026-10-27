@@ -61,6 +61,33 @@ afterEach(() => {
 });
 
 describe('WhatsApp review retains the exact message and separates saved updates from current totals', () => {
+  it('puts the original evidence before the match and decision, and filters location without rewriting the selected record', async () => {
+    const { project } = fixture();
+    const source = project.whatsappMessages.find(message => message.kind === 'progress' && message.status === 'new'
+      && project.items.find(item => item.id === message.itemId)?.location === 'W3');
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount(source.id);
+    const evidence = review().querySelector('.wa-source-evidence');
+    const match = within(review()).getByRole('region', { name: 'Matched work and area' });
+    const decision = within(review()).getByRole('button', { name: 'Add progress update', exact: true });
+    expect(evidence.open).toBe(true);
+    expect(evidence.textContent).toContain(source.text);
+    expect(evidence.compareDocumentPosition(match) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(match.compareDocumentPosition(decision) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Clear all', exact: true })).toBeNull();
+    await chooseSelect(user, screen.getByRole('combobox', { name: 'Filter message location', exact: true }), 'W5');
+    expect(screen.getByText('Selected message is outside these filters.', { exact: true })).toBeTruthy();
+    expect(inbox().textContent).not.toContain(source.area);
+    expect(review().textContent).toContain(source.text);
+    expect(params().get('message')).toBe(source.id);
+    await user.click(screen.getByRole('button', { name: 'Clear all', exact: true }));
+    expect(screen.queryByRole('button', { name: 'Clear all', exact: true })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Search site updates', exact: true }));
+    expect(messageButton(source)).toBeTruthy();
+    expect(workspace().projects).toEqual(before);
+  });
+
   it('keeps a linked message open outside list filters until a visible inbox message is explicitly chosen', async () => {
     const { project } = fixture();
     const source = project.whatsappMessages.find(message => message.id.endsWith('-CASE-WA-001'));
@@ -94,12 +121,12 @@ describe('WhatsApp review retains the exact message and separates saved updates 
     await user.click(screen.getByRole('button', { name: 'Back to messages', exact: true }));
     expect(params().get('message')).toBeNull();
     expect(params().get('area')).toBe(area.id);
-    expect(params().get('from')).toBe('overview');
+    expect(params().get('from')).toBe('dashboard');
     expect(document.querySelector('.whatsapp-view').classList.contains('wa-review-open')).toBe(false);
     view.unmount();
     render(<App />);
     expect(document.querySelector('.whatsapp-view').classList.contains('wa-review-open')).toBe(false);
-    expect(screen.getByRole('button', { name: 'Back to overview', exact: true })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Back to dashboard', exact: true })).toBeTruthy();
     expect(workspace().projects).toEqual(before);
   });
 

@@ -1,3 +1,4 @@
+import { chooseDrawingArea } from './drawing-select-helpers.mjs';
 import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -8,7 +9,6 @@ import { createSITContractDemo } from '../src/data/provided-contract-demo';
 import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace';
 import { getDrawingMapping } from '../src/data/drawing-mapping';
 import { clearProjectFormBuffers } from '../src/data/form-buffer';
-import { chooseSelect } from './select-helpers.mjs';
 
 const now = new Date('2026-10-24T10:00:00+08:00');
 const projectIds = new Set();
@@ -16,7 +16,7 @@ const workspace = () => JSON.parse(localStorage.getItem(WORKSPACE_STORE));
 const storedProject = (id) => workspace().projects.find((project) => project.id === id);
 const summary = (area) => screen.getByRole('region', { name: `Area ${area.code} completion`, exact: true });
 const pin = (area) => screen.getByRole('button', { name: (name) => name.startsWith(`Select area ${area.code}:`) });
-const picker = () => screen.getByRole('combobox', { name: 'Choose site area', exact: true });
+const picker = () => screen.getByRole('button', { name: 'Choose site area', exact: true });
 const dimensions = { width: 1000, height: 600, left: 80, top: 120 };
 const documentDescriptors = new Map(['getAnimations', 'elementFromPoint', 'elementsFromPoint']
   .map((key) => [key, Object.getOwnPropertyDescriptor(document, key)]));
@@ -298,12 +298,12 @@ describe('draggable drawing pins keep Save area links authoritative', () => {
 
     await keyboardMove(user, nextArea, '{ArrowLeft}');
     const draftAcross = screen.getByRole('spinbutton', { name: /^Across drawing/ }).value;
-    await chooseSelect(user, picker(), area.id);
+    await chooseDrawingArea(user, picker(), area.id);
     expect(summary(area)).toBeTruthy();
     await user.click(within(summary(area)).getByRole('button', { name: 'Edit area mapping', exact: true }));
     await openCoordinates(user);
     expect(Number(screen.getByRole('spinbutton', { name: /^Across drawing/ }).value)).toBeCloseTo(area.position.x * 100);
-    await chooseSelect(user, picker(), nextArea.id);
+    await chooseDrawingArea(user, picker(), nextArea.id);
     await user.click(within(summary(nextArea)).getByRole('button', { name: 'Edit area mapping', exact: true }));
     await openCoordinates(user);
     expect(screen.getByRole('spinbutton', { name: /^Across drawing/ }).value).toBe(draftAcross);
@@ -313,7 +313,7 @@ describe('draggable drawing pins keep Save area links authoritative', () => {
     await chooseProjectOption(user, other);
     loadDrawing();
     const foreignArea = getDrawingMapping(other).areas.find((entry) => entry.code === nextArea.code);
-    await chooseSelect(user, picker(), foreignArea.id);
+    await chooseDrawingArea(user, picker(), foreignArea.id);
     await user.click(within(summary(foreignArea)).getByRole('button', { name: 'Edit area mapping', exact: true }));
     await openCoordinates(user);
     expect(Number(screen.getByRole('spinbutton', { name: /^Across drawing/ }).value)).toBeCloseTo(foreignArea.position.x * 100);

@@ -1,3 +1,4 @@
+import { chooseDrawingArea } from './drawing-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -61,9 +62,10 @@ describe('the main S.I.T. showcase links contract, area evidence and the QS clai
     let view = render(<App />);
     expect(screen.getByRole('heading', { name: 'Contract', exact: true })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Drawing & areas', exact: true }));
-    await chooseSelect(user, screen.getByRole('combobox', { name: 'Choose site area', exact: true }), areaA.id);
+    await chooseDrawingArea(user, screen.getByRole('button', { name: 'Choose site area', exact: true }), areaA.id);
     const areaSummary = screen.getByRole('region', { name: 'Area BRACKET-A completion', exact: true });
-    expect(areaSummary.textContent).toContain('90 pc assigned here · 180 pc in contract');
+    expect(within(areaSummary).getByText('Contract quantity', { exact: true }).nextElementSibling.textContent).toBe('180 pc');
+    expect(within(areaSummary).getByText('Quantity in this area', { exact: true }).nextElementSibling.textContent).toBe('90 pc');
     await user.click(within(areaSummary).getByRole('button', { name: 'View contract item D.5', exact: true }));
     expect(screen.getByRole('heading', { name: 'Contract review', exact: true })).toBeTruthy();
     expect(screen.getAllByText('Installation of cantilever wall bracket', { exact: true }).length).toBeGreaterThan(0);

@@ -1,7 +1,7 @@
 .contract-item-editor .editor-header h2 { font-size:14px; line-height:1.6; }
-.contract-item-editor .editor-header p { color:#64748b; font-size:12px; line-height:1.7; }
+.contract-item-editor .editor-header p { color:#64748b; font-size:13px; line-height:1.7; }
 .contract-item-editor .editor-header .badge { flex-shrink:0; font-size:12px; }
-.contract-item-context { display:flex; align-items:flex-start; gap:8px; margin-bottom:16px; color:#475569; font-size:12px; line-height:1.8; }
+.contract-item-context { display:flex; align-items:flex-start; gap:8px; margin-bottom:16px; color:#475569; font-size:13px; line-height:1.8; }
 .contract-item-context > svg { flex-shrink:0; margin-top:4px; color:#64748b; }
 .contract-item-demo { margin:8px 0 20px; color:#64748b; font-size:12px; line-height:1.8; }
 .contract-item-unsaved { margin-bottom:14px; padding:10px 12px; border:1px solid #bfdbfe; border-radius:7px; color:#1d4ed8; background:#eff6ff; font-size:12px; line-height:1.8; }
@@ -9,16 +9,34 @@
 .contract-quantity-warning .button { margin-top:10px; }
 .contract-readonly-work h3 { color:#334155; font-size:15px; line-height:1.8; font-weight:550; }
 .contract-readonly-work > p { margin-top:5px; color:#64748b; font-size:12px; line-height:1.8; }
-.contract-readonly-values { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px 16px; margin:21px 0; }
-.contract-readonly-values dt,.contract-item-source dt { color:#64748b; font-size:12px; line-height:1.7; }
-.contract-readonly-values dd { margin:5px 0 0; color:#334155; font-size:17px; font-weight:550; line-height:1.6; }
-.contract-readonly-values dd > span { font-size:13px; font-weight:450; }
-.contract-readonly-values p { margin-top:4px; color:#64748b; font-size:12px; line-height:1.7; }
-.contract-line-amount { align-self:start; min-width:0; padding:13px 14px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; }
-.contract-line-amount > span { display:block; color:#64748b; font-size:12px; line-height:1.7; }
-.contract-line-amount > strong { display:block; margin-top:5px; color:#334155; font-size:20px; font-weight:600; line-height:1.6; font-variant-numeric:tabular-nums; }
-.contract-line-amount > p { margin-top:4px; color:#64748b; font-size:12px; line-height:1.8; }
-.contract-line-amount.matches { background:#f7fcf9; border-color:#d1fae5; }
+.contract-item-description { margin-top:0; }
+.contract-value-comparison-wrap { margin-top:18px; }
+.contract-value-comparison { width:100%; border-collapse:collapse; table-layout:fixed; text-align:left; }
+.contract-value-comparison th, .contract-value-comparison td { vertical-align:top; padding:12px 10px; border-bottom:1px solid #edf2f7; overflow-wrap:anywhere; white-space:normal; }
+.contract-value-comparison thead th { color:#64748b; font-size:12px; font-weight:500; line-height:1.6; background:#f8fafc; }
+.contract-value-comparison th:first-child { width:22%; padding-left:0; }
+.contract-value-comparison th:nth-child(2) { width:32%; }
+.contract-value-comparison thead th:first-child { padding-left:10px; }
+.contract-value-comparison th:last-child, .contract-value-comparison td:last-child { padding-right:0; }
+.contract-value-comparison tbody th { color:#475569; font-size:13px; font-weight:500; line-height:1.7; }
+.contract-value-comparison tbody th > small { display:block; margin-top:3px; color:#64748b; font-size:12px; font-weight:400; line-height:1.6; }
+.contract-value-comparison td { color:#334155; font-size:14px; font-weight:500; line-height:1.7; font-variant-numeric:tabular-nums; }
+.contract-value-comparison td > span { font-size:12px; font-weight:400; }
+.contract-value-comparison td > small { display:block; color:#64748b; font-size:12px; font-weight:400; line-height:1.6; margin-top:3px; }
+.contract-value-comparison .contract-comparison-input { margin:0; min-width:0; }
+.contract-comparison-input .form-field-label { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.contract-comparison-input .form-input, .contract-comparison-input [data-slot='select-trigger'] { width:100%; min-width:0; font-size:13px; }
+.contract-comparison-quantity-inputs { display:grid; grid-template-columns:minmax(0,1fr) 76px; gap:6px; }
+.contract-line-amount { min-width:0; }
+.contract-line-amount > strong { display:block; color:#334155; font-size:15px; font-weight:600; line-height:1.6; font-variant-numeric:tabular-nums; }
+.contract-line-amount > span { display:block; margin-top:4px; color:#64748b; font-size:12px; font-weight:400; line-height:1.6; }
+.contract-line-amount.matches > span { color:#15803d; }
+.contract-value-note { margin-top:10px; color:#64748b; font-size:13px; line-height:1.7; }
+.contract-item-related { margin-top:18px; }
+.contract-item-related > span { display:block; margin-bottom:5px; color:#64748b; font-size:12px; font-weight:500; line-height:1.6; }
+.contract-item-related > div { display:flex; align-items:center; flex-wrap:wrap; gap:5px 12px; }
+.contract-item-related a { display:inline-flex; align-items:center; min-height:36px; font-size:13px; line-height:1.6; }
+.contract-item-related .button { margin:0; }
 .contract-quantity-field .form-input { border-color:#f8d795; }
 .contract-item-source { margin-top:22px; border-top:1px solid var(--border); }
 .contract-item-source > summary { display:flex; align-items:center; gap:10px; padding:15px 0; color:#475569; font-size:12px; line-height:1.8; cursor:pointer; list-style:none; }
@@ -32,5 +50,11 @@
 .contract-item-editor .editor-summary { color:#64748b; font-size:12px; line-height:1.7; }
 @media screen and (max-width:420px) {
   .contract-item-editor .editor-header { flex-wrap:wrap; }
-  .contract-readonly-values,.contract-item-source dl { gap:16px 12px; }
+  .contract-item-source dl { gap:16px 12px; }
+  .contract-value-comparison th, .contract-value-comparison td { padding-inline:6px; }
+  .contract-value-comparison th:first-child { padding-left:0; }
+  .contract-value-comparison thead th:first-child { width:26%; }
+  .contract-value-comparison thead th:nth-child(2) { width:34%; }
+  .contract-value-comparison thead th:last-child { width:40%; }
+  .contract-comparison-quantity-inputs { grid-template-columns:minmax(0,1fr); gap:7px; }
 }

@@ -56,11 +56,11 @@ export function ProjectsView({ projects = [], activeProjectId, showcaseProjectId
     return <article key={project.id} className={`project-list-row${project.id === activeProjectId ? ' active' : ''}${isShowcase ? ' project-main-showcase' : ''}`}>
       <div className="project-list-icon"><Building2 size={22} aria-hidden="true"/></div>
       <div className="project-list-copy"><h2>{project.name}</h2><p>{project.code} · {project.country || 'Country not set'}</p><div>{isShowcase && <Badge tone="blue">Main showcase</Badge>}{project.id === activeProjectId && !isShowcase && <Badge tone="blue">Current project</Badge>}<Badge tone={project.locked ? 'green' : counts.items ? 'amber' : 'slate'}>{project.locked ? 'Contract checked' : counts.items ? 'Contract to check' : 'No contract yet'}</Badge>{counts.pending > 0 && <span>{counts.pending} site {counts.pending === 1 ? 'update' : 'updates'} to check</span>}</div></div>
-      <Button onClick={() => onOpen?.(project.id, 'projects')}>{isShowcase ? 'Open showcase' : project.id === activeProjectId ? 'View overview' : 'Open project'}<ArrowRight size={14} aria-hidden="true"/></Button>
+      <Button onClick={() => onOpen?.(project.id, 'dashboard')}>{isShowcase ? 'Open showcase' : project.id === activeProjectId ? 'Open dashboard' : 'Open project'}<ArrowRight size={14} aria-hidden="true"/></Button>
     </article>;
   };
   return <div className="projects-view">
-    <PageHeader title="All projects" description={showcaseProjectId ? 'Open the S.I.T. showcase or choose another project.' : 'Open a project to see its next steps.'} onBack={onBack} backLabel="Back to overview" actions={<Button className="primary" icon={Plus} onClick={onCreate}>New project</Button>} />
+    <PageHeader title="All projects" description={showcaseProjectId ? 'Open the S.I.T. showcase or choose another project.' : 'Choose a project to open its dashboard.'} onBack={onBack} backLabel="Back to dashboard" actions={<Button className="primary" icon={Plus} onClick={onCreate}>New project</Button>} />
     <div className="section-toolbar projects-toolbar"><label className="search-box"><Search size={16}/><Input aria-label="Search projects" placeholder="Find a project…" value={search} onChange={event=>setSearch(event.target.value)}/>{search&&<button aria-label="Clear project search" onClick={()=>setSearch('')}><X size={14}/></button>}</label><SelectField className="form-select" aria-label="Filter projects by country" value={country} onChange={event=>setCountry(event.target.value)}><option value="all">All countries</option>{COUNTRIES.map(value=><option key={value}>{value}</option>)}</SelectField></div>
     <div className="projects-catalog">
       {showcase && <section aria-label="Main showcase">{renderProject(showcase)}</section>}

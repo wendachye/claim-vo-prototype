@@ -1,3 +1,4 @@
+import { chooseDrawingArea } from './drawing-select-helpers.mjs';
 import { chooseSelect } from './select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
@@ -15,7 +16,7 @@ const elementScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, 'scro
 const workspace = () => JSON.parse(localStorage.getItem(WORKSPACE_STORE));
 const selectedProject = () => { const value = workspace(); return value.projects.find(project => project.id === value.activeProjectId); };
 const params = () => new URLSearchParams(location.hash.split('?')[1]);
-const areaPicker = () => screen.getByRole('combobox', { name: 'Choose site area', exact: true });
+const areaPicker = () => screen.getByRole('button', { name: 'Choose site area', exact: true });
 const areaSummary = area => screen.getByRole('region', { name: `Area ${area.code} completion`, exact: true });
 
 function fixture() {
@@ -99,7 +100,7 @@ describe('drawing areas stay connected to their contract scope', () => {
     expect(screen.queryByRole('region', { name: /^Area .+ completion$/ })).toBeNull();
     expect(screen.queryByRole('region', { name: /^Site updates and photos for area/ })).toBeNull();
     expect(document.querySelector('.drawing-area-editor')).toBeNull();
-    await chooseSelect(user, areaPicker(), area.id);
+    await chooseDrawingArea(user, areaPicker(), area.id);
     await waitFor(() => expect(params().get('area')).toBe(area.id));
     expect(screen.queryByText('This site area is not available in the selected project.')).toBeNull();
     expect(areaSummary(area)).toBeTruthy();
@@ -117,16 +118,17 @@ describe('drawing areas stay connected to their contract scope', () => {
     const name = screen.getByRole('textbox', { name: /^Area name/ });
     await user.clear(name);
     await user.type(name, 'Demo west access working area');
-    const workChoice = within(document.querySelector('.drawing-work-options')).getByRole('checkbox', { name: name => name.includes(extraItem.description) });
+    await user.click(screen.getByRole('button', { name: 'Add item', exact: true }));
+    const workChoice = within(screen.getByRole('region', { name: 'Add contract items', exact: true })).getByRole('checkbox', { name: name => name.includes(extraItem.description) });
     await user.click(workChoice);
     expect(workspace().projects).toEqual(before);
-    await chooseSelect(user, areaPicker(), nextArea.id);
+    await chooseDrawingArea(user, areaPicker(), nextArea.id);
     expect(areaSummary(nextArea)).toBeTruthy();
-    await chooseSelect(user, areaPicker(), area.id);
+    await chooseDrawingArea(user, areaPicker(), area.id);
     expect(areaSummary(area).textContent).not.toContain('Demo west access working area');
     await user.click(within(areaSummary(area)).getByRole('button', { name: 'Edit area mapping', exact: true }));
     expect(screen.getByRole('textbox', { name: /^Area name/ }).value).toBe('Demo west access working area');
-    expect(within(document.querySelector('.drawing-work-options')).getByRole('checkbox', { name: name => name.includes(extraItem.description) }).getAttribute('aria-checked')).toBe('true');
+    expect(within(document.querySelector('.drawing-selected-work')).getByRole('checkbox', { name: name => name.includes(extraItem.description) }).getAttribute('aria-checked')).toBe('true');
     expect(workspace().projects).toEqual(before);
     await user.click(screen.getByRole('button', { name: 'Save area links', exact: true }));
     await waitFor(() => expect(document.querySelector('.drawing-area-editor')).toBeNull());
@@ -147,7 +149,7 @@ describe('drawing areas stay connected to their contract scope', () => {
     const user = userEvent.setup();
     mount(`#drawing?area=${encodeURIComponent(areas[0].id)}`);
     for (const area of areas) {
-      await chooseSelect(user, areaPicker(), area.id);
+      await chooseDrawingArea(user, areaPicker(), area.id);
       const summary = areaSummary(area);
       expect(within(summary).getByRole('button', { name: `View contract item ${included.ref}`, exact: true })).toBeTruthy();
       expect(summary.textContent).toMatch(/Included/);

@@ -61,10 +61,11 @@ export function getProjectDashboard(project: Project) {
       && (!entry.projectDetails || entry.projectDetails.id === current.id)),
     claimTracking: unique(current.claimTracking, 'draftId').filter(entry => entry.projectId === current.id),
   };
+  const attentionTasks = getProjectAttention(scoped).filter(entry => entry.projectId === current.id);
   const measured = items.filter(entry => entry.pricingType === 'measured');
   const site = { total: measured.length, completed: 0, inProgress: 0, notStarted: 0, unknown: 0,
     excluded: items.length - measured.length,
-    pending: getProjectAttention(scoped).filter(entry => entry.category === 'site' && entry.kind === 'progress').length,
+    pending: attentionTasks.filter(entry => entry.category === 'site' && entry.kind === 'progress').length,
     target: { route: 'completion' } as AttentionTarget };
   for (const item of measured) {
     const allocation = getItemAreaAllocation(scoped, item.id);
@@ -104,11 +105,23 @@ export function getProjectDashboard(project: Project) {
   });
   const latestSaved = [...latest].sort((a, b) => time(b.createdAt) - time(a.createdAt)
     || b.period.localeCompare(a.period) || b.revision - a.revision || a.id.localeCompare(b.id))[0];
-  const claims = [...latest].sort((a, b) => b.period.localeCompare(a.period)).slice(0, 3).map(draft => claimSummary(scoped, draft));
+  const claimSummaries = [...latest].sort((a, b) => b.period.localeCompare(a.period)).map(draft => claimSummary(scoped, draft));
+  const claims = claimSummaries.slice(0, 3);
+  const claimStatuses = { draft: 0, prepared: 0, submitted: 0, queried: 0, certified: 0, paid: 0 };
+  for (const claim of claimSummaries) if (Object.hasOwn(claimStatuses, claim.status)) claimStatuses[claim.status as keyof typeof claimStatuses]++;
+  const voStatuses = { flagged: 0, clarification: 0, pendingApproval: 0, approved: 0, rejected: 0 };
+  for (const entry of cases) if (Object.hasOwn(voStatuses, entry.status)) voStatuses[entry.status as keyof typeof voStatuses]++;
+  const financialAttention = attentionTasks.filter(entry => entry.category === 'claims' || entry.category === 'vo');
+  // Counts describe one saved revision per month. History is a comparison of
+  // separate assessments, never a cumulative claim ledger or payment forecast.
+  const analytics = { claimStatuses, claimCount: claimSummaries.length, voStatuses,
+    attention: financialAttention.slice(0, 4), attentionTotal: financialAttention.length,
+    claimHistory: claimSummaries.slice(0, 6).reverse(),
+  };
   return {
     contract: { currency: text(current.contract?.currency) || null, declaredValue: (money(current.contract?.totalAmount) ?? -1) >= 0 ? money(current.contract?.totalAmount) : null,
       partialSchedule: current.contract?.representativeSubset === true, itemCount: items.length,
       target: { route: 'contract' } as AttentionTarget },
-    site, vo, claims, latestClaim: latestSaved ? claimSummary(scoped, latestSaved) : null,
+    site, vo, claims, latestClaim: latestSaved ? claimSummary(scoped, latestSaved) : null, analytics,
   };
 }

@@ -1,15 +1,13 @@
 import { chooseProjectOption } from './project-select-helpers.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../src/App';
 import { createProject, WORKSPACE_STORE } from '../src/data/projects.ts';
 import { createSITContractDemo } from '../src/data/provided-contract-demo.ts';
 import { loadShowcaseWorkspace, SIT_SHOWCASE_VERSION } from '../src/data/showcase-workspace.ts';
-import { getProjectOverview } from '../src/data/project-overview.ts';
 import { getVOCases } from '../src/data/vo.ts';
 import { markClaimPrepared } from '../src/data/claims.ts';
-import { recordClaimStage } from '../src/data/claim-tracking.ts';
 import { buildClaimPack } from '../src/data/claim-pack.ts';
 import { clearProjectFormBuffers } from '../src/data/form-buffer.ts';
 
@@ -18,10 +16,6 @@ const projectIds = new Set();
 const elementScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTo');
 const workspace = () => JSON.parse(localStorage.getItem(WORKSPACE_STORE));
 const params = () => new URLSearchParams(location.hash.split('?')[1]);
-const recent = () => screen.getByRole('region', { name: 'Recent activity', exact: true });
-const rows = () => within(recent()).getAllByRole('button');
-const cards = () => screen.getByRole('navigation', { name: 'Project steps', exact: true });
-
 function updated(result) {
   if (result.outcome !== 'updated') throw new Error(result.error || `Expected updated, received ${result.outcome}`);
   return result.project;
@@ -38,21 +32,15 @@ function fixture({ change = project => project, emptyOther = false } = {}) {
   return { project: loaded.projects.find(entry => entry.id === project.id), other: loaded.projects.find(entry => entry.id === other.id) };
 }
 
-function mount() {
-  window.history.replaceState(null, '', '#projects');
+function mount(hash = '#dashboard') {
+  window.history.replaceState(null, '', hash);
   return render(<App />);
 }
 
-function activityFor(project, target) {
-  const activities = getProjectOverview(project).activities;
-  const index = activities.findIndex(entry => Object.entries(target).every(([key, value]) => entry.target[key] === value));
-  expect(index).toBeGreaterThanOrEqual(0);
-  return rows()[index];
-}
-
-async function backToOverview(user) {
-  await user.click(screen.getByRole('button', { name: 'Back to overview', exact: true }));
-  await screen.findByRole('heading', { name: 'Project overview', exact: true });
+async function backToDashboard(user) {
+  await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+  await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+  expect(location.hash).toBe('#dashboard');
 }
 
 beforeEach(() => {
@@ -75,141 +63,116 @@ afterEach(() => {
   window.history.replaceState(null, '', '#projects');
 });
 
-describe('overview recent activity opens exact saved records without changing the project', () => {
-  it('shows three latest activities and preserves exact message, report and saved-claim links across reload and return', async () => {
-    const { project } = fixture({ change(value) {
-      value.whatsappMessages.find(message => message.status === 'new').date = '2026-10-22T01:59:50.000Z';
-      value.reports.find(report => !report.vo && report.status === 'verified').verifiedAt = '2026-10-22T01:59:40.000Z';
-      value.claimDrafts[0].createdAt = '2026-10-22T01:59:30.000Z';
-      return value;
-    } });
-    const message = project.whatsappMessages.find(entry => entry.date === '2026-10-22T01:59:50.000Z');
-    const report = project.reports.find(entry => entry.verifiedAt === '2026-10-22T01:59:40.000Z');
-    const draft = project.claimDrafts[0];
+describe('removed Overview links return to Dashboard without changing saved project records', () => {
+  it.each(['', '#unknown', '#projects', '#overview', '#projects?manage=0'])('makes Dashboard the default for %s', async hash => {
+    const { project } = fixture();
     const before = workspace().projects;
-    const pack = buildClaimPack(project, draft.id);
-    const user = userEvent.setup();
-    let view = mount();
-    expect(within(cards()).getAllByRole('button')).toHaveLength(4);
-    expect(rows()).toHaveLength(3);
-    await user.click(activityFor(project, { route: 'whatsapp', messageId: message.id }));
-    await screen.findByRole('heading', { name: 'WhatsApp messages', exact: true });
-    expect(params().get('message')).toBe(message.id);
-    expect(params().get('from')).toBe('overview');
-    expect(document.querySelector('.wa-review').textContent).toContain(message.text);
-    view.unmount(); view = render(<App />);
-    expect(document.querySelector('.wa-review').textContent).toContain(message.text);
-    await backToOverview(user);
+    const frozen = buildClaimPack(project, project.claimDrafts[0].id);
+    const view = mount(hash);
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    expect(location.hash).toBe('#dashboard');
+    expect(screen.queryByRole('button', { name: 'Overview', exact: true })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Project overview', exact: true })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Other tasks', exact: true })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Recent activity', exact: true })).toBeNull();
+    view.unmount(); render(<App />);
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
     expect(workspace().projects).toEqual(before);
+    expect(buildClaimPack(workspace().projects.find(entry => entry.id === project.id), project.claimDrafts[0].id)).toEqual(frozen);
+  });
 
-    await user.click(activityFor(project, { route: 'completion', reportId: report.id, itemId: report.itemId }));
-    const dialog = await screen.findByRole('dialog');
-    expect(dialog.textContent).toContain(report.message);
-    expect(params().get('report')).toBe(report.id);
-    expect(params().get('item')).toBe(report.itemId);
-    expect(params().get('from')).toBe('overview');
-    expect(within(dialog).queryByRole('button', { name: 'Verify progress', exact: true })).toBeNull();
+  it('keeps All projects reachable and opens the showcase Dashboard without changing its data', async () => {
+    fixture();
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount('#projects?manage=1');
+    await screen.findByRole('heading', { name: 'All projects', exact: true });
+    await user.click(screen.getByRole('button', { name: 'Back to dashboard', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    await user.click(screen.getByRole('button', { name: 'All projects', exact: true }));
+    await screen.findByRole('heading', { name: 'All projects', exact: true });
+    expect(location.hash).toBe('#projects?manage=1');
+    await user.click(screen.getByRole('button', { name: 'Open showcase', exact: true }));
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    expect(location.hash).toBe('#dashboard');
+    expect(workspace().projects).toEqual(before);
+  });
+
+  it.each(['contract', 'whatsapp', 'completion', 'vo', 'claims', 'claim-preview', 'claim-status'])('preserves the exact legacy %s record and returns to Dashboard across reload', async route => {
+    const { project } = fixture({ change: value => route === 'claim-status' ? updated(markClaimPrepared(value, value.claimDrafts[0].id)) : value });
+    const message = project.whatsappMessages.find(entry => entry.status === 'new');
+    const report = project.reports.find(entry => !entry.vo && entry.status === 'verified');
+    const extra = getVOCases(project).find(entry => entry.status === 'approved');
+    const draft = project.claimDrafts[0];
+    const target = route === 'contract' ? { item: project.items[0].id }
+      : route === 'whatsapp' ? { message: message.id }
+      : route === 'completion' ? { report: report.id, item: report.itemId }
+      : route === 'vo' ? { case: extra.id }
+      : { draft: draft.id };
+    const before = workspace().projects;
+    const frozen = buildClaimPack(project, draft.id);
+    const user = userEvent.setup();
+    let view = mount(`#${route}?${new URLSearchParams({ ...target, from: 'overview' })}`);
+    await waitFor(() => expect(params().get('from')).toBe('dashboard'));
+    for (const [key, value] of Object.entries(target)) expect(params().get(key)).toBe(value);
+    expect(screen.queryByRole('button', { name: 'Back to overview', exact: true })).toBeNull();
+    const assertRecord = () => {
+      if (route === 'contract') expect(screen.getByRole('heading', { name: project.items[0].description, exact: true })).toBeTruthy();
+      else if (route === 'whatsapp') expect(document.querySelector('.wa-review').textContent).toContain(message.text);
+      else if (route === 'completion') expect(screen.getByRole('dialog').textContent).toContain(report.message);
+      else if (route === 'vo') expect(document.querySelector('.vo-detail').textContent).toContain(extra.report.message);
+      else if (route === 'claim-preview') expect(document.querySelector('.claim-pack-document').textContent).toContain(draft.id);
+      else if (route === 'claims') expect(screen.getByRole('heading', { name: /Prepare a monthly claim/ })).toBeTruthy();
+      else expect(screen.getByRole('heading', { name: 'Claim status', exact: true })).toBeTruthy();
+    };
+    assertRecord();
     view.unmount(); view = render(<App />);
-    expect(screen.getByRole('dialog').textContent).toContain(report.message);
+    assertRecord();
+    expect(params().get('from')).toBe('dashboard');
+    for (const [key, value] of Object.entries(target)) expect(params().get(key)).toBe(value);
+    if (route === 'completion') {
+      await user.click(screen.getByRole('button', { name: 'Close site report', exact: true }));
+      await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    } else await backToDashboard(user);
+    expect(workspace().projects).toEqual(before);
+    expect(buildClaimPack(workspace().projects.find(entry => entry.id === project.id), draft.id)).toEqual(frozen);
+  });
+
+  it('clears old record context when switching projects and does not show a foreign report', async () => {
+    const { project, other } = fixture();
+    const report = project.reports.find(entry => !entry.vo && entry.status === 'verified');
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount(`#completion?${new URLSearchParams({ item: report.itemId, report: report.id, from: 'overview' })}`);
     await user.click(screen.getByRole('button', { name: 'Close site report', exact: true }));
-    await screen.findByRole('heading', { name: 'Project overview', exact: true });
-    expect(workspace().projects).toEqual(before);
-
-    await user.click(activityFor(project, { route: 'claim-preview', draftId: draft.id }));
-    await screen.findByRole('heading', { name: 'Claim preview', exact: true });
-    expect(params().get('draft')).toBe(draft.id);
-    expect(params().get('from')).toBe('overview');
-    expect(document.querySelector('.claim-pack-document').textContent).toContain(draft.id);
-    expect(document.querySelector('.claim-pack-document').textContent).toContain(`Revision ${draft.revision}`);
-    view.unmount(); render(<App />);
-    expect(document.querySelector('.claim-pack-document').textContent).toContain(draft.id);
-    await backToOverview(user);
-    expect(rows()).toHaveLength(3);
-    expect(workspace().projects).toEqual(before);
-    expect(buildClaimPack(workspace().projects.find(entry => entry.id === project.id), draft.id)).toEqual(pack);
-  });
-
-  it('opens the exact recorded VO decision while retaining its source evidence and separate claim eligibility', async () => {
-    const { project } = fixture({ change(value) {
-      const review = value.voReviews.find(entry => entry.status === 'approved');
-      review.history.at(-1).date = '2026-10-22T01:59:59.000Z';
-      review.updatedAt = review.history.at(-1).date;
-      return value;
-    } });
-    const entry = getVOCases(project).find(value => value.status === 'approved');
-    const before = workspace().projects;
-    const user = userEvent.setup();
-    const view = mount();
-    await user.click(activityFor(project, { route: 'vo', caseId: entry.id }));
-    await screen.findByRole('heading', { name: entry.title, exact: true });
-    expect(params().get('case')).toBe(entry.id);
-    expect(params().get('from')).toBe('overview');
-    expect(document.querySelector('.vo-detail').textContent).toContain(entry.report.message);
-    view.unmount(); render(<App />);
-    expect(screen.getByRole('heading', { name: entry.title, exact: true })).toBeTruthy();
-    await backToOverview(user);
-    expect(workspace().projects).toEqual(before);
-  });
-
-  it('opens the exact checked contract item and returns to the overview after reload', async () => {
-    const { project } = fixture({ change(value) {
-      value.items.find(item => item.id === 'WI-004').reviewedAt = '2026-10-22T01:59:59.000Z';
-      return value;
-    } });
-    const item = project.items.find(entry => entry.id === 'WI-004');
-    const before = workspace().projects;
-    const user = userEvent.setup();
-    const view = mount();
-    await user.click(activityFor(project, { route: 'contract', itemId: item.id }));
-    await screen.findByRole('heading', { name: 'Contract review', exact: true });
-    expect(params().get('item')).toBe(item.id);
-    expect(params().get('from')).toBe('overview');
-    expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).getAttribute('data-value')).toBe(item.id);
-    view.unmount(); render(<App />);
-    expect(screen.getByRole('combobox', { name: 'Choose contract item', exact: true }).getAttribute('data-value')).toBe(item.id);
-    await backToOverview(user);
-    expect(workspace().projects).toEqual(before);
-  });
-
-  it('opens the exact prepared claim tracking record without altering its saved assessment or lifecycle', async () => {
-    const { project } = fixture({ change(value) {
-      const id = value.claimDrafts[0].id;
-      const prepared = updated(markClaimPrepared(value, id));
-      return updated(recordClaimStage(prepared, id, 'submitted', { date: '2026-10-22', reference: 'OVERVIEW-SUBMISSION' }));
-    } });
-    const draft = project.claimDrafts[0];
-    const before = workspace().projects;
-    const user = userEvent.setup();
-    const view = mount();
-    await user.click(activityFor(project, { route: 'claim-status', draftId: draft.id }));
-    expect(params().get('draft')).toBe(draft.id);
-    expect(params().get('from')).toBe('overview');
-    expect(screen.getByRole('heading', { name: 'Record certification', exact: true })).toBeTruthy();
-    view.unmount(); render(<App />);
-    expect(screen.getByRole('heading', { name: 'Record certification', exact: true })).toBeTruthy();
-    await backToOverview(user);
-    expect(workspace().projects).toEqual(before);
-  });
-
-  it('refreshes cards and recent activities when switching projects and gives an empty project a truthful start', async () => {
-    const { project, other } = fixture({ emptyOther: true });
-    const before = workspace().projects;
-    const user = userEvent.setup();
-    mount();
-    expect(rows()).toHaveLength(3);
-    for (const card of getProjectOverview(project).cards) expect(cards().textContent).toContain(card.summary);
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
     await user.click(screen.getByRole('button', { name: `Project: ${project.name}`, exact: true }));
     await chooseProjectOption(user, other);
-    await waitFor(() => expect(workspace().activeProjectId).toBe(other.id));
-    expect(screen.getByRole('heading', { name: 'Project overview', exact: true })).toBeTruthy();
-    expect(within(recent()).queryAllByRole('button')).toHaveLength(0);
-    for (const card of getProjectOverview(other).cards) expect(cards().textContent).toContain(card.summary);
-    expect(screen.getByText('Ready to get started', { exact: true })).toBeTruthy();
+    expect(location.hash).toBe('#dashboard');
+    expect(workspace().activeProjectId).toBe(other.id);
+    expect(screen.queryByText(report.message)).toBeNull();
     expect(workspace().projects).toEqual(before);
-    await user.click(screen.getByRole('button', { name: `Project: ${other.name}`, exact: true }));
-    await chooseProjectOption(user, project);
-    await waitFor(() => expect(workspace().activeProjectId).toBe(project.id));
-    expect(rows()).toHaveLength(3);
+  });
+
+  it('redirects legacy Overview links during navigation while preserving a deep-linked original message', async () => {
+    const { project } = fixture();
+    const message = project.whatsappMessages.find(entry => entry.status === 'new');
+    const before = workspace().projects;
+    const user = userEvent.setup();
+    mount('#contract');
+    const changeHash = hash => act(() => {
+      window.history.replaceState(null, '', hash);
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    changeHash('#overview');
+    await screen.findByRole('heading', { name: 'Dashboard', exact: true });
+    expect(location.hash).toBe('#dashboard');
+    changeHash(`#whatsapp?${new URLSearchParams({ message: message.id, from: 'overview' })}`);
+    await screen.findByRole('heading', { name: 'WhatsApp messages', exact: true });
+    expect(params().get('message')).toBe(message.id);
+    expect(params().get('from')).toBe('dashboard');
+    expect(document.querySelector('.wa-review').textContent).toContain(message.text);
+    await backToDashboard(user);
     expect(workspace().projects).toEqual(before);
   });
 });

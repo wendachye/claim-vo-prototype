@@ -212,7 +212,11 @@ describe('overlay navigation and focus', () => {
     await user.click(opener);
     const dialog = await screen.findByRole('dialog', { name: 'Ref. A.1 · A1' });
     expect(dialog.closest('.app-shell')).not.toBeNull();
+    expect(within(dialog).queryByRole('spinbutton')).toBeNull();
+    expect(within(dialog).queryByRole('textbox', { name: 'Review note or correction reason' })).toBeNull();
+    await user.click(within(dialog).getByRole('button', { name: 'Correct', exact: true }));
     const completion = within(dialog).getByRole('spinbutton', { name: 'Verified cumulative completion (%)' });
+    expect(document.activeElement).toBe(completion);
     await user.clear(completion);
     await user.type(completion, '50');
     await user.click(within(dialog).getByRole('button', { name: 'Verify progress' }));

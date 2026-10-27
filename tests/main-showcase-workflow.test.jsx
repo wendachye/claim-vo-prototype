@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { App } from '../src/App';
 import { WORKSPACE_STORE } from '../src/data/projects.ts';
 import { loadShowcaseWorkspace } from '../src/data/showcase-workspace.ts';
 import { buildClaimPack, toClaimCSV } from '../src/data/claim-pack.ts';
 import { getSITShowcaseFeatureTargets } from '../src/data/sit-showcase-features.ts';
+import { getProjectAttention } from '../src/data/project-attention.ts';
 
 const now = new Date('2026-10-24T10:00:00+08:00');
 const stored = () => JSON.parse(localStorage.getItem(WORKSPACE_STORE));
@@ -42,12 +43,18 @@ it('opens voice and match records inside the main S.I.T. showcase without creati
   expect(claimExports(selected())).toEqual(exportsBefore);
 });
 
-it('links the overview guide to the main project’s unclear recording and preserves its original claim', async () => {
+it('opens the main project’s unclear recording from Dashboard notifications and preserves its original claim', async () => {
   const initial = loadShowcaseWorkspace(localStorage, now);
   const main = initial.projects[0], targets = getSITShowcaseFeatureTargets(main), before = claimExports(main);
-  const user = userEvent.setup(); window.history.replaceState(null, '', '#projects'); render(<App />);
-  await user.click(screen.getByText('About this demo', { exact: true }));
-  await user.click(screen.getByRole('button', { name: 'Clarify recording', exact: true }));
+  const task = getProjectAttention(main).find(entry => entry.target.messageId === targets.unclearVoiceMessageId);
+  const user = userEvent.setup(); window.history.replaceState(null, '', '#dashboard'); render(<App />);
+  await user.click(screen.getByRole('button', { name: /^Needs attention, \d+ pending tasks$/ }));
+  const notifications = screen.getByRole('dialog', { name: 'Project notifications' });
+  const action = `${task.actionLabel}: ${task.reference || task.title}`;
+  if (!within(notifications).queryByRole('button', { name: action, exact: true })) {
+    await user.click(within(notifications).getByRole('button', { name: /^View all/ }));
+  }
+  await user.click(within(notifications).getByRole('button', { name: action, exact: true }));
   await waitFor(() => expect(location.hash).toContain(targets.unclearVoiceMessageId));
   expect(selected().id).toBe(main.id);
   expect(screen.getByRole('heading', { name: 'Ask for missing details' })).toBeTruthy();

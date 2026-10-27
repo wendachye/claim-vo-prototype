@@ -84,12 +84,12 @@ describe('project manager catalog', () => {
     expect(within(screen.getByRole('region', { name: 'Main showcase' })).getByText('Original S.I.T. contract')).toBeTruthy();
     expect(screen.queryByText('Voice-note review (Demo)')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Open showcase' }));
-    expect(opened).toHaveBeenLastCalledWith(showcase.id, 'projects');
+    expect(opened).toHaveBeenLastCalledWith(showcase.id, 'dashboard');
     await user.click(screen.getByRole('button', { name: 'Demo examples 2' }));
     expect(screen.getByText('Voice-note review (Demo)')).toBeTruthy();
     const voiceCard = screen.getByText('Voice-note review (Demo)').closest('article');
     await user.click(within(voiceCard).getByRole('button', { name: 'Open project' }));
-    expect(opened).toHaveBeenLastCalledWith(voice.id, 'projects');
+    expect(opened).toHaveBeenLastCalledWith(voice.id, 'dashboard');
     await user.click(screen.getByRole('button', { name: 'New project' }));
     expect(create).toHaveBeenCalledTimes(1);
     expect(projects).toEqual(original);

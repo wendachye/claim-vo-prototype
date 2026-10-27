@@ -105,7 +105,7 @@ export function MessageMatchReviewPanel({ project, message, onSave, onEditingCha
 
   if (!context.eligible && !context.review) return null;
   return <section className="wa-match-review" aria-label="Review match">
-    <header className="wa-match-heading"><div><h3>Review match</h3><p>{source.audio ? 'Mock suggestion · check the reviewed transcript and recording above.' : 'Mock suggestion · review against the original below.'}</p></div>
+    <header className="wa-match-heading"><div><h3>Review match</h3><p>{source.audio ? 'Mock suggestion · check the reviewed transcript and recording above.' : 'Mock suggestion · compare with the original above.'}</p></div>
       {editable && !editing && <Button className="ghost" icon={Pencil} onClick={() => setForm(previous => ({ ...previous, editing: true }))}>Edit match</Button>}
     </header>
     {feedback && <div ref={feedbackRef} tabIndex={-1} role={feedback.error ? 'alert' : 'status'} className={`wa-match-feedback${feedback.error ? ' error' : ''}`}>{feedback.message}</div>}

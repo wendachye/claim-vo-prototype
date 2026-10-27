@@ -29,16 +29,24 @@ function Harness({ initial, onRecorded = () => {} }) {
 }
 
 describe('mock claim status tracker', () => {
-  it('shows the exact prepared revision with unknown later amounts and validates before recording', async () => {
+  it('keeps the prepared summary compact, preserves revision details and validates before recording', async () => {
     const user = userEvent.setup();
     const project = fixture(0);
     const onRecord = vi.fn();
     const onPreview = vi.fn();
-    render(<ClaimStatusTracker project={project} draftId={project.claimDrafts[0].id} onRecord={onRecord} onPreview={onPreview} />);
-    expect(screen.getByText('October 2026 · Version 1')).toBeTruthy();
+    render(<ClaimStatusTracker project={project} draftId={project.claimDrafts[0].id} onBack={() => {}} onRecord={onRecord} onPreview={onPreview} />);
+    expect(screen.getByText('October 2026')).toBeTruthy();
+    expect(screen.getAllByRole('button', { name: 'Back to monthly claims', exact: true })).toHaveLength(1);
+    const details = screen.getByText('Saved claim details').closest('details');
+    expect(details.open).toBe(false);
+    await user.click(screen.getByText('Saved claim details'));
+    expect(within(details).getByText('Version').nextElementSibling.textContent).toBe('1');
     expect(screen.getByText(project.claimDrafts[0].id)).toBeTruthy();
     expect(screen.getByText('SGD 0.00')).toBeTruthy();
-    expect(screen.getAllByText('Not recorded')).toHaveLength(2);
+    expect(screen.queryByText('Not recorded')).toBeNull();
+    const summary = screen.getByRole('region', { name: 'Claim status summary' });
+    expect(within(summary).queryByText('Certified amount')).toBeNull();
+    expect(within(summary).queryByText('Total paid to date')).toBeNull();
     expect(screen.getByLabelText(/Submission reference/).value).toBe('');
     await user.click(screen.getByRole('button', { name: 'Record submission', exact: true }));
     expect(screen.getByText('Check the highlighted fields before saving.')).toBeTruthy();
@@ -92,6 +100,9 @@ describe('mock claim status tracker', () => {
     await user.click(screen.getByRole('button', { name: 'Use demo details' }));
     await user.click(screen.getByRole('button', { name: 'Record certification', exact: true }));
     expect(screen.getByRole('heading', { name: 'Record payment' })).toBeTruthy();
+    const summary = screen.getByRole('region', { name: 'Claim status summary' });
+    expect(within(summary).getByText('Certified amount').nextElementSibling.textContent).toBe('SGD 100.00');
+    expect(within(summary).getByText('Total paid to date').nextElementSibling.textContent).toBe('Not recorded');
     await user.type(screen.getByLabelText(/Payment reference/), 'DEMO-PART');
     await user.type(screen.getByLabelText(/Total paid to date/), '40');
     await user.click(screen.getByRole('button', { name: 'Record payment', exact: true }));
@@ -99,6 +110,7 @@ describe('mock claim status tracker', () => {
     expect(screen.getByRole('heading', { name: 'Record payment' })).toBeTruthy();
     expect(screen.getByLabelText(/Total paid to date/).value).toBe('');
     expect(getClaimTracking(records.at(-1).project, initial.claimDrafts[0].id).status).toBe('certified');
+    expect(within(summary).getByText('Total paid to date').nextElementSibling.textContent).toBe('SGD 40.00');
     await user.click(screen.getByRole('button', { name: 'Use demo details' }));
     await user.click(screen.getByRole('button', { name: 'Record payment', exact: true }));
     expect(screen.getByRole('heading', { name: 'Payment fully recorded' })).toBeTruthy();
@@ -106,6 +118,18 @@ describe('mock claim status tracker', () => {
     expect(records.at(-1).tracking.status).toBe('paid');
     expect(records.at(-1).project.claimDrafts[0]).toEqual(initial.claimDrafts[0]);
     expect(within(screen.getByRole('list', { name: 'Claim stages' })).getByText('Paid').closest('li').getAttribute('aria-current')).toBe('step');
+  });
+
+  it('shows recorded zero certification separately from an unrecorded payment', () => {
+    let project = submitted(fixture(100, 'TRACK-ZERO-SUMMARY'));
+    project = recordClaimStage(project, project.claimDrafts[0].id, 'certified', { date: date(), reference: 'DEMO-CERT-ZERO', value: '0', note: 'No amount certified in this demo.' }).project;
+    const original = structuredClone(project);
+    render(<ClaimStatusTracker project={project} draftId={project.claimDrafts[0].id} onBack={() => {}} />);
+    const summary = screen.getByRole('region', { name: 'Claim status summary' });
+    expect(within(summary).getByText('Certified amount').nextElementSibling.textContent).toBe('SGD 0.00');
+    expect(within(summary).getByText('Total paid to date').nextElementSibling.textContent).toBe('Not recorded');
+    expect(screen.getByRole('heading', { name: 'Record payment' })).toBeTruthy();
+    expect(project).toEqual(original);
   });
 
   it('keeps unfinished forms separate by project and claim stage', async () => {

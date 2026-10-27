@@ -8,6 +8,7 @@ import {
   Flag,
   ImageOff,
   MessageSquare,
+  Pencil,
   Plus,
   ShieldCheck,
   Smartphone,
@@ -51,6 +52,7 @@ export function ReportDrawer({
 }: ReportDrawerProps) {
   const drawerRef = useRef<HTMLDivElement | null>(null);
   const noteRef = useRef<HTMLTextAreaElement | null>(null);
+  const completionRef = useRef<HTMLInputElement | null>(null);
   const openerRef = useRef(typeof document === 'undefined' ? null : document.activeElement);
   const restoreOpenerOnClose = useRef(true);
   const [sheetOpen, setSheetOpen] = useState(true);
@@ -60,6 +62,7 @@ export function ReportDrawer({
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [photoFailed, setPhotoFailed] = useState(false);
+  const [decision, setDecision] = useState<'confirm' | 'correct' | 'clarify' | 'reject' | 'vo'>('confirm');
 
   const isPending = isReviewableProgressReport(report);
   const isClarification = needsProgressClarification(report);
@@ -76,6 +79,8 @@ export function ReportDrawer({
     && numericCompletion >= 0
     && numericCompletion <= 100;
   const canVerify = Boolean(locked && isPending && hasMatchedItem && !isVo && !legacyScope && validCompletion && onApprove);
+  const lowersVerified = currentVerified != null && validCompletion && numericCompletion < currentVerified;
+  const showReason = decision !== 'confirm' || lowersVerified || Boolean(error);
   const photoUrl = typeof report?.photo === 'string' ? report.photo : report?.photo?.url;
   const originalVoiceReport = Boolean(report?.voiceNote && report.voiceNote.messageId === report.sourceMessageId);
   const isSimulated = report?.demo || report?.origin === 'simulated';
@@ -90,11 +95,26 @@ export function ReportDrawer({
   // Reset the editable review when navigating to a different report or item.
   useEffect(() => {
     setCompletion(defaultCompletion(report, item));
+    setDecision('confirm');
     setReason('');
     setError('');
   }, [report?.id, item?.id]);
 
   useEffect(() => setPhotoFailed(false), [photoUrl]);
+  useEffect(() => { if (error) noteRef.current?.focus(); }, [error]);
+  useEffect(() => {
+    if (decision === 'correct') completionRef.current?.focus();
+    else if (decision !== 'confirm') noteRef.current?.focus();
+  }, [decision]);
+
+  function chooseDecision(next: typeof decision) {
+    setDecision(next);
+    if (next === 'confirm') {
+      setCompletion(defaultCompletion(report, item));
+      setReason('');
+    }
+    setError('');
+  }
 
 
   function needReason(message: string) {
@@ -123,7 +143,7 @@ export function ReportDrawer({
   function approve() {
     if (!canVerify || !report || !onApprove) return;
     const original = report?.completion;
-    if ((original == null || Number(original) !== numericCompletion)
+    if ((decision === 'correct' || original == null || Number(original) !== numericCompletion)
       && needReason('Explain the corrected percentage before verifying progress.')) return;
     if (currentVerified != null && numericCompletion < currentVerified
       && needReason('Explain the lower verified total before verifying progress.')) return;
@@ -177,14 +197,51 @@ export function ReportDrawer({
             )}
           </div>
 
+          {report?.voiceNote && <VoiceNoteEvidenceDetails evidence={report.voiceNote} defaultOpen={isPending}/>}
+          {report?.matchReview && <MessageMatchReviewDetails review={report.matchReview}/>}
+          {report ? <details className="site-report-evidence" open={!originalVoiceReport || undefined}>
+            <summary>{originalVoiceReport ? 'Sender & update details' : report.voiceNote ? 'Worker reply & sender details' : 'Original site update & photo'}</summary>
+            <div className="site-report-evidence-body">
+              <div className="message-card">
+              <div className="message-meta">
+                <strong>{report.sender || 'Sender not recorded'}</strong>
+                <time dateTime={report.date || undefined}>{timeLabel(report.date)}</time>
+              </div>
+              {!originalVoiceReport && <blockquote className="message-text" style={{ margin: 0 }}>
+                {report.message || 'No message text attached.'}
+              </blockquote>}
+              </div>
+
+              {photoUrl && !photoFailed ? (
+            <figure className="evidence-placeholder" style={{ marginInline: 0 }}>
+              <img
+                src={photoUrl}
+                alt={report?.photoAlt || `Site evidence attached to report ${report?.id || ''}`}
+                onError={() => setPhotoFailed(true)}
+              />
+              <figcaption>{report?.channel === 'whatsapp-mock' ? 'Generated demo photo · not actual project evidence' : isSimulated ? 'Demo attachment' : 'Attached site photo'} · {report.voiceNote ? 'review alongside the recording and transcript' : 'review alongside the original message'}</figcaption>
+            </figure>
+          ) : (!report.voiceNote || photoFailed) && (
+            <div className="evidence-placeholder">
+              <ImageOff aria-hidden="true" />
+              <strong>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</strong>
+              <span>{photoFailed ? 'The report is retained. Check the attachment before verifying.' : report ? 'This update contains text only. No photo evidence is being implied.' : 'A site photo will appear here when an update includes one.'}</span>
+            </div>
+          )}
+
+            </div>
+          </details> : <div className="notice info"><MessageSquare aria-hidden="true" /><span>No site update is attached to this work item. Add an update to record new progress.</span></div>}
+
+
           <section className="site-report-progress" aria-label="Completion totals">
             <dl className="site-report-totals">
               <div><dt>{areaProgress ? 'Area reported total' : 'Current reported total'}</dt><dd>{percent(currentReported)}</dd><small>Worker’s latest total</small></div>
               <div><dt>{areaProgress ? 'Area verified total' : 'Current verified total'}</dt><dd>{percent(currentVerified)}</dd><small>Supervisor checked</small></div>
             </dl>
+            <p className="site-report-scope">{areaProgress ? 'Allocated area total' : 'Whole work item total'}</p>
             {areaProgress && <p className="site-report-review-help">Area quantity: {formatNumber(areaProgress.allocatedQuantity)} {item?.unit} of {formatNumber(areaProgress.contractQuantity)} {item?.unit}. Whole item: reported {percent(item?.reported)} · verified {percent(item?.verified)}.</p>}
             {report && <div className="site-report-observation"><span>This update</span><strong>{percent(report.completion)}</strong><small>{report.completionBasis === 'cumulative' ? areaProgress ? 'Cumulative completion of this allocated area' : 'Cumulative total to date' : 'Completion basis needs confirmation'}</small></div>}
-            {isPending && !isVo && !legacyScope && <p className="site-report-verification-preview"><ShieldCheck size={15} aria-hidden="true" /><span>After verification: <strong>{validCompletion ? percent(numericCompletion) : 'Enter a valid total'}</strong> {areaProgress ? 'of this area’s allocated quantity' : ''} verified. Reported total stays {percent(currentReported)}.</span></p>}
+            {isPending && !isVo && !legacyScope && ['confirm', 'correct'].includes(decision) && <p className="site-report-verification-preview"><ShieldCheck size={15} aria-hidden="true" /><span>After verification: <strong>{validCompletion ? percent(numericCompletion) : 'Enter a valid total'}</strong> {areaProgress ? 'of this area’s allocated quantity' : ''} verified. Reported total stays {percent(currentReported)}.</span></p>}
           </section>
 
           {legacyScope && <div className="notice warning"><AlertTriangle aria-hidden="true"/><span>Whole-item update retained in history. Add an area update to track the allocated quantities independently.</span></div>}
@@ -218,78 +275,32 @@ export function ReportDrawer({
           )}
 
           {isPending && report && !isVo && !legacyScope && (
-            <div>
-              <h3 className="form-section-heading">Supervisor decision</h3><p className="site-report-review-help">{report.voiceNote ? 'Check the recording, transcript and any clarification below, then confirm ' : 'Check the original update and photo below, then confirm '}{areaProgress ? 'this area’s verified completion against its allocated quantity' : 'the whole work item’s verified total'}.</p>
-              {onMobileReview && <Button className="ghost" icon={Smartphone} onClick={openMobileReview}>Open mobile review</Button>}
-              <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage. Explain any correction below.">
-                  <input
-                    id={`${id}-completion`}
-                    className="form-input"
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    max="100"
-                    step="any"
-                    value={completion}
-                    disabled={!locked || !hasMatchedItem}
-                    aria-invalid={completion.trim() !== '' && !validCompletion}
-                    onChange={(event) => { setCompletion(event.target.value); setError(''); }}
-                  />
-              </FormField>
-              <FormField className="drawer-note-field" label="Review note or correction reason" error={error}>
-                <textarea
-                  ref={noteRef}
-                  id={`${id}-reason`}
-                  className="form-textarea"
-                  value={reason}
-                  rows={3}
-                  placeholder="Add context, or explain why this update needs a correction…"
-                  aria-invalid={Boolean(error)}
-                  onChange={(event) => { setReason(event.target.value); setError(''); }}
-                />
-              </FormField>
-              <div className="site-report-other-actions"><span>Other review actions</span><div className="review-actions">
-                <Button className="ghost" disabled={!onChange} onClick={() => change('reject')}>Reject</Button>
-                <Button className="ghost" icon={MessageSquare} disabled={!onChange} onClick={() => change('clarify')}>Needs clarification</Button>
-                <Button className="ghost" icon={Flag} disabled={!onChange} onClick={() => change('vo')}>Flag possible VO</Button>
-              </div></div>
-            </div>
-          )}
-
-          {report?.voiceNote && <VoiceNoteEvidenceDetails evidence={report.voiceNote}/>}
-          {report?.matchReview && <MessageMatchReviewDetails review={report.matchReview}/>}
-          {report ? <details className="site-report-evidence" open={!originalVoiceReport && isPending || undefined}>
-            <summary>{originalVoiceReport ? 'Sender & update details' : report.voiceNote ? 'Worker reply & sender details' : 'Original site update & photo'}</summary>
-            <div className="site-report-evidence-body">
-              <div className="message-card">
-              <div className="message-meta">
-                <strong>{report.sender || 'Sender not recorded'}</strong>
-                <time dateTime={report.date || undefined}>{timeLabel(report.date)}</time>
+            <section className="site-report-decision" aria-label="Supervisor decision">
+              <div className="site-report-decision-heading"><h3 className="form-section-heading">Your review</h3>{onMobileReview && <Button className="ghost" icon={Smartphone} onClick={openMobileReview}>Open mobile review</Button>}</div>
+              <p className="site-report-review-help">{areaProgress ? 'Review this area’s completion against its allocated quantity.' : 'Review the whole work item’s cumulative completion.'}</p>
+              <div className="site-report-choices" role="group" aria-label="Review decision">
+                <Button className={decision === 'confirm' ? 'selected' : ''} aria-pressed={decision === 'confirm'} icon={Check} disabled={!locked || !hasMatchedItem} onClick={() => chooseDecision('confirm')}>Confirm</Button>
+                <Button className={decision === 'correct' ? 'selected' : ''} aria-pressed={decision === 'correct'} icon={Pencil} disabled={!locked || !hasMatchedItem} onClick={() => chooseDecision('correct')}>Correct</Button>
+                <Button className={decision === 'clarify' ? 'selected' : ''} aria-pressed={decision === 'clarify'} icon={MessageSquare} disabled={!onChange} onClick={() => chooseDecision('clarify')}>Can’t verify</Button>
               </div>
-              {!originalVoiceReport && <blockquote className="message-text" style={{ margin: 0 }}>
-                {report.message || 'No message text attached.'}
-              </blockquote>}
-              </div>
-
-              {photoUrl && !photoFailed ? (
-            <figure className="evidence-placeholder" style={{ marginInline: 0 }}>
-              <img
-                src={photoUrl}
-                alt={report?.photoAlt || `Site evidence attached to report ${report?.id || ''}`}
-                onError={() => setPhotoFailed(true)}
-              />
-              <figcaption>{report?.channel === 'whatsapp-mock' ? 'Generated demo photo · not actual project evidence' : isSimulated ? 'Demo attachment' : 'Attached site photo'} · {report.voiceNote ? 'review alongside the recording and transcript' : 'review alongside the original message'}</figcaption>
-            </figure>
-          ) : (!report.voiceNote || photoFailed) && (
-            <div className="evidence-placeholder">
-              <ImageOff aria-hidden="true" />
-              <strong>{photoFailed ? 'Site photo could not be displayed' : 'No site photo attached'}</strong>
-              <span>{photoFailed ? 'The report is retained. Check the attachment before verifying.' : report ? 'This update contains text only. No photo evidence is being implied.' : 'A site photo will appear here when an update includes one.'}</span>
-            </div>
+              {decision === 'confirm' && <p className="site-report-review-help">Confirm the reported {percent(report.completion)} total, then verify below.{lowersVerified && ' This is below the current verified total; explain the change.'}</p>}
+              {decision === 'clarify' && <p className="site-report-review-help">Explain what needs checking. Verified progress stays unchanged; no message is sent.</p>}
+              {decision === 'correct' && <FormField label="Verified cumulative completion (%)" hint="Enter the total to date, not an additional percentage.">
+                <input ref={completionRef} id={`${id}-completion`} className="form-input" type="number" inputMode="decimal" min="0" max="100" step="any" value={completion} disabled={!locked || !hasMatchedItem} aria-invalid={completion.trim() !== '' && !validCompletion} onChange={(event) => { setCompletion(event.target.value); setError(''); }}/>
+              </FormField>}
+              {showReason && <FormField className="drawer-note-field" label="Review note or correction reason" required error={error}>
+                <textarea ref={noteRef} id={`${id}-reason`} className="form-textarea" value={reason} rows={3} placeholder={decision === 'clarify' ? 'What needs checking before this can be verified?' : 'Explain this review decision…'} aria-invalid={Boolean(error)} onChange={(event) => { setReason(event.target.value); setError(''); }}/>
+              </FormField>}
+              <details className="site-report-other-actions" open={decision === 'reject' || decision === 'vo' || undefined}>
+                <summary>Other review actions</summary><div className="review-actions">
+                  <Button className={decision === 'reject' ? 'selected' : 'ghost'} aria-pressed={decision === 'reject'} disabled={!onChange} onClick={() => chooseDecision('reject')}>Reject</Button>
+                  <Button className={decision === 'vo' ? 'selected' : 'ghost'} aria-pressed={decision === 'vo'} icon={Flag} disabled={!onChange} onClick={() => chooseDecision('vo')}>Flag possible VO</Button>
+                </div>
+                {decision === 'reject' && <p className="site-report-review-help">The original evidence stays in history. Verified progress is unchanged.</p>}
+                {decision === 'vo' && <p className="site-report-review-help">Flag this update for separate QS scope and price review. This does not approve a claim.</p>}
+              </details>
+            </section>
           )}
-
-            </div>
-          </details> : <div className="notice info"><MessageSquare aria-hidden="true" /><span>No site update is attached to this work item. Add an update to record new progress.</span></div>}
 
           {report?.note && <p className="field-note" style={{ marginTop: 18 }}>{report.note}</p>}
           {report && (
@@ -309,9 +320,11 @@ export function ReportDrawer({
         <footer className="drawer-footer">
           <FormActions secondary={isPending && <Button onClick={onClose}>Cancel review</Button>}>
           {!report && <Button icon={Plus} disabled={!onAdd} onClick={addUpdate}>Add site update</Button>}
-          {isPending && !isVo && report && (
+          {isPending && !isVo && report && (decision === 'confirm' || decision === 'correct' ? (
             <Button icon={Check} className="primary" disabled={!canVerify} onClick={approve}>Verify progress</Button>
-          )}
+          ) : (
+            <Button icon={decision === 'vo' ? Flag : decision === 'clarify' ? MessageSquare : X} className="primary" disabled={!onChange} onClick={() => change(decision)}>{decision === 'clarify' ? 'Save clarification' : decision === 'reject' ? 'Reject update' : 'Flag for QS review'}</Button>
+          ))}
           {(isVerified || !isPending || isVo) && <Button onClick={onClose}>Done</Button>}
           {isClarification && <Button className="primary" icon={Plus} disabled={!onAdd} onClick={addUpdate}>Add clarified demo update</Button>}
           {isVo && <Button className="primary" icon={Flag} disabled={!onReviewVO} onClick={() => report && onReviewVO?.(report)}>Open VO review</Button>}
