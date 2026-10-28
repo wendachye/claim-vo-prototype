@@ -1,5 +1,6 @@
 import type { Project, SiteReport, AttentionTask, ClaimDraft, WorkItem, WhatsAppMessage } from "../types/domain";
 import { getWhatsAppMessages } from './whatsapp.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 import { getVOCases, getVOClaimEligibility } from './vo.ts';
 import { isReviewableProgressReport, needsProgressClarification } from './report-status.ts';
 import { getClaimTracking } from './claim-tracking.ts';
@@ -29,6 +30,8 @@ export function getProjectWorkflow(project: Project, period = currentMonth()) {
   const unresolvedReportSources = new Set([...pendingReports, ...clarificationReports].map((report) => report.sourceMessageId).filter(Boolean));
   const messages = getWhatsAppMessages(project).filter((message) => message.projectId === project.id);
   const actionableMessages = messages.filter(message => {
+    const decision = getMessageInboxDecision(project, message.id);
+    if (decision.dismissed || decision.blocked) return false;
     const context = getMessageClarification(project, message.id);
     return !(context?.reply?.id === message.id && context!.stage === 'superseded');
   });

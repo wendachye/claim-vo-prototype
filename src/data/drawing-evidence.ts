@@ -8,6 +8,7 @@ import { getMessageReviewStatus } from './message-inbox.ts';
 import { getVOCases } from './vo.ts';
 import { getMessageMatchContext } from './message-match.ts';
 import { getVoiceNoteContext, isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 
 type EvidenceSource = SiteReport | WhatsAppMessage;
 export interface DrawingEvidenceEntry { id: string; messageId: string | null; reportId: string | null; sourceLabel: string; kind: string; status: string; label: string; tone: string; sender: string; date: string; text: string; photo: string | null; photoAlt: string; hasVoiceNote?: boolean; itemId: string | null; matchKind: 'saved-area' | 'area-code' | 'area-alias' | 'work-item'; matchLabel: string }
@@ -90,6 +91,9 @@ const matchLabels = {
 };
 
 function stateFor(project: Project, report: SiteReport | null, message: WhatsAppMessage | null | undefined, kind: string) {
+  const inboxDecision = !report && message ? getMessageInboxDecision(project, message.id) : null;
+  if (inboxDecision?.blocked) return { status: 'decision-unavailable', label: 'Message decision needs review', tone: 'slate' };
+  if (inboxDecision?.dismissed) return { status: 'dismissed', label: 'Dismissed', tone: 'slate' };
   const clarification = message && getMessageClarification(project, message.id);
   if (!report && clarification?.reply && clarification.thread.sourceMessageId === message?.id) {
     return { status: `clarification-${clarification.stage}`, ...getMessageReviewStatus(message, null, null, clarification) };

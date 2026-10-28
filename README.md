@@ -123,6 +123,12 @@ The sidebar opens separate modules with icons, without numbered stages or a modu
 
 **Dashboard** keeps three summary cards: **Latest claim** shows its saved amount, month and status and opens that exact record; **Extra work to review** shows the existing review count and opens VO review; **Claim-eligible extra work** shows the value passing QS eligibility checks. Eligibility does not mean the amount is unclaimed or unpaid, and remains separate from price approval. **Recent claims** shows up to three months, using the latest saved revision for each, with status, amount, direct record links and **View all monthly claims**. Pending tasks stay in the notification bell; Dashboard has no duplicate task table, status charts or extra-work summary/list. **Back to dashboard** is preserved after reload. Summaries use the existing calculations and saved mock records: revisions are not added together, unknown values stay unknown, and saved claim assessments, evidence and tracking remain unchanged. No Mighty One business data is copied.
 
+## Dismiss and reopen inbox messages
+
+For a new message that was sent by mistake, choose **Message actions → Dismiss message**, enter a reason and save. It leaves New and Needs attention, while the original message and attachments stay available under **All** or **Dismissed**. **Message actions → Reopen** requires another reason and returns the same message to review without processing it. The latest reason, reviewer/time and decision history stay with the original.
+
+This inbox action is available only before processing and before a clarification thread exists. Existing progress reports and extra-work cases keep their own review actions. Finish or cancel open match/transcript edits first; unfinished clarification forms remain in their existing project/message buffers. Decisions are local to the selected project and never change reported/verified completion or saved claims/exports.
+
 ## Progress checks before processing
 
 WhatsApp review shows one compact **Progress check** after the work item and area are confirmed. It explains an unchanged cumulative total, an earlier update with a newer report, or a percentage below the current reported/verified total. Allocated areas compare their own progress; whole-item observations stay separate. **View latest report** opens the exact same-scope Site progress record, supports reload and provides **Back to message**. Viewing the comparison changes no records.

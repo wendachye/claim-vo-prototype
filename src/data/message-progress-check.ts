@@ -4,6 +4,7 @@ import { getAreaLinkStatus } from './drawing-mapping.ts';
 import { getMessageMatchContext } from './message-match.ts';
 import { getWhatsAppMessages } from './whatsapp.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 
 export interface MessageProgressCheck {
   kind: 'repeated' | 'older' | 'lower'; completion: number; reported: number | null; verified: number | null;
@@ -22,6 +23,8 @@ const activeStatuses = new Set(['pending', 'needsReview', 'needsClarification', 
 /** Explain an already trustworthy cumulative match; never process, deduplicate,
  * or infer an area percentage from the item's quantity-weighted rollup. */
 export function getMessageProgressCheck(project: Project, messageId: string): MessageProgressCheck | null {
+  const inboxDecision = getMessageInboxDecision(project, messageId);
+  if (inboxDecision.dismissed || inboxDecision.blocked) return null;
   const messages = Array.isArray(project?.whatsappMessages) ? project.whatsappMessages : getWhatsAppMessages(project);
   const matches = messages.filter(entry => record(entry) && entry.id === messageId);
   const source = matches.length === 1 ? matches[0] : null;

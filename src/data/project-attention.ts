@@ -8,6 +8,7 @@ import { getClaimTracking } from './claim-tracking.ts';
 import { getClaimRevisionContext } from './claim-revisions.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
 import { getVoiceNoteContext } from './voice-notes.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 
 const list = <T,>(value: T[] | null | undefined): T[] => Array.isArray(value) ? value : [];
 const text = (value: unknown): string => typeof value === 'string' ? value.trim() : '';
@@ -50,6 +51,14 @@ export function getProjectAttention(project: Project): AttentionTask[] {
     // Paired inbox messages are represented by their latest progress review or
     // VO case, including when the inbox status was left stale by an old demo.
     if (getMessageReport(scoped, message) || !['new', 'clarification'].includes(message.status)) continue;
+    const decision = getMessageInboxDecision(scoped, message.id);
+    if (decision.blocked) {
+      add({ id: `message:${message.id}`, category: 'site', kind: 'message', title: 'Review a saved message decision',
+        detail: message.sender || 'Original message retained', reference: message.id, statusLabel: 'Decision needs review',
+        actionLabel: 'View message', date: message.date, priority: 55, target: { route: 'whatsapp', messageId: message.id } });
+      continue;
+    }
+    if (decision.dismissed) continue;
     const clarification = message.status === 'clarification';
     const voice=message.audio?getVoiceNoteContext(scoped,message.id):null;
     const context = getMessageClarification(scoped, message.id);

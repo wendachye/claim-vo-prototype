@@ -6,6 +6,7 @@ import { normalizeVOConfirmationRequests } from './vo-confirmation.ts';
 import { normalizeClaimDrafts } from './claims.ts';
 import { normalizeClaimTracking } from './claim-tracking.ts';
 import { normalizeMessageClarifications } from './whatsapp-clarification.ts';
+import { normalizeMessageInboxDecisions } from './message-dismissal.ts';
 
 export const WORKSPACE_STORE = 'claim-vo-frontend-v2';
 export const LEGACY_STORE = 'claim-vo-frontend-v1';
@@ -283,6 +284,8 @@ function normalizeProject(project: Project): Project {
   if (seed.voConfirmationRequests !== undefined) seed.voConfirmationRequests = normalizeVOConfirmationRequests({ ...project, ...seed, voConfirmationRequests: seed.voConfirmationRequests });
   seed.claimDrafts = normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts });
   seed.messageClarifications = normalizeMessageClarifications({ ...project, ...seed, messageClarifications: seed.messageClarifications });
+  if (seed.messageInboxDecisions !== undefined || seed.messageInboxDecisionIssues !== undefined) Object.assign(seed,
+    normalizeMessageInboxDecisions({ ...project, ...seed, messageInboxDecisions: seed.messageInboxDecisions, messageInboxDecisionIssues: seed.messageInboxDecisionIssues }));
   return {
     ...base,
     ...clone(project),
@@ -294,6 +297,7 @@ function normalizeProject(project: Project): Project {
     version: project.version ?? 1,
     whatsappMessages: clone(getWhatsAppMessages(project)),
     messageClarifications: normalizeMessageClarifications(project),
+    ...(project.messageInboxDecisions !== undefined || project.messageInboxDecisionIssues !== undefined ? normalizeMessageInboxDecisions(project) : {}),
     voReviews: normalizeVOReviews(project),
     ...(project.voEvidenceLinks !== undefined || project.voEvidenceLinkIssues !== undefined ? {
       voEvidenceLinks: normalizeVOEvidenceLinks(project), voEvidenceLinkIssues: getVOEvidenceLinkIssues(project),
@@ -383,6 +387,8 @@ export function resetProject(project: Project): Project {
   if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;
   if (!Array.isArray(seed.contractTotalReviews)) delete next.contractTotalReviews;
   if (!Array.isArray(seed.messageMatchReviews)) delete next.messageMatchReviews;
+  if (!Array.isArray(seed.messageInboxDecisions)) delete next.messageInboxDecisions;
+  if (!Array.isArray(seed.messageInboxDecisionIssues)) delete next.messageInboxDecisionIssues;
   if (!Array.isArray(seed.voiceTranscriptReviews)) delete next.voiceTranscriptReviews;
   if (!Array.isArray(seed.voEvidenceLinks)) delete next.voEvidenceLinks;
   if (!Array.isArray(seed.voEvidenceLinkIssues)) delete next.voEvidenceLinkIssues;

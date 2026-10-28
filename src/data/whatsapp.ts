@@ -3,6 +3,7 @@ import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, 
 import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.ts';
 import { getMessageMatchContext } from './message-match.ts';
 import { getVoiceNoteContext } from './voice-notes.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 import { isUnresolvedProgressReport } from './report-status.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope, syncAreaItemProgress } from './area-allocations.ts';
 export interface WhatsAppProcessingResult { project: Project; outcome: string; reportId?: string; error?: string }
@@ -102,6 +103,8 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
   const originalMessage = messages.find((entry) => entry.id === messageId);
   let message = originalMessage;
   if (!message || message.projectId !== project.id || message.projectCode !== project.code) return invalid;
+  const inboxDecision = getMessageInboxDecision(project, messageId);
+  if (inboxDecision.dismissed || inboxDecision.blocked) return { ...invalid, error: inboxDecision.issue || 'Reopen this dismissed message with a reason before processing it.' };
   const existing = project.reports.find((report) => report.sourceMessageId === messageId);
   if (message.status !== 'new' || existing) {
     return { project, outcome: 'duplicate', reportId: existing?.id || message.reportId };

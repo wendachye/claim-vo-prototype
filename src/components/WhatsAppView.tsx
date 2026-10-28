@@ -26,6 +26,8 @@ import { getMessageProgressCheck } from '../data/message-progress-check';
 import { MessageProgressCheck } from './MessageProgressCheck';
 import './whatsapp.css';
 import { ActionMenu } from './ActionMenu';
+import { getMessageInboxDecision } from '../data/message-dismissal';
+import { MessageInboxActions, type InboxDecisionFields, type InboxDecisionResult } from './MessageInboxActions';
 
 const waiting = isReviewableProgressReport;
 const percent = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 100 ? `${value}%` : 'Not recorded';
@@ -41,18 +43,20 @@ function DemoPhoto({ src, alt, className = '', onOpen }: { src?: string | null; 
 }
 
 interface DemoPhotoRecord { photo: string; photoAlt?: string }
-interface WhatsAppViewProps { onStartProgressCheckDemo?: () => void; onOpenLatestReport?: (reportId: string, messageId: string) => void; onSaveDemoMessage?: (values: DemoMessageInput) => { outcome: string; messageId?: string; error?: string } | undefined; project: Project; messages?: WhatsAppMessage[]; initialMessageId?: string | null; onProcess?: (message: WhatsAppMessage) => void; onSaveMatch?: (messageId:string,fields:{itemId:string;areaId:string;reason:string})=>{outcome:string;error?:string}|undefined; onStartMatchDemo?:()=>void; onStartVoiceDemo?:()=>void; onSaveTranscript?:(messageId:string,values:{transcript:string;reason:string;sourceKey:string})=>{outcome:string;error?:string}|undefined; onReview?: (report: SiteReport) => void; onSaveClarificationRequest?: WhatsAppClarificationProps['onSaveRequest']; onSaveClarificationReply?: WhatsAppClarificationProps['onSaveReply']; onOpenCompletion?: (itemId?: string | null, areaId?: string, messageId?: string) => void; onOpenContract?: () => void; onOpenContractItem?: (id: string, messageId?: string) => void; onOpenVO?: (id: string, messageId?: string) => void; onOpenDrawing?: (areaId?: string) => void; onAddAreaMessages?: () => void; onRefreshDemoPhotos?: () => void; onSelectMessage?: (id: string) => void; onClearMessageSelection?: () => void; onBackToDrawing?: () => void; onBackToDashboard?: () => void }
+interface WhatsAppViewProps { onDismissMessage?: (messageId: string, fields: InboxDecisionFields) => InboxDecisionResult | undefined; onReopenMessage?: (messageId: string, fields: InboxDecisionFields) => InboxDecisionResult | undefined; onStartProgressCheckDemo?: () => void; onOpenLatestReport?: (reportId: string, messageId: string) => void; onSaveDemoMessage?: (values: DemoMessageInput) => { outcome: string; messageId?: string; error?: string } | undefined; project: Project; messages?: WhatsAppMessage[]; initialMessageId?: string | null; onProcess?: (message: WhatsAppMessage) => void; onSaveMatch?: (messageId:string,fields:{itemId:string;areaId:string;reason:string})=>{outcome:string;error?:string}|undefined; onStartMatchDemo?:()=>void; onStartVoiceDemo?:()=>void; onSaveTranscript?:(messageId:string,values:{transcript:string;reason:string;sourceKey:string})=>{outcome:string;error?:string}|undefined; onReview?: (report: SiteReport) => void; onSaveClarificationRequest?: WhatsAppClarificationProps['onSaveRequest']; onSaveClarificationReply?: WhatsAppClarificationProps['onSaveReply']; onOpenCompletion?: (itemId?: string | null, areaId?: string, messageId?: string) => void; onOpenContract?: () => void; onOpenContractItem?: (id: string, messageId?: string) => void; onOpenVO?: (id: string, messageId?: string) => void; onOpenDrawing?: (areaId?: string) => void; onAddAreaMessages?: () => void; onRefreshDemoPhotos?: () => void; onSelectMessage?: (id: string) => void; onClearMessageSelection?: () => void; onBackToDrawing?: () => void; onBackToDashboard?: () => void }
 
-export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckDemo, onOpenLatestReport, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToDashboard, onSaveMatch, onStartMatchDemo, onStartVoiceDemo, onSaveTranscript }: WhatsAppViewProps) {
+export function WhatsAppView({ project, onDismissMessage, onReopenMessage, onSaveDemoMessage, onStartProgressCheckDemo, onOpenLatestReport, messages = [], onProcess, onReview, onSaveClarificationRequest, onSaveClarificationReply, onOpenCompletion, onOpenContract, onOpenContractItem, onOpenVO, onOpenDrawing, onAddAreaMessages, onRefreshDemoPhotos, initialMessageId, onSelectMessage, onClearMessageSelection, onBackToDrawing, onBackToDashboard, onSaveMatch, onStartMatchDemo, onStartVoiceDemo, onSaveTranscript }: WhatsAppViewProps) {
   const voCases: VOCase[] = getVOCases(project);
   const caseFor = (report?: SiteReport | null) => voCases.find((entry) => entry.id === report?.id);
-  const unresolvedArea = (message: WhatsAppMessage, report?: SiteReport | null) => !report && !getMessageClarification(project, message.id)?.reply && (getAreaLinkStatus(project, message).ambiguous || getAreaLinkStatus(project, message).blocked);
+  const decisionFor = (message: WhatsAppMessage) => getMessageInboxDecision(project, message.id);
+  const newMessage = (message: WhatsAppMessage, report = messageReport(project, message)) => isNewInboxMessage(message, report, getMessageClarification(project, message.id), decisionFor(message));
+  const unresolvedArea = (message: WhatsAppMessage, report?: SiteReport | null) => !decisionFor(message).dismissed && !decisionFor(message).blocked && !report && !getMessageClarification(project, message.id)?.reply && (getAreaLinkStatus(project, message).ambiguous || getAreaLinkStatus(project, message).blocked);
   const inboxStatus = (message: WhatsAppMessage, report?: SiteReport | null) => unresolvedArea(message, report)
-    ? { label: 'Needs clarification', tone: 'amber' } : statusFor(message, report, caseFor(report), getMessageClarification(project, message.id));
+    ? { label: 'Needs clarification', tone: 'amber' } : statusFor(message, report, caseFor(report), getMessageClarification(project, message.id), decisionFor(message));
   const inFilter = (key: string, message: WhatsAppMessage, report?: SiteReport | null) => key === 'clarification' && unresolvedArea(message, report)
-    || matchesInboxFilter(key, message, report, getMessageClarification(project, message.id));
-  const orderedMessages = [...messages].sort((a, b) => Number(isNewInboxMessage(b, messageReport(project, b), getMessageClarification(project, b.id))) - Number(isNewInboxMessage(a, messageReport(project, a), getMessageClarification(project, a.id))) || Date.parse(b.date) - Date.parse(a.date));
-  const [selectedId, setSelectedId] = useState(() => initialMessageId || orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id)))?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
+    || matchesInboxFilter(key, message, report, getMessageClarification(project, message.id), decisionFor(message));
+  const orderedMessages = [...messages].sort((a, b) => Number(newMessage(b)) - Number(newMessage(a)) || Date.parse(b.date) - Date.parse(a.date));
+  const [selectedId, setSelectedId] = useState(() => initialMessageId || orderedMessages.find((message) => newMessage(message))?.id || orderedMessages.find((message) => waiting(messageReport(project, message)))?.id || orderedMessages[0]?.id || '');
   const [search, setSearch] = useBufferedState(project.id, 'whatsapp:search', '');
   const [filter, setFilter] = useBufferedState(project.id, 'whatsapp:filter', 'all');
   const [location, setLocation] = useBufferedState(project.id, 'whatsapp:location', 'all');
@@ -103,7 +107,9 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
   const selectedIsReply = Boolean(selected && clarification?.reply?.id === selected.id);
   const status = selected ? inboxStatus(selected, report) : null;
   const voCase = caseFor(report);
-  const isNew = isNewInboxMessage(selected, report, clarification);
+  const inboxDecision = selected ? decisionFor(selected) : null;
+  const inboxClosed = Boolean(!report && (inboxDecision?.dismissed || inboxDecision?.blocked));
+  const isNew = isNewInboxMessage(selected, report, clarification, inboxDecision);
   const isVerified = ['verified', 'approved'].includes(report?.status || '');
   const selectedSummary = selected ? getMessageSummary(selected) : null;
   const isVo = selected?.kind === 'vo' || Boolean(report?.vo);
@@ -134,11 +140,11 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
   const editingMatch = Boolean(matchEditing && matchEditing.messageId === selected?.id && matchEditing.editing);
   const editingVoice=Boolean(voiceEditing?.messageId===selected?.id && voiceEditing?.editing);
   const voiceAwaitingReview=Boolean(isNew && voiceContext && !voiceContext.needsClarification && !voiceContext.review);
-  const progressCheck = selected && !report && !editingMatch && !editingVoice && !voiceAwaitingReview ? getMessageProgressCheck(project, selected.id) : null;
+  const progressCheck = selected && !inboxClosed && !report && !editingMatch && !editingVoice && !voiceAwaitingReview ? getMessageProgressCheck(project, selected.id) : null;
   const isUnclear = voiceContext && !report ? voiceContext.needsClarification : matchContext?.clarificationRequired || areaAmbiguous || areaBlocked || needsMessageClarification(selected, report) || (!needsMatchConfirmation && isNew && (areaLink?.conflict || allocation?.split && !areaProgress));
-  const showClarification = Boolean(selected && (clarification || getMessageClarificationEligibility(project, selected.id).eligible));
-  const newCount = messages.filter((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id))).length;
-  const nextMessage = orderedMessages.find((message) => isNewInboxMessage(message, messageReport(project, message), getMessageClarification(project, message.id)) && message.id !== selected?.id);
+  const showClarification = Boolean(selected && !inboxClosed && (clarification || getMessageClarificationEligibility(project, selected.id).eligible));
+  const newCount = messages.filter((message) => newMessage(message)).length;
+  const nextMessage = orderedMessages.find((message) => newMessage(message) && message.id !== selected?.id);
   const voEligibility = voCase ? getVOClaimEligibility(voCase) : null;
   const needsClaimEligibilityReview = voCase?.status === 'approved' && voEligibility?.status !== 'excluded' && !voEligibility?.eligible;
   const approvedVOHint = voEligibility?.status === 'excluded' ? 'The QS has excluded this extra work from claims. The record and original evidence remain available.' : voEligibility?.eligible ? 'The QS claim eligibility checks are complete. Review quantities and amounts in monthly claims.' : 'Price approval does not establish claim eligibility. Check the separate QS assessment.';
@@ -146,7 +152,7 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
   const voReviewLabel = needsClaimEligibilityReview ? 'Review claim eligibility' : hasPendingReview ? 'Review extra work' : 'View extra work';
   const nextMessageButton = !isNew && nextMessage ? <Button className={hasPendingReview ? 'ghost' : 'primary'} icon={ArrowRight} onClick={() => { clearFilters(); chooseMessage(nextMessage); }}>Next message</Button> : null;
   function processSelectedMessage() {
-    if (!selected || editingVoice || voiceAwaitingReview || needsMatchConfirmation && (!matchContext?.review || editingMatch)) return;
+    if (!selected || inboxClosed || editingVoice || voiceAwaitingReview || needsMatchConfirmation && (!matchContext?.review || editingMatch)) return;
     clearFilters();
     setSelectedId(selected.id);
     setReviewOpen(true);
@@ -190,7 +196,7 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
       messageRefs.current.get(selected?.id || '')?.focus();
     }
   }, [reviewOpen, selected?.id]);
-  const filters = [['all', 'All messages'], ['new', 'New messages'], ['review', 'Needs verification'], ['vo', 'Extra work'], ['clarification', 'Needs clarification'], ['processed', 'Saved messages']];
+  const filters = [['all', 'All messages'], ['new', 'New messages'], ['review', 'Needs verification'], ['vo', 'Extra work'], ['clarification', 'Needs clarification'], ['processed', 'Saved messages'], ['dismissed', 'Dismissed']];
   const filterCount = (key: string) => messages.filter((message) => inFilter(key, message, messageReport(project, message))).length;
 
   return <div className={`whatsapp-view${reviewOpen ? ' wa-review-open' : ''}`}>
@@ -230,11 +236,11 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
 
         {selected ? <section ref={reviewRef} className="wa-review" aria-labelledby="wa-review-heading">
           <div className="wa-panel-back wa-back-inbox"><BackButton onClick={backToMessages}>Back to messages</BackButton></div>
-          <header className="wa-panel-header"><div><h2 id="wa-review-heading" ref={reviewHeadingRef} tabIndex={-1}>{selectedSummary?.title}</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><Badge tone={status?.tone}>{status?.label === 'To check' ? 'Needs verification' : status?.label === 'Approved' ? 'Price approved' : status?.label}</Badge></header>
+          <header className="wa-panel-header"><div><h2 id="wa-review-heading" ref={reviewHeadingRef} tabIndex={-1}>{selectedSummary?.title}</h2><p>{selected.area || selected.location || 'Location needs confirmation'}</p></div><div className="wa-message-actions"><Badge tone={status?.tone}>{status?.label === 'To check' ? 'Needs verification' : status?.label === 'Approved' ? 'Price approved' : status?.label}</Badge><MessageInboxActions key={selected.id} project={project} messageId={selected.id} editing={editingMatch || editingVoice} onDismiss={onDismissMessage} onReopen={onReopenMessage}/></div></header>
           <div className="wa-review-body">
             {selected.channel === 'whatsapp-intake-mock' && <p className="wa-selected-filter-note">Mock incoming message · saved in this browser</p>}
             {selectionOutsideFilters && <p className="wa-selected-filter-note" role="status">Selected message is outside these filters.</p>}
-            {report?.voiceNote ? <VoiceNoteEvidenceDetails evidence={report.voiceNote} defaultOpen/> : voiceContext && <VoiceNoteReview key={selected.id} project={project} messageId={selected.id} onSave={onSaveTranscript} onEditingChange={editing=>setVoiceEditing({messageId:selected.id,editing})}/>}
+            {report?.voiceNote ? <VoiceNoteEvidenceDetails evidence={report.voiceNote} defaultOpen/> : voiceContext && inboxClosed ? <VoiceNoteEvidenceDetails evidence={voiceContext.evidence} defaultOpen/> : voiceContext && <VoiceNoteReview key={selected.id} project={project} messageId={selected.id} onSave={onSaveTranscript} onEditingChange={editing=>setVoiceEditing({messageId:selected.id,editing})}/>}
             {selected.originalVoiceNote && !report?.voiceNote && <VoiceNoteEvidenceDetails evidence={selected.originalVoiceNote} defaultOpen/>}
             <details className="wa-source-evidence" key={`${selected.id}:${report?.id || 'inbox'}:${clarification?.stage || 'original'}-evidence`} open={!selected.audio}>
               <summary><MessageSquare size={15} /><span>{selectedIsReply ? 'Reply message & retained evidence' : selected.audio ? 'Sender & message details' : 'Original message & photo'}</span><small>{selected.sender} · {time(selected.date)}</small></summary>
@@ -247,6 +253,8 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
               </div>
             </details>
 
+            <MessageInboxActions key={`${selected.id}-record`} project={project} messageId={selected.id} recordOnly/>
+            {!inboxClosed && <>
             {!voiceAwaitingReview && !showClarification && !matchContext?.eligible && !areaAmbiguous && !areaBlocked && (item || areaLink?.area) && <section className="wa-work-summary" aria-label="Matched work and area">
               <dl>{item && <div><dt>{isVo ? 'Related contract work · QS to confirm scope' : 'Contract work'}</dt><dd>Ref. {item.ref} · {item.description}</dd></div>}
               {areaLink?.area && <div><dt>Site area</dt><dd>{areaLink.area.code} · {areaLink.area.name}</dd></div>}</dl>
@@ -287,6 +295,8 @@ export function WhatsAppView({ project, onSaveDemoMessage, onStartProgressCheckD
               {!hasPendingReview && nextMessageButton}
             </>}
           </FormActions></footer>}
+            </>}
+            {inboxClosed && !report && matchContext?.review && <MessageMatchReviewDetails review={matchContext.review}/>}
 
 
             <details className="wa-context-details" key={`${selected.id}-context`}><summary>Contract &amp; drawing links</summary><div>

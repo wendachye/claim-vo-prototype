@@ -1,6 +1,7 @@
 import type { DateInput, MessageMatchSuggestion, Project, VoiceNoteAudio, VoiceNoteEvidence, VoiceTranscriptReview, WhatsAppMessage } from '../types/domain';
 import { getDrawingMapping } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation } from './area-allocations.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
@@ -151,7 +152,9 @@ export function getVoiceNoteContext(project: Project, messageId: string): VoiceN
   const latest = reviews.at(-1) || null;
   const review = historyValid && latest?.sourceFingerprint === sourceFingerprint ? latest : null;
   const sourceKey = keyFor(sourceFingerprint, latest?.id || null);
-  const readOnly = !historyValid || source.status !== 'new' || Boolean(source.processedAt || source.reportId || source.clarificationRequestedAt)
+  const inboxDecision = getMessageInboxDecision(project, messageId);
+  const inboxReadOnly = inboxDecision.dismissed || inboxDecision.blocked;
+  const readOnly = inboxReadOnly || !historyValid || source.status !== 'new' || Boolean(source.processedAt || source.reportId || source.clarificationRequestedAt)
     || (project.reports || []).some(report => report.sourceMessageId === source.id)
     || (project.messageClarifications || []).some(thread => thread.sourceMessageId === source.id);
   const reviewedTranscript = review?.transcript || source.originalTranscript;
@@ -161,9 +164,10 @@ export function getVoiceNoteContext(project: Project, messageId: string): VoiceN
     reviewedBy: review?.reviewedBy || null, reviewedAt: review?.reviewedAt || null, reviewId: review?.id || null, sourceKey: review?.sourceKey || sourceKey };
   return { ...base, audio, originalTranscript: source.originalTranscript, reviewedTranscript, review, reviews, sourceKey,
     eligible: true, readOnly, needsClarification: !interpreted.message, effectiveMessage: review ? interpreted.message : null, evidence,
-    status: readOnly && historyValid ? ['clarification', 'replied'].includes(source.status) ? 'clarification' : 'processed'
+    status: inboxReadOnly ? 'unavailable' : readOnly && historyValid ? ['clarification', 'replied'].includes(source.status) ? 'clarification' : 'processed'
       : !historyValid ? 'unavailable' : !interpreted.message ? 'clarification' : review ? 'reviewed' : 'pending',
-    ...(!historyValid ? { issue: 'The saved transcript review history is unavailable. Reopen the original message.' }
+    ...(inboxReadOnly ? { issue: inboxDecision.issue || 'Reopen the dismissed message before reviewing its transcript.' }
+      : !historyValid ? { issue: 'The saved transcript review history is unavailable. Reopen the original message.' }
       : readOnly ? { issue: 'This voice note already has a processing or clarification record. Its transcript review is retained as evidence.' }
         : interpreted.issue ? { issue: interpreted.issue } : !review ? { issue: 'Review the mock transcript before reviewing its work-item and area match.' } : {}) };
 }

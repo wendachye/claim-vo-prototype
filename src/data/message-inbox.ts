@@ -1,13 +1,16 @@
 import type { ClarificationContext } from './whatsapp-clarification';
+import type { InboxDecisionContext } from './message-dismissal';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
 import { VO_STATUS_LABELS } from './vo.ts';
 import { isReviewableProgressReport, needsMessageClarification, needsProgressClarification } from './report-status.ts';
 
 // Report evidence takes priority over a legacy inbox status. Viewing never processes it.
-export const isNewInboxMessage = (message?: WhatsAppMessage | null, report?: SiteReport | null, clarification?: ClarificationContext | null) => Boolean(message?.status === 'new' && !report
+export const isNewInboxMessage = (message?: WhatsAppMessage | null, report?: SiteReport | null, clarification?: ClarificationContext | null, decision?: InboxDecisionContext | null) => Boolean(!decision?.dismissed && !decision?.blocked && message?.status === 'new' && !report
   && !(clarification?.reply?.id === message.id && clarification.stage === 'superseded'));
 
-export function getMessageReviewStatus(message?: WhatsAppMessage | null, report?: SiteReport | null, voCase?: VOCase | null, clarification?: ClarificationContext | null) {
+export function getMessageReviewStatus(message?: WhatsAppMessage | null, report?: SiteReport | null, voCase?: VOCase | null, clarification?: ClarificationContext | null, decision?: InboxDecisionContext | null) {
+  if (!report && decision?.blocked) return { label: 'Decision needs review', tone: 'amber' };
+  if (!report && decision?.dismissed) return { label: 'Dismissed', tone: 'slate' };
   if (!report && clarification && clarification.reply?.id === message?.id && clarification.stage === 'superseded') return { label: 'Reply superseded', tone: 'slate' };
   if (clarification?.reply && clarification.thread.sourceMessageId === message?.id) {
     const statuses: Record<string, { label: string; tone: string }> = {
@@ -39,9 +42,11 @@ export function getMessageReviewStatus(message?: WhatsAppMessage | null, report?
   return { label: 'Update added', tone: 'slate' };
 }
 
-export function matchesInboxFilter(filter: string, message?: WhatsAppMessage | null, report?: SiteReport | null, clarification?: ClarificationContext | null) {
+export function matchesInboxFilter(filter: string, message?: WhatsAppMessage | null, report?: SiteReport | null, clarification?: ClarificationContext | null, decision?: InboxDecisionContext | null) {
   if (!message) return false;
   if (filter === 'all') return true;
+  if (!report && (decision?.dismissed || decision?.blocked)) return filter === 'dismissed' && decision.dismissed;
+  if (filter === 'dismissed') return report?.status === 'rejected' && !report.vo;
   // Keep the original in history; the separate reply/report owns the next task.
   if (clarification?.reply && clarification.thread.sourceMessageId === message.id) return filter === 'processed';
   if (!report && clarification?.reply?.id === message.id && clarification.stage === 'superseded') return filter === 'processed';

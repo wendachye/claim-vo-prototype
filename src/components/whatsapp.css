@@ -212,3 +212,20 @@
 @container (max-width:300px) {
   .wa-filter-fields { grid-template-columns:minmax(0,1fr); }
 }
+
+.wa-message-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:6px; flex-shrink:0; }
+.wa-inbox-decision { margin:0 0 18px; padding:14px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; color:#334155; font-size:13px; line-height:1.7; overflow-wrap:anywhere; }
+.wa-inbox-decision > strong { font-size:13px; font-weight:550; }
+.wa-inbox-decision p { margin:5px 0; white-space:pre-wrap; }
+.wa-inbox-decision small { color:#64748b; font-size:12px; }
+.wa-inbox-decision .wa-inbox-decision-note { margin-top:10px; color:#64748b; font-size:12px; }
+.wa-decision-history { margin-top:10px; border-top:1px solid var(--border); }
+.wa-decision-history summary { padding-top:10px; cursor:pointer; color:#475569; font-size:12px; }
+.wa-decision-history ol { margin:10px 0 0; padding-left:18px; }
+.wa-decision-history li + li { margin-top:12px; }
+.wa-decision-history summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:3px; }
+.wa-inbox-decision-form .form-actions { margin-top:20px; }
+@media(max-width:760px) {
+  .wa-review .wa-panel-header { flex-wrap:wrap; gap:10px; }
+  .wa-message-actions { width:100%; justify-content:space-between; }
+}

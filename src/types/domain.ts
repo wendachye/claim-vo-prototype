@@ -173,12 +173,18 @@ export interface MessageClarification {
   id: string; projectId: string; sourceMessageId: string; original: WhatsAppMessage;
   request: { question: string; date: string; actor: string }; replyMessageId?: string;
 }
+export interface MessageInboxDecision {
+  version: 1; id: string; projectId: string; messageId: string; sourceKey: string;
+  action: 'dismiss' | 'reopen'; reason: string; reviewedBy: string; reviewedAt: string;
+  previousDecisionId: string | null;
+}
 
 export interface ProjectWorkflow {
   sourceItems: WorkItem[]; items: WorkItem[]; reports: SiteReport[]; history: HistoryEntry[];
   baselines: ContractBaseline[]; locked: boolean; version: number; lockedAt?: string;
   voReviews: VOReview[]; claimDrafts: ClaimDraft[]; claimTracking?: ClaimTracking[]; messageClarifications?: MessageClarification[];
   messageMatchReviews?: MessageMatchReview[];
+  messageInboxDecisions?: MessageInboxDecision[]; messageInboxDecisionIssues?: string[];
   voiceTranscriptReviews?: VoiceTranscriptReview[];
   voConfirmationRequests?: VOConfirmationRequest[];
   voEvidenceLinks?: VOEvidenceLink[]; voEvidenceLinkIssues?: string[];

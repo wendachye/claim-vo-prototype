@@ -5,6 +5,7 @@ import { getMessageReport, getWhatsAppMessages } from './whatsapp.ts';
 import { getDrawingMapping, snapshotMappedArea } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope } from './area-allocations.ts';
 import { getVoiceNoteContext, isVoiceNoteAudio, isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 
 export interface ClarificationMutation { project: Project; outcome: string; error?: string; thread?: MessageClarification }
 export interface ClarificationContext { thread: MessageClarification; original: WhatsAppMessage; request: MessageClarification['request']; reply: WhatsAppMessage | null; report: SiteReport | null; latestReport: SiteReport | null; stage: string; sourceMessageId: string; replyMessageId: string | null }
@@ -125,6 +126,8 @@ export function getMessageClarificationEligibility(project: Project, messageId: 
   const source = sourceFor(project, messageId);
   const invalid = (error: string) => ({ eligible: false, error });
   if (!source) return invalid('Choose an original message from the selected project.');
+  const inboxDecision = getMessageInboxDecision(project, messageId);
+  if (inboxDecision.dismissed || inboxDecision.blocked) return invalid(inboxDecision.issue || 'Reopen the dismissed message before requesting clarification.');
   if (source.replyToMessageId) return invalid('Open the original clarification to review this reply.');
   if (source.vo || source.kind === 'vo') return invalid('Review possible extra work in VO review.');
   const voice = getVoiceNoteContext(project,messageId);

@@ -2,6 +2,7 @@ import type { DateInput, DrawingArea, MessageMatchFields, MessageMatchLabels, Me
 import { getAreaLinkStatus, getDrawingMapping, snapshotMappedArea } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation } from './area-allocations.ts';
 import { getVoiceNoteContext } from './voice-notes.ts';
+import { getMessageInboxDecision } from './message-dismissal.ts';
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 const text = (value: unknown) => typeof value === 'string' ? value.trim() : '';
@@ -139,8 +140,13 @@ export function getMessageMatchContext(project: Project, messageId: string): Mes
     return same(value.areaMapping, snapshotMappedArea(selected.area)) && same(value.areaProgress ?? null, areaProgress)
       && same(value.suggested, frozenLabels(project, suggestion.fields)) && same(value.confirmed, frozenLabels(project, value.fields));
   }) || null;
-  return { eligible: true, requiresReview: !review, original, suggestion, review, fields: clone(review?.fields || suggestion.fields),
-    ...(review ? {} : { issue: 'Review the suggested work item and site area before adding progress.' }),
+  const inboxDecision = getMessageInboxDecision(project, messageId);
+  const inboxReadOnly = inboxDecision.dismissed || inboxDecision.blocked;
+  // Retain a saved match for read-only evidence and drawing routing; dismissing
+  // the inbox entry must not erase its correction history or original scope.
+  return { eligible: !inboxReadOnly, requiresReview: !inboxReadOnly && !review, original, suggestion, review, fields: clone(review?.fields || suggestion.fields),
+    ...(inboxReadOnly ? { issue: inboxDecision.issue || 'Reopen the dismissed message before reviewing its match.' }
+      : review ? {} : { issue: 'Review the suggested work item and site area before adding progress.' }),
     effectiveMessage: review ? { ...clone(original), areaProgress: undefined, itemId: review.fields.itemId, areaId: review.fields.areaId,
       area: review.areaMapping.code, areaMapping: clone(review.areaMapping), ...(review.areaProgress ? { areaProgress: clone(review.areaProgress) } : {}) } : null };
 }
