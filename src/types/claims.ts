@@ -75,10 +75,19 @@ export interface ClaimProjectDetails {
   id: string; code: string | null; name: string | null; country: string | null;
   description: string | null; contract: ContractDetails;
 }
+export interface ClaimDocumentDetails {
+  version: 1;
+  recipientCompany: string; recipientAttention: string; recipientAddress: string;
+  projectName: string; printedProjectCode: string; contractReference: string;
+  claimReference: string; claimDate: string;
+  companyName: string; companyAddress: string; companyRegistration: string;
+  companyPhone: string; companyEmail: string;
+}
 export interface ClaimDraft {
   id: string; projectId: string; period: string; revision: number; status: string; createdAt: string;
   preparedAt?: string; assessment: ClaimAssessment; snapshot: ClaimReview; projectDetails?: ClaimProjectDetails;
   revisionOf?: string; queryId?: string; revisionResponse?: string;
+  documentDetails?: ClaimDocumentDetails; documentRevisionOf?: string;
 }
 export interface ClaimQuery {
   id: string; date: string; reference: string; note: string; targetType?: string; targetId?: string;
@@ -115,4 +124,5 @@ export interface ClaimPack {
   metadataNotice: string; projectDetails: ClaimProjectDetails; workRows: ClaimWorkRow[]; voRows: ClaimVORow[];
   totals: ClaimTotals; assessment: ClaimAssessment; claimBasis?: ClaimBasis; issues: string[];
   canPrepare: boolean; evidenceRefs: ClaimEvidenceReference[]; prototypeNotice: string;
+  documentDetails?: ClaimDocumentDetails;
 }

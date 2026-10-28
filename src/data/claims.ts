@@ -3,6 +3,7 @@ import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, 
 import { getItemAreaAllocation, getItemAreaRollup, getItemAreaSplitStartedAt } from './area-allocations.ts';
 import { getVOCases, getVOClaimEligibility, getVORelatedEvidence } from './vo.ts';
 import { captureClaimProjectDetails } from './claim-pack.ts';
+import { isClaimDocumentDetails } from './claim-document-details.ts';
 import { normalizeClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum, claimBasisDifference, applyClaimBasis } from './claim-basis.ts';
 
 // Preparation only: these records never certify, submit or pay a claim.
@@ -271,6 +272,9 @@ export function saveClaimDraft(project: Project, period: string, assessment: unk
   const drafts = normalizeClaimDrafts(project);
   const projectDetails = captureClaimProjectDetails(project);
   const previous = drafts.filter((entry) => entry.period === period).sort((a, b) => b.revision - a.revision)[0];
+  if (previous && Object.hasOwn(previous, 'documentDetails') && !isClaimDocumentDetails(previous.documentDetails)) {
+    return { project, outcome: 'invalid' as const, error: 'The latest saved claim document details are invalid. Review them before saving another version.' };
+  }
   if (previous && JSON.stringify(previous.snapshot) === JSON.stringify(snapshot)
     && JSON.stringify(previous.projectDetails) === JSON.stringify(projectDetails)) return { project, outcome: 'unchanged' as const, draft: clone(previous) };
   const revision = (previous?.revision || 0) + 1;
@@ -279,6 +283,7 @@ export function saveClaimDraft(project: Project, period: string, assessment: unk
     id: `CLAIM-${project.id}-${period}-R${revision}`, projectId: project.id, period, revision,
     status: 'draft', createdAt: date, assessment: clone(snapshot.assessment), snapshot: clone(snapshot),
     projectDetails,
+    ...(previous && Object.hasOwn(previous, 'documentDetails') ? { documentDetails: clone(previous.documentDetails) } : {}),
   };
   return { outcome: 'updated' as const, draft: clone(draft), project: {
     ...project, claimDrafts: [...drafts, draft],
@@ -290,6 +295,9 @@ export function markClaimPrepared(project: Project, draftId: string) {
   const drafts = normalizeClaimDrafts(project);
   const draft = drafts.find((entry) => entry.id === draftId);
   if (!draft) return { project, outcome: 'invalid' as const, error: 'Choose a saved claim draft from this project.' };
+  if (Object.hasOwn(draft, 'documentDetails') && !isClaimDocumentDetails(draft.documentDetails)) {
+    return { project, outcome: 'invalid' as const, error: 'The saved claim document details are invalid. Review them before preparing this version.' };
+  }
   if (draft.status === 'prepared') return { project, outcome: 'unchanged' as const, draft: clone(draft) };
   if (drafts.some((entry) => entry.period === draft.period && entry.revision > draft.revision)) return { project, outcome: 'invalid' as const, error: 'Prepare the latest saved revision for this month.' };
   const current = buildClaimReview(project, draft.period, draft.assessment);

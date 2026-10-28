@@ -1,0 +1,13 @@
+.claim-details-modal .modal { width:620px; }
+.claim-details-form { display:grid; gap:22px; }
+.claim-details-form fieldset { display:grid; min-width:0; gap:14px; margin:0; padding:0; border:0; }
+.claim-details-form legend { width:100%; margin-bottom:14px; padding:0 0 8px; border-bottom:1px solid var(--border); color:#334155; font-size:14px; font-weight:600; }
+.claim-details-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.claim-details-note { color:var(--ui-help-color,#64748b); font-size:12px; line-height:1.7; }
+.claim-details-disclosure { color:#475569; font-size:12px; }
+.claim-details-disclosure summary { width:fit-content; cursor:pointer; padding-block:3px; }
+.claim-details-disclosure summary:focus-visible { outline:2px solid #2563eb; outline-offset:4px; border-radius:2px; }
+.claim-details-disclosure > div { display:grid; gap:14px; padding-top:14px; }
+.claim-details-error { color:#b91c1c; font-size:12px; line-height:1.7; }
+.modal-footer .claim-details-actions { width:100%; margin:0; padding:0; border:0; }
+@media (max-width:600px) { .claim-details-grid { grid-template-columns:1fr; } }

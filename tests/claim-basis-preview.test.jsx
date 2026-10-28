@@ -42,7 +42,7 @@ describe('saved claim basis preview', () => {
     expect(mathRow(basis, 'Cumulative net')).toContain('SGD 13,389.30');
     expect(mathRow(basis, 'Less previously submitted net')).toContain('SGD 0.00');
     expect(mathRow(basis, 'Net claim this month')).toContain('SGD 13,389.30');
-    expect(screen.getByRole('columnheader', { name: 'This period · gross' })).toBeTruthy();
+    expect(screen.getByRole('columnheader', { name: 'Current claim' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'View evidence for A/01', exact: true }));
     const evidence = within(screen.getByRole('dialog'));
     expect(evidence.getByText('Original saved update', { exact: true })).toBeTruthy();
@@ -55,13 +55,13 @@ describe('saved claim basis preview', () => {
     expect(saved.project).toEqual(before);
   });
 
-  it('retains the legacy three-total view and its gross-only notice', () => {
+  it('retains legacy gross-only reconciliation and its unchanged notice in the progressive claim layout', () => {
     const saved = fixture(null);
     saved.project.claimBasis = { retentionRate: 50 };
     render(<ClaimPackPreview project={saved.project} draftId={saved.draft.id} />);
     expect(screen.queryByRole('region', { name: 'Saved claim basis' })).toBeNull();
     expect(screen.getByRole('region', { name: 'Claim totals' }).textContent).toContain('14,094.00');
-    expect(screen.getByText('This period · before deductions', { exact: true })).toBeTruthy();
+    expect(screen.getByText('Total amount of progressive claim for work done', { exact: true })).toBeTruthy();
     expect(screen.getByText(/does not certify work, approve payment or include tax and retention deductions/)).toBeTruthy();
   });
 

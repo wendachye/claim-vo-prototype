@@ -1,6 +1,7 @@
 import { isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 import type { ClaimRow, ClaimPack, ClaimProjectDetails, ClaimEvidenceReference } from '../types/claims';
 import { isMessageMatchReviewSnapshot } from './message-match.ts';
+import { isClaimDocumentDetails } from './claim-document-details.ts';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput, VORelatedEvidence } from '../types/domain';
 // Read-only exports of saved local assessments; never rebuild from live progress.
 const clone = <T>(value: T): T => structuredClone(value);
@@ -75,6 +76,9 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
     || !Array.isArray(snapshot.workRows) || !Array.isArray(snapshot.voRows)
     || !record(snapshot.totals) || !record(snapshot.assessment) || !Array.isArray(snapshot.issues)) return invalid();
   if (draft.projectDetails != null && (!record(draft.projectDetails) || draft.projectDetails.id !== project.id)) return invalid();
+  if (Object.hasOwn(draft, 'documentDetails') && !isClaimDocumentDetails(draft.documentDetails)) {
+    return { outcome: 'invalid', error: 'The saved claim document details are invalid. The saved financial assessment is unchanged.' };
+  }
   if (snapshot.claimBasis != null && (!record(snapshot.claimBasis) || snapshot.claimBasis.version !== 1)) return invalid();
   const hasBasis = record(snapshot.claimBasis);
   const workRows = snapshot.workRows.filter((row) => record(row) && row.included === true);
@@ -92,6 +96,7 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
     metadataNotice: hasSavedDetails ? 'Project and contract details captured when this revision was saved.'
       : 'Legacy draft: project and contract details below are current workspace details, not a saved metadata snapshot. Financial values and evidence remain from the saved draft.',
     projectDetails: hasSavedDetails ? draft.projectDetails! : captureClaimProjectDetails(project),
+    ...(Object.hasOwn(draft, 'documentDetails') ? { documentDetails: draft.documentDetails } : {}),
     workRows, voRows, totals: snapshot.totals, assessment: snapshot.assessment,
     ...(hasBasis ? { claimBasis: snapshot.claimBasis } : {}),
     issues: snapshot.issues, canPrepare: snapshot.canPrepare === true,
@@ -144,6 +149,19 @@ export function toClaimCSV(pack: ClaimPack) {
   metadata('Readiness at save', pack.canPrepare ? 'Ready at save' : 'Incomplete at save');
   metadata('Document notice', pack.prototypeNotice);
   metadata('Project details source', pack.metadataNotice);
+  if (Object.hasOwn(pack, 'documentDetails')) {
+    if (!isClaimDocumentDetails(pack.documentDetails)) throw new Error('Saved claim document details are invalid.');
+    const details = pack.documentDetails;
+    for (const [label, value] of [
+      ['Recipient company', details.recipientCompany], ['Recipient attention', details.recipientAttention],
+      ['Recipient address', details.recipientAddress], ['Printed project name', details.projectName],
+      ['Printed project code', details.printedProjectCode], ['Printed contract reference', details.contractReference],
+      ['Printed claim reference', details.claimReference || pack.draftId], ['Claim date', details.claimDate],
+      ['Company name', details.companyName], ['Company address', details.companyAddress],
+      ['Company registration', details.companyRegistration], ['Company phone', details.companyPhone],
+      ['Company email', details.companyEmail],
+    ]) metadata(label, value);
+  }
   metadata('Previous claims checked', pack.assessment?.priorConfirmed === true ? 'Confirmed by QS' : 'Not yet confirmed');
   const basis = pack.claimBasis?.version === 1 ? pack.claimBasis : null;
   if (basis) {
