@@ -1,7 +1,7 @@
 import { isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 import type { ClaimRow, ClaimPack, ClaimProjectDetails, ClaimEvidenceReference } from '../types/claims';
 import { isMessageMatchReviewSnapshot } from './message-match.ts';
-import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
+import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput, VORelatedEvidence } from '../types/domain';
 // Read-only exports of saved local assessments; never rebuild from live progress.
 const clone = <T>(value: T): T => structuredClone(value);
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -18,10 +18,28 @@ export function captureClaimProjectDetails(project: Project): ClaimProjectDetail
   });
 }
 
-function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | null | undefined = row.evidence): ClaimEvidenceReference {
+export function isClaimRelatedEvidence(value: unknown, projectId: string, caseId: string): value is VORelatedEvidence[] {
+  if (!Array.isArray(value)) return false;
+  const seen = new Set<string>();
+  return value.every(entry => {
+    if (!record(entry) || !record(entry.link) || !record(entry.report)) return false;
+    const link = entry.link;
+    const report = entry.report;
+    const required = ['id', 'sourceCaseId', 'targetCaseId', 'sourceReference', 'targetReference', 'reason', 'linkedAt', 'linkedBy'];
+    if (link.version !== 1 || link.projectId !== projectId || link.targetCaseId !== caseId || link.sourceCaseId === caseId
+      || required.some(key => typeof link[key] !== 'string' || !(link[key] as string).trim())
+      || !Number.isFinite(Date.parse(link.linkedAt as string)) || seen.has(link.sourceCaseId as string)
+      || report.id !== link.sourceCaseId || report.vo !== true || report.projectId && report.projectId !== projectId
+      || !record(link.sourceReport) || JSON.stringify(link.sourceReport) !== JSON.stringify(report)) return false;
+    seen.add(link.sourceCaseId as string);
+    return true;
+  });
+}
+
+function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | null | undefined = row.evidence, related?: VORelatedEvidence): ClaimEvidenceReference {
   const evidence: Partial<SiteReport> = record(source) ? source : {};
   return {
-    id: evidence.areaProgress ? `${kind}-${row.id}-${evidence.id}` : `${kind}-${row.id}`, kind, rowId: row.id,
+    id: related ? `${kind}-${row.id}-related-${related.link.id}` : evidence.areaProgress ? `${kind}-${row.id}-${evidence.id}` : `${kind}-${row.id}`, kind, rowId: row.id,
     rowRef: (kind === 'work' ? row.ref : row.reference) ?? null,
     title: (kind === 'work' ? row.description : row.title) ?? null,
     reportId: evidence.id ?? null, sourceMessageId: evidence.sourceMessageId ?? null,
@@ -39,6 +57,9 @@ function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | nu
     ...(isMessageMatchReviewSnapshot(evidence.matchReview) ? {matchReview:clone(evidence.matchReview)} : {}),
     ...(evidence.channel === 'manual-vo-mock' ? { channel: evidence.channel,
       reportedInstructionReference: evidence.reportedInstructionReference ?? null } : {}),
+    ...(related ? { relatedVO: { linkId: related.link.id, sourceCaseId: related.link.sourceCaseId,
+      sourceReference: related.link.sourceReference, reason: related.link.reason,
+      linkedAt: related.link.linkedAt, linkedBy: related.link.linkedBy } } : {}),
   };
 }
 
@@ -59,6 +80,7 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
   const workRows = snapshot.workRows.filter((row) => record(row) && row.included === true);
   const voRows = snapshot.voRows.filter((row) => record(row) && row.included === true);
   if ([...workRows, ...voRows].some((row) => row.evidence?.projectId && row.evidence.projectId !== project.id || row.areaEvidence?.some(evidence=>evidence.projectId && evidence.projectId!==project.id))) return invalid();
+  if (voRows.some(row => row.relatedEvidence !== undefined && !isClaimRelatedEvidence(row.relatedEvidence, project.id, row.id))) return invalid();
   const hasSavedDetails = record(draft.projectDetails);
   return { outcome: 'ready', pack: clone({
     id: draft.id, draftId: draft.id, projectId: draft.projectId,
@@ -73,7 +95,7 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
     workRows, voRows, totals: snapshot.totals, assessment: snapshot.assessment,
     ...(hasBasis ? { claimBasis: snapshot.claimBasis } : {}),
     issues: snapshot.issues, canPrepare: snapshot.canPrepare === true,
-    evidenceRefs: [...workRows.flatMap((row) => row.areaEvidence?.length ? row.areaEvidence.map(evidence=>evidenceFor(row,'work',evidence)) : [evidenceFor(row, 'work')]), ...voRows.map((row) => evidenceFor(row, 'vo'))],
+    evidenceRefs: [...workRows.flatMap((row) => row.areaEvidence?.length ? row.areaEvidence.map(evidence=>evidenceFor(row,'work',evidence)) : [evidenceFor(row, 'work')]), ...voRows.flatMap((row) => [evidenceFor(row, 'vo'), ...(row.relatedEvidence || []).map(related => evidenceFor(row, 'vo', related.report, related))])],
     prototypeNotice: hasBasis ? 'Local demonstration assessment using the saved mock claim basis. Retention is included in the net application; tax, retention releases and other deductions are not supported. Prepared status does not submit, certify or pay a claim; unknown amounts remain blank.' : 'Local demonstration assessment. Prepared status does not submit, certify or pay a claim. Values are before tax, retention and other deductions; unknown amounts remain blank.',
   }) };
 }
@@ -179,6 +201,7 @@ export function toClaimCSV(pack: ClaimPack) {
     'Reviewer / approver': joined(evidence.reviewer, evidence.approver),
     'Message / photo': joined(evidence.message, photoReference(evidence.photo), evidence.voiceNote && `Synthetic demo voice note: ${evidence.voiceNote.audio.asset}`),
     'Review notes': joined(evidence.channel === 'manual-vo-mock' && 'Source: Manual entry · local demo',
+      evidence.relatedVO && `Related evidence from ${evidence.relatedVO.sourceReference}; reason: ${evidence.relatedVO.reason}; linked by ${evidence.relatedVO.linkedBy} at ${evidence.relatedVO.linkedAt}. Supporting evidence only; no additional claim value.`,
       evidence.voiceNote && `Original mock transcript: ${evidence.voiceNote.originalTranscript}; reviewed transcript: ${evidence.voiceNote.reviewedTranscript || 'Not reviewed'}; correction reason: ${evidence.voiceNote.reason || (evidence.voiceNote.reviewId ? 'Original transcript confirmed' : 'Not reviewed')}; reviewed by: ${evidence.voiceNote.reviewedBy || 'Not recorded'} at ${evidence.voiceNote.reviewedAt || 'Not recorded'}`,
       evidence.reportedInstructionReference && `Reported instruction/reference: ${evidence.reportedInstructionReference}`,
       evidence.areaProgress && `Area quantity: ${evidence.areaProgress.allocatedQuantity}; contract quantity: ${evidence.areaProgress.contractQuantity}` ,

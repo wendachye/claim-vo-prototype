@@ -22,7 +22,7 @@ export function getAreaVOFlags(project: Project, areaId: string) {
       cases.push({
         id: review.id, reportId: review.reportId,
         title: text(review.title) || 'Possible extra work', status: review.status,
-        label: VO_STATUS_LABELS[review.status], tone: review.status === 'approved' ? 'green' : review.status === 'rejected' ? 'slate' : 'amber',
+        label: VO_STATUS_LABELS[review.status], tone: review.status === 'approved' ? 'green' : ['rejected', 'linked'].includes(review.status) ? 'slate' : 'amber',
         date: originalText(entry.date), matchKind: entry.matchKind, matchLabel: entry.matchLabel,
       });
     } else if (!entry.reportId && entry.messageId && entry.status === 'new' && !seenMessages.has(entry.messageId)) {

@@ -11,9 +11,9 @@ import './vo-review.css';
 
 const reviewStatusLabel = (status: string) => status === 'approved' ? 'Price approved' : (VO_STATUS_LABELS as Readonly<Record<string, string>>)[status];
 
-interface VOReviewViewProps { project: Project; cases?: VOCase[]; initialCaseId?: string | null; onSelect?: (id: string) => void; onAction?: VOCaseReviewProps['onAction']; onCreateConfirmation?: VOCaseReviewProps['onCreateConfirmation']; onConfirmationReply?: VOCaseReviewProps['onConfirmationReply']; onCreate?: ComponentProps<typeof ManualVOForm>['onSave']; onOpenWhatsApp?: () => void; onOpenContract?: VOCaseReviewProps['onOpenContract']; onReviewContract?: () => void; onOpenClaims?: (caseId: string) => void; onBackToDrawing?: () => void; onBackToMessage?: () => void; onBackToDashboard?: () => void; onClearCaseSelection?: () => void }
+interface VOReviewViewProps { project: Project; cases?: VOCase[]; initialCaseId?: string | null; onSelect?: (id: string) => void; onAction?: VOCaseReviewProps['onAction']; onLink?: VOCaseReviewProps['onLink']; onCreateConfirmation?: VOCaseReviewProps['onCreateConfirmation']; onConfirmationReply?: VOCaseReviewProps['onConfirmationReply']; onCreate?: ComponentProps<typeof ManualVOForm>['onSave']; onOpenWhatsApp?: () => void; onOpenContract?: VOCaseReviewProps['onOpenContract']; onReviewContract?: () => void; onOpenClaims?: (caseId: string) => void; onBackToDrawing?: () => void; onBackToMessage?: () => void; onBackToDashboard?: () => void; onClearCaseSelection?: () => void }
 
-export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onCreateConfirmation, onConfirmationReply, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToMessage, onBackToDashboard, onClearCaseSelection }: VOReviewViewProps) {
+export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onAction, onLink, onCreateConfirmation, onConfirmationReply, onCreate, onOpenWhatsApp, onOpenContract, onReviewContract, onOpenClaims, onBackToDrawing, onBackToMessage, onBackToDashboard, onClearCaseSelection }: VOReviewViewProps) {
   const [selectedId, setSelectedId] = useBufferedState(project.id, 'vo:selected', () => initialCaseId || cases[0]?.id || '');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -85,6 +85,17 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
     }
     return result;
   }
+  function linkEvidence(sourceId: string, targetId: string, reason: string) {
+    const result = onLink?.(sourceId, targetId, reason);
+    if (result && ['updated', 'unchanged'].includes(result.outcome)) {
+      focusReview.current = true; clearFilters(); setSelectedId(sourceId); setPhoto(null); setReviewOpen(true); onSelect?.(sourceId);
+    }
+    return result;
+  }
+  function openRelatedCase(caseId: string) {
+    const entry = cases.find(candidate => candidate.id === caseId);
+    if (entry) choose(entry);
+  }
   async function createEntry(values: Parameters<NonNullable<ComponentProps<typeof ManualVOForm>['onSave']>>[0]) {
     const result = await onCreate?.(values);
     if (result && ['updated', 'unchanged'].includes(result.outcome) && result.caseId) {
@@ -95,10 +106,10 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
     }
     return result;
   }
-  const openCount = cases.filter((entry) => !['approved', 'rejected'].includes(entry.status) || entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible).length;
+  const openCount = cases.filter((entry) => !['approved', 'rejected', 'linked'].includes(entry.status) || entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible).length;
   const filterCount = (status: string) => cases.filter((entry) => status === 'all' || entry.status === status).length;
   const titleForList = (entry: VOCase) => entry.title === `Possible extra work · ${entry.report.area}` ? 'Possible extra work' : entry.title || 'Flagged extra work';
-  const priceForList = (entry: VOCase) => { const value = entry.status === 'approved' ? entry.approvedValue : entry.proposedValue; return value == null ? 'Price unknown' : amountLabel(value, currency); };
+  const priceForList = (entry: VOCase) => { if (entry.status === 'linked') return 'Evidence only'; const value = entry.status === 'approved' ? entry.approvedValue : entry.proposedValue; return value == null ? 'Price unknown' : amountLabel(value, currency); };
 
   return <div className={`vo-view${reviewOpen ? ' vo-review-open' : ''}`}>
     <PageHeader title="Extra work (VO)" description="Check the scope, instruction, price and claim eligibility." onBack={onBackToMessage || onBackToDashboard || onBackToDrawing} backLabel={onBackToMessage ? 'Back to message' : onBackToDashboard ? 'Back to dashboard' : 'Back to drawing'} actions={onCreate && <Button className="primary" icon={Plus} onClick={() => setCreateOpen(true)}>Add extra work</Button>} />
@@ -119,12 +130,12 @@ export function VOReviewView({ project, cases = [], initialCaseId, onSelect, onA
         <h2 className="vo-list-heading" id="vo-register-heading">Extra-work cases</h2>
         <div className="vo-register-list">{shown.length ? shown.map((entry) => <button type="button" key={entry.id} ref={(node) => { if (node) caseRefs.current.set(entry.id,node); else caseRefs.current.delete(entry.id); }} className={`vo-register-item${selected?.id === entry.id ? ' selected' : ''}`} aria-label={`Open extra work: ${entry.reference}, ${titleForList(entry)}, ${(VO_STATUS_LABELS as Readonly<Record<string, string>>)[entry.status]}`} aria-pressed={selected?.id === entry.id} onClick={() => choose(entry)}>
           <VOCaseThumbnail report={entry.report}/>
-          <div className="vo-register-copy"><div className="vo-register-title"><strong>{titleForList(entry)}</strong></div><p className="vo-register-area"><MapPin size={12} aria-hidden="true"/>{[entry.report.location,entry.report.area].filter(Boolean).join(' · ') || 'Location not recorded'}</p><div className="vo-register-summary"><Badge tone={tone(entry.status)}>{reviewStatusLabel(entry.status)}</Badge><span className="vo-register-price" aria-label={`${entry.status === 'approved' ? 'Approved price' : 'Proposed price'}: ${amountLabel(entry.status === 'approved' ? entry.approvedValue : entry.proposedValue,currency)}`}>{priceForList(entry)}</span></div></div><ChevronRight className="vo-open-case" size={16} aria-hidden="true"/>
+          <div className="vo-register-copy"><div className="vo-register-title"><strong>{titleForList(entry)}</strong></div><p className="vo-register-area"><MapPin size={12} aria-hidden="true"/>{[entry.report.location,entry.report.area].filter(Boolean).join(' · ') || 'Location not recorded'}</p><div className="vo-register-summary"><Badge tone={tone(entry.status)}>{reviewStatusLabel(entry.status)}</Badge><span className="vo-register-price" aria-label={entry.status === 'linked' ? 'Evidence only; no separate claim value' : `${entry.status === 'approved' ? 'Approved price' : 'Proposed price'}: ${amountLabel(entry.status === 'approved' ? entry.approvedValue : entry.proposedValue,currency)}`}>{priceForList(entry)}</span></div></div><ChevronRight className="vo-open-case" size={16} aria-hidden="true"/>
         </button>) : <div className="vo-list-empty"><Search size={25}/><h3>No matching extra work</h3><p>Try another search, location or status.</p><Button onClick={clearAll}>Clear all</Button></div>}</div>
         <p className="vo-register-note">Demo review · decisions stay in this browser. Nothing is submitted or paid.</p>
       </section>
 
-      <div ref={reviewRef} className="vo-review-anchor">{selectionOutsideFilters && <p className="vo-selected-filter-note" role="status">Selected case is outside these filters.</p>}{selected ? <VOCaseReview key={`${selected.id}-${selected.status}-${selected.history.length}`} entry={selected} project={project} currency={currency} headingRef={headingRef} onAction={reviewAction} onCreateConfirmation={onCreateConfirmation} onConfirmationReply={onConfirmationReply} onPhoto={setPhoto} onOpenContract={onOpenContract} onOpenClaims={onOpenClaims} onBack={backToRegister} backLabel="Back to extra work" /> : <section className="vo-detail vo-list-empty"><Flag size={28} /><h3>Select extra work</h3><p>Its message, photo and review will appear here.</p></section>}</div>
+      <div ref={reviewRef} className="vo-review-anchor">{selectionOutsideFilters && <p className="vo-selected-filter-note" role="status">Selected case is outside these filters.</p>}{selected ? <VOCaseReview key={`${selected.id}-${selected.status}-${selected.history.length}`} entry={selected} project={project} currency={currency} headingRef={headingRef} onAction={reviewAction} onLink={onLink ? linkEvidence : undefined} onOpenRelatedCase={openRelatedCase} onCreateConfirmation={onCreateConfirmation} onConfirmationReply={onConfirmationReply} onPhoto={setPhoto} onOpenContract={onOpenContract} onOpenClaims={onOpenClaims} onBack={backToRegister} backLabel="Back to extra work" /> : <section className="vo-detail vo-list-empty"><Flag size={28} /><h3>Select extra work</h3><p>Its message, photo and review will appear here.</p></section>}</div>
     </div></>}
     {photo && <div className="vo-photo-modal"><Modal title="Extra-work photo" description="Demo attachment · review alongside the original message" onClose={() => setPhoto(null)} footer={<Button onClick={() => setPhoto(null)}>Done</Button>}><img src={photo.src} alt={photo.alt || 'Photo attached to the demo variation report'} /></Modal></div>}
   </div>;

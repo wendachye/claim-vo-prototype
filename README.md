@@ -75,6 +75,10 @@ This is a browser-local preview, not a shared link or live approval service. It 
 
 ## Claim item evidence
 
+In **Extra work → Review actions → Link to existing VO**, choose the open VO for the same extra work, enter a reason and **Save link**. Both records must be open for editing, without a previous price approval or inclusion in a saved claim; cases awaiting approval can use **Need information** first. Unfinished QS edits must be saved or finished before linking.
+
+The supporting record stays read only with **Open VO-…**, and the destination keeps its normal scope, instruction, approval and claim checks. Expand **Related evidence** to see each preserved original message/photo, sender/date, reason and exact source record. Linking does not combine prices or create another claim value. New saved claims capture the related evidence with that assessment; earlier claims and exports stay unchanged. This remains a local mock workflow.
+
 Use **View evidence** on a work item or VO in Choose work, Enter totals or Review. The read-only panel shows the original message/photo, sender/date and supervisor or VO decision supporting that claim cutoff. Closing with Done, the close button or Escape returns to the same item without changing selections, unfinished inputs or saved claims.
 
 In **Preview & export**, each saved schedule item opens evidence captured with that exact version. New site updates, changed reviews or missing live records never replace its saved evidence. Missing attachments are shown explicitly. These controls stay out of the printed claim; its existing evidence appendix remains available.

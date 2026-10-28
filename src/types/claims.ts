@@ -1,4 +1,4 @@
-import type { ContractDetails, InputNumber, SiteReport, VOHistoryEntry } from './domain';
+import type { ContractDetails, InputNumber, SiteReport, VOHistoryEntry, VORelatedEvidence } from './domain';
 
 export interface ClaimBasis {
   version: number; billingMethod: string; retentionMode: string; retentionRate: number | null;
@@ -43,7 +43,7 @@ export interface ClaimRow {
   description?: string; title?: string; unit?: string; rate?: InputNumber;
   included: boolean; eligible: boolean; exclusionReason: string; previousValue: number | null;
   cumulativeValue: number | null; currentValue: number | null; issues: string[];
-  evidence?: SiteReport | null; areaEvidence?: SiteReport[]; sourcePage?: number | null;
+  evidence?: SiteReport | null; areaEvidence?: SiteReport[]; relatedEvidence?: VORelatedEvidence[]; sourcePage?: number | null;
   verifiedAt?: string | null; evidenceDateConfirmation?: EvidenceDateConfirmation | null;
   assessedQuantity?: number | null; assessedValue?: number | null;
   approvedValue?: number | null; approvalReference?: string; approvalDate?: string | null;
@@ -106,6 +106,7 @@ export interface ClaimEvidenceReference {
   matchReview?: SiteReport['matchReview'];
   voiceNote?: SiteReport['voiceNote'];
   channel?: string; reportedInstructionReference?: string | null;
+  relatedVO?: { linkId: string; sourceCaseId: string; sourceReference: string; reason: string; linkedAt: string; linkedBy: string };
 }
 export interface ClaimPack {
   id: string; draftId: string; projectId: string; period: string; cutoff: string | null; currency: string;

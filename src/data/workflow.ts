@@ -42,7 +42,7 @@ export function getProjectWorkflow(project: Project, period = currentMonth()) {
     && message.projectId === project.id && !reports.some((report) => report.sourceMessageId === message.id))
     .sort((a, b) => timestamp(b.date) - timestamp(a.date));
   const cases = getVOCases({ ...project, items, reports });
-  const openVOs = cases.filter((entry) => !['approved', 'rejected'].includes(entry.status) || entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible);
+  const openVOs = cases.filter((entry) => !['approved', 'rejected', 'linked'].includes(entry.status) || entry.status === 'approved' && entry.claimEligibility !== 'excluded' && !getVOClaimEligibility(entry).eligible);
   const currentDrafts = list(project.claimDrafts).filter((draft) => draft.projectId === project.id
     && draft.snapshot?.projectId === project.id && draft.period === period && draft.snapshot.period === period
     && ['draft', 'prepared'].includes(draft.status) && Number.isInteger(draft.revision))

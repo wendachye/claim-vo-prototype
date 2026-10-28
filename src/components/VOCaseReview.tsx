@@ -1,7 +1,7 @@
 import type { Project, VOCase, SiteReport } from '../types/domain';
 import { useRef, useState, useEffect, type ReactNode, type RefObject } from 'react';
-import { ArrowRight, CheckCheck, ChevronDown, CircleAlert, ImageOff, RotateCcw, Save, ZoomIn } from 'lucide-react';
-import { VO_STATUS_LABELS, VO_SCOPE_LABELS, VO_INSTRUCTION_LABELS, VO_EXECUTION_LABELS, VO_ELIGIBILITY_LABELS, getVOClaimEligibility } from '../data/vo';
+import { ArrowRight, CheckCheck, ChevronDown, CircleAlert, ImageOff, Link2, RotateCcw, Save, ZoomIn } from 'lucide-react';
+import { VO_STATUS_LABELS, VO_SCOPE_LABELS, VO_INSTRUCTION_LABELS, VO_EXECUTION_LABELS, VO_ELIGIBILITY_LABELS, getVOClaimEligibility, getVOEvidenceLink, getVORelatedEvidence } from '../data/vo';
 import { clearFormBuffer } from '../data/form-buffer';
 import { useBufferedState } from './useFormBuffer';
 import { BackButton, Badge, Button, FormActions, FormField, SelectField, formatMoney, formatTime } from './ui';
@@ -9,8 +9,9 @@ import './vo-case-review.css';
 import { VOConfirmationPanel, type VOConfirmationPanelProps } from './VOConfirmationPanel';
 import { getVOConfirmationApprovalValues } from '../data/vo-confirmation';
 import { ActionMenu } from './ActionMenu';
+import { VOLinkForm } from './VOLinkForm';
 
-const tone = (status: string) => status === 'approved' ? 'green' : status === 'pendingApproval' ? 'blue' : status === 'rejected' ? 'slate' : 'amber';
+const tone = (status: string) => status === 'approved' ? 'green' : status === 'pendingApproval' ? 'blue' : ['rejected', 'linked'].includes(status) ? 'slate' : 'amber';
 const dateLabel = (value?: string | null) => value && !Number.isNaN(new Date(value).getTime()) ? formatTime(value) : 'Date not recorded';
 const amountLabel = (value: string | number | null | undefined, currency: string) => value == null || value === '' ? 'Unknown' : `${currency} ${formatMoney(value)}`;
 const actionLabel = (action: string) => ({ save: 'QS review saved', clarify: 'Marked needs information', submit: 'Marked awaiting price approval', approve: 'Price approval recorded', assessEligibility: 'Claim eligibility recorded', reject: 'Review closed', reopen: 'Review reopened' } as Record<string, string>)[action] || action;
@@ -21,7 +22,7 @@ type VOFields = ReturnType<typeof fieldsFor>;
 export type VOActionValues = Omit<VOFields, 'reviewNote'> & { reviewNote?: string };
 export interface VOPhoto { src: string; alt?: string | null }
 export interface VOActionResult { outcome: string; error?: string }
-export interface VOCaseReviewProps { entry: VOCase; project: Project; currency: string; onAction?: (caseId: string, action: string, values: VOActionValues) => VOActionResult | undefined; onPhoto?: (photo: VOPhoto) => void; onOpenContract?: (itemId: string, caseId: string) => void; onOpenClaims?: (caseId: string) => void; onBack?: () => void; backLabel?: string; headingRef?: RefObject<HTMLHeadingElement | null>; onCreateConfirmation?: VOConfirmationPanelProps['onCreate']; onConfirmationReply?: VOConfirmationPanelProps['onReply'] }
+export interface VOCaseReviewProps { entry: VOCase; project: Project; currency: string; onAction?: (caseId: string, action: string, values: VOActionValues) => VOActionResult | undefined; onLink?: (sourceId: string, targetId: string, reason: string) => VOActionResult | undefined; onOpenRelatedCase?: (caseId: string) => void; onPhoto?: (photo: VOPhoto) => void; onOpenContract?: (itemId: string, caseId: string) => void; onOpenClaims?: (caseId: string) => void; onBack?: () => void; backLabel?: string; headingRef?: RefObject<HTMLHeadingElement | null>; onCreateConfirmation?: VOConfirmationPanelProps['onCreate']; onConfirmationReply?: VOConfirmationPanelProps['onReply'] }
 const labelFor = (labels: Readonly<Record<string, string>>, key?: string) => key ? labels[key] : undefined;
 
 function EvidencePhoto({ report, onOpen }: { report: SiteReport; onOpen?: (photo: VOPhoto) => void }) {
@@ -35,7 +36,7 @@ function CheckSection({ title, status, children }: { title: string; status?: Rea
   return <section className="vo-check-section" aria-label={title}><header><h3>{title}</h3><span className="vo-check-state">{status}</span></header>{children}</section>;
 }
 
-export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOpenContract, onOpenClaims, onBack, backLabel, headingRef, onCreateConfirmation, onConfirmationReply }: VOCaseReviewProps) {
+export function VOCaseReview({ entry, project, currency, onAction, onLink, onOpenRelatedCase, onPhoto, onOpenContract, onOpenClaims, onBack, backLabel, headingRef, onCreateConfirmation, onConfirmationReply }: VOCaseReviewProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
   const formScope = `vo:${JSON.stringify([entry.id, entry.status, entry.history.length])}`;
   const [buffer, setFields] = useBufferedState(project.id, formScope, () => fieldsFor(entry));
@@ -48,6 +49,8 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
   const actionScope = `${formScope}:action`;
   const [reviewAction, setReviewAction] = useBufferedState<'clarify' | 'reject' | 'reopen' | null>(project.id, actionScope, null);
   const [noteRequested, setNoteRequested] = useState(false);
+  const [linkOpen, setLinkOpen] = useBufferedState(project.id, `vo-link-open:${entry.id}`, false);
+  const restoreActionsFocus = useRef(false);
   const noteRef = useRef<HTMLTextAreaElement | null>(null);
   const editable = ['flagged', 'clarification'].includes(entry.status);
   const approved = entry.status === 'approved';
@@ -58,6 +61,10 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
   const canReviewChecks = editable || editingEligibility;
   const closingScope = closureDispositions.includes(fields.scopeDisposition);
   const report = entry.report;
+  const linked = getVOEvidenceLink(project, entry.id);
+  const readOnlyLinked = entry.status === 'linked';
+  const showingLink = linkOpen && Boolean(onLink);
+  const related = getVORelatedEvidence(project, entry.id);
   const manual = report.channel === 'manual-vo-mock';
   const contractItem = project.items.find(item => item.id === fields.relatedItemId);
   const eligibility = getVOClaimEligibility(entry);
@@ -76,6 +83,12 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
     if (reviewAction || noteRequested) noteRef.current?.focus();
   }, [reviewAction, noteRequested]);
   useEffect(() => {
+    if (!showingLink && restoreActionsFocus.current) {
+      restoreActionsFocus.current = false;
+      formRef.current?.querySelector<HTMLButtonElement>('.action-menu-trigger')?.focus();
+    }
+  }, [showingLink]);
+  useEffect(() => {
     if (!errorField) return;
     const control = formRef.current?.querySelector<HTMLElement>(`[name="${errorField}"]`);
     let parent = control?.closest('details');
@@ -84,6 +97,13 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
   }, [error, errorField]);
   function chooseAction(action: 'clarify' | 'reject' | 'reopen') {
     setReviewAction(action); setError(''); setErrorField(''); setSaved('');
+  }
+  function chooseLink() {
+    if (hasEdits || reviewAction) return problem('Save or finish your review changes before linking this VO.');
+    setLinkOpen(true); setError(''); setErrorField(''); setSaved('');
+  }
+  function closeLink() {
+    restoreActionsFocus.current = true; setLinkOpen(false);
   }
   function act(action: string) {
     const values = { ...fields };
@@ -152,7 +172,11 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
     <header className="vo-panel-header"><div><span className="vo-reference">{entry.reference}</span><h2 id="vo-detail-heading" ref={headingRef} tabIndex={-1}>{entry.title || 'Flagged extra work'}</h2></div><Badge tone={tone(entry.status)}>{approved ? 'Price approved' : labelFor(VO_STATUS_LABELS, entry.status)}</Badge></header>
     <div className="vo-detail-body">
       <details className="vo-evidence-details" open><summary><span><strong>{manual ? 'Manual entry & photo' : 'Original message & photo'}</strong><small>{report.sender || 'Sender not recorded'} · {dateLabel(report.date)}</small></span><ChevronDown size={16} aria-hidden="true" /></summary><div><blockquote className="vo-source-message">{report.message || 'No source message attached.'}</blockquote><p className="vo-source-location">{[report.location, report.area].filter(Boolean).join(' · ')}</p><EvidencePhoto report={report} onOpen={onPhoto}/><details className="vo-source-details"><summary>Source details</summary><p>Report: {report.id}{report.sourceMessageId && <><br/>Message: {report.sourceMessageId}</>}<br/>{manual ? 'Manual extra-work entry · local demo' : report.channel === 'whatsapp-mock' ? 'Simulated WhatsApp message' : 'Demo site report'}{manual && report.reportedInstructionReference && <><br/>Reported instruction/reference: {report.reportedInstructionReference}</>}</p></details>{report.reviewReason && <p className="vo-legacy-note"><strong>Earlier review note:</strong> {report.reviewReason}</p>}</div></details>
-      <form ref={formRef} onSubmit={event => event.preventDefault()} className="vo-checks-form">
+      {related.length > 0 && <details className="vo-related-evidence"><summary><strong>Related evidence</strong><span>{related.length} {related.length === 1 ? 'linked record' : 'linked records'}</span><ChevronDown size={15} aria-hidden="true"/></summary><div>{related.map(({ link, report: source }) => <article key={link.id} className="vo-related-record"><header><div><strong>{link.sourceReference}</strong><small>{source.sender || 'Sender not recorded'} · {dateLabel(source.date)}</small></div>{onOpenRelatedCase && <Button className="ghost" onClick={() => onOpenRelatedCase(link.sourceCaseId)}>Open record<ArrowRight size={13}/></Button>}</header><blockquote className="vo-source-message">{source.message || 'No source message attached.'}</blockquote><p className="vo-source-location">{[source.location, source.area].filter(Boolean).join(' · ')}</p><EvidencePhoto report={source} onOpen={onPhoto}/><p className="vo-link-reason"><strong>Reason for linking:</strong> {link.reason}</p><small className="vo-link-meta">Linked {dateLabel(link.linkedAt)} · {link.linkedBy}</small></article>)}</div></details>}
+      {linked && <section className="vo-linked-summary" aria-label="Linked VO"><h3><Link2 size={15} aria-hidden="true"/>Linked to {linked.targetReference}</h3><p>{linked.reason}</p><small>Linked {dateLabel(linked.linkedAt)} · {linked.linkedBy}</small><p>This record is supporting evidence only. Its work is reviewed and priced in the linked VO.</p>{onOpenRelatedCase && <Button onClick={() => onOpenRelatedCase(linked.targetCaseId)}>Open {linked.targetReference}<ArrowRight size={14}/></Button>}</section>}
+      {readOnlyLinked && !linked && <section className="vo-linked-summary" aria-label="Saved evidence link needs review"><h3>Saved evidence link needs review</h3><p>The original evidence is retained. A valid destination could not be confirmed, so this record cannot be reviewed or claimed separately.</p></section>}
+      {!readOnlyLinked && showingLink && onLink && <VOLinkForm project={project} entry={entry} onSave={onLink} onClose={closeLink}/>}
+      {!readOnlyLinked && !showingLink && <form ref={formRef} onSubmit={event => event.preventDefault()} className="vo-checks-form">
         {hasEdits && <p className="vo-unsaved" role="status">Unsaved changes · Save before refreshing.</p>}
         {rejected && <section className="vo-closed-summary" aria-label="Review closed"><header><h3>Review closed</h3><Badge>Excluded from new claims</Badge></header><p>{closedReason}</p></section>}
         <details className="vo-work-review" open={editable || undefined}>
@@ -191,6 +215,7 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
         <FormActions className="vo-action-row" secondary={<>
           {reviewAction ? <Button onClick={() => { setReviewAction(null); clearFormBuffer(project.id, actionScope); setError(''); setErrorField(''); }}>Cancel action</Button> : editable && <Button className="ghost" icon={Save} onClick={() => act('save')}>Save draft</Button>}
           <ActionMenu label="Review actions" items={[
+            editable && onLink && {label:'Link to existing VO',icon:Link2,onSelect:chooseLink},
             !approved && !rejected && {label:'Need information',onSelect:()=>chooseAction('clarify')},
             !approved && !rejected && {label:'Reject',onSelect:()=>chooseAction('reject')},
             (approved || rejected) && {label:'Reopen review',icon:RotateCcw,onSelect:()=>chooseAction('reopen')},
@@ -202,8 +227,8 @@ export function VOCaseReview({ entry, project, currency, onAction, onPhoto, onOp
             {eligibility.eligible && <Button className={editingEligibility && hasEdits ? '' : 'primary'} icon={ArrowRight} disabled={hasEdits} onClick={() => onOpenClaims?.(entry.id)}>Review in monthly claim</Button>}
           </> : null}
         </FormActions>
-      </form>
-      <details className="vo-history"><summary>Review history <span>{history.length} {history.length === 1 ? 'action' : 'actions'}</span></summary><ol>{history.map((event,index) => <li key={event.id || `${event.date}-${index}`}><i className={`vo-history-dot ${event.to === 'approved' ? 'approved' : ''}`}/><div><div className="vo-history-heading"><strong>{actionLabel(event.action)}</strong></div>{event.values?.reviewNote && <p>{event.values.reviewNote}</p>}{event.action === 'approve' && <p>{amountLabel(event.values?.approvedValue,currency)} · {event.values?.approver} · {event.values?.approvalReference}</p>}{event.action === 'assessEligibility' && <p>{labelFor(VO_ELIGIBILITY_LABELS, event.values?.claimEligibility) || 'Checks recorded'} · {event.values?.eligibilityNote}</p>}<small>{dateLabel(event.date)} · {event.actor || 'Demo QS reviewer'}</small></div></li>)}<li><i className="vo-history-dot"/><div><strong>{manual ? 'Extra work added manually' : 'Extra work flagged'}</strong><p>{manual ? 'Original entry and optional photo retained.' : 'Original message and photo retained.'}</p><small>{dateLabel(report.date)} · {report.sender || 'Demo site report'}</small></div></li></ol></details>
+      </form>}
+      <details className="vo-history"><summary>Review history <span>{history.length + (linked ? 1 : 0)} {history.length + (linked ? 1 : 0) === 1 ? 'action' : 'actions'}</span></summary><ol>{linked && <li><i className="vo-history-dot"/><div><strong>Linked to {linked.targetReference}</strong><p>{linked.reason}</p><small>{dateLabel(linked.linkedAt)} · {linked.linkedBy}</small></div></li>}{history.map((event,index) => <li key={event.id || `${event.date}-${index}`}><i className={`vo-history-dot ${event.to === 'approved' ? 'approved' : ''}`}/><div><div className="vo-history-heading"><strong>{actionLabel(event.action)}</strong></div>{event.values?.reviewNote && <p>{event.values.reviewNote}</p>}{event.action === 'approve' && <p>{amountLabel(event.values?.approvedValue,currency)} · {event.values?.approver} · {event.values?.approvalReference}</p>}{event.action === 'assessEligibility' && <p>{labelFor(VO_ELIGIBILITY_LABELS, event.values?.claimEligibility) || 'Checks recorded'} · {event.values?.eligibilityNote}</p>}<small>{dateLabel(event.date)} · {event.actor || 'Demo QS reviewer'}</small></div></li>)}<li><i className="vo-history-dot"/><div><strong>{manual ? 'Extra work added manually' : 'Extra work flagged'}</strong><p>{manual ? 'Original entry and optional photo retained.' : 'Original message and photo retained.'}</p><small>{dateLabel(report.date)} · {report.sender || 'Demo site report'}</small></div></li></ol></details>
     </div>
   </section>;
 }

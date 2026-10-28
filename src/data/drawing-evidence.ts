@@ -5,6 +5,7 @@ import { getWhatsAppMessages } from './whatsapp.ts';
 import { needsProgressClarification } from './report-status.ts';
 import { getMessageClarification } from './whatsapp-clarification.ts';
 import { getMessageReviewStatus } from './message-inbox.ts';
+import { getVOCases } from './vo.ts';
 import { getMessageMatchContext } from './message-match.ts';
 import { getVoiceNoteContext, isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 
@@ -79,6 +80,7 @@ const voStates: Record<string, { label: string; tone: string }> = {
   pendingApproval: { label: 'Awaiting approval', tone: 'amber' },
   approved: { label: 'Approved', tone: 'green' },
   rejected: { label: 'Rejected', tone: 'slate' },
+  linked: { label: 'Linked to existing VO', tone: 'slate' },
 };
 const matchLabels = {
   'saved-area': 'Saved area reference',
@@ -94,9 +96,7 @@ function stateFor(project: Project, report: SiteReport | null, message: WhatsApp
   }
   if (report) {
     if (kind === 'vo') {
-      const review = (Array.isArray(project.voReviews) ? project.voReviews : []).find((entry) => inProject(project, entry)
-        && entry.projectId === project.id && entry.id === report.id && entry.reportId === report.id
-        && typeof entry.status === 'string' && Object.hasOwn(voStates, entry.status));
+      const review = getVOCases(project).find((entry) => entry.id === report.id && Object.hasOwn(voStates, entry.status));
       const status = review?.status || (report.status === 'rejected' ? 'rejected' : 'flagged');
       return { status, ...voStates[status] };
     }

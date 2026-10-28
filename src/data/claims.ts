@@ -1,7 +1,7 @@
 import type { ClaimAssessment, ClaimAssessmentRow, ClaimRow, ClaimWorkRow, ClaimVORow, ClaimReview, ClaimDraft, ClaimTotals } from '../types/claims';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
 import { getItemAreaAllocation, getItemAreaRollup, getItemAreaSplitStartedAt } from './area-allocations.ts';
-import { getVOCases, getVOClaimEligibility } from './vo.ts';
+import { getVOCases, getVOClaimEligibility, getVORelatedEvidence } from './vo.ts';
 import { captureClaimProjectDetails } from './claim-pack.ts';
 import { normalizeClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum, claimBasisDifference, applyClaimBasis } from './claim-basis.ts';
 
@@ -103,6 +103,7 @@ function verificationFor(project: Project, item: WorkItem, end: number): {verifi
 }
 
 function approvedEvidence(entry: VOCase, end: number) {
+  if (entry.status === 'linked' && entry.linkedTo) return { eligible: false, exclusionReason: `Linked to ${entry.linkedTo.targetReference}; assess that VO once.`, approval: null };
   if (entry.status !== 'approved') return { eligible: false, exclusionReason: 'VO is not currently approved.', approval: null };
   const event = [...entry.history].reverse().find((value) => value.action === 'approve' && value.to === 'approved');
   if (!event || !Number.isFinite(dateTime(event.date))) return { eligible: false, exclusionReason: 'Approval date is not recorded.', approval: null };
@@ -184,6 +185,7 @@ export function buildClaimReview(project: Project, period: string, input: unknow
   const voRows: ClaimVORow[] = getVOCases(project).map((entry) => {
     const entered = assessment.vos[entry.id] || {};
     const approval = approvedEvidence(entry, end);
+    const relatedEvidence = getVORelatedEvidence(project, entry.id);
     const previousValue = entered.previousValue ?? (assessment.priorConfirmed ? 0 : null);
     const included = entered.include === true || (entered.previousValue ?? 0) > 0;
     const assessedValue = entered.assessedValue ?? null;
@@ -203,6 +205,7 @@ export function buildClaimReview(project: Project, period: string, input: unknow
       approvedValue: entry.approvedValue, approvalReference: entry.approvalReference,
       approver: entry.approver, approvalDate: approval.approval?.date || null,
       approval: approval.approval, evidence: clone(entry.report),
+      ...(relatedEvidence.length ? { relatedEvidence: clone(relatedEvidence) } : {}),
       ...(entry.reviewChecksVersion === 1 ? { eligibilityReview: clone({
         scopeDisposition: entry.scopeDisposition, scopeAssessment: entry.scopeAssessment, relatedItemId: entry.relatedItemId,
         instructionStatus: entry.instructionStatus,

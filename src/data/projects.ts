@@ -1,7 +1,7 @@
 import type { Project, ProjectWorkflow, ProjectValues, Workspace, WorkItem, SiteReport, ContractDetails } from "../types/domain";
 import { contract, initialItems, initialReports } from './contract.ts';
 import { getWhatsAppMessages, seedWhatsAppMessages } from './whatsapp.ts';
-import { normalizeVOReviews } from './vo.ts';
+import { normalizeVOReviews, normalizeVOEvidenceLinks, getVOEvidenceLinkIssues } from './vo.ts';
 import { normalizeVOConfirmationRequests } from './vo-confirmation.ts';
 import { normalizeClaimDrafts } from './claims.ts';
 import { normalizeClaimTracking } from './claim-tracking.ts';
@@ -275,6 +275,11 @@ function normalizeProject(project: Project): Project {
     ...base, ...project, ...seed, whatsappMessages: seed.whatsappMessages,
   }));
   seed.voReviews = normalizeVOReviews({ ...project, ...seed, voReviews: seed.voReviews });
+  if (seed.voEvidenceLinks !== undefined || seed.voEvidenceLinkIssues !== undefined) {
+    const seedProject = { ...project, ...seed, voEvidenceLinks: seed.voEvidenceLinks, voEvidenceLinkIssues: seed.voEvidenceLinkIssues };
+    seed.voEvidenceLinks = normalizeVOEvidenceLinks(seedProject);
+    seed.voEvidenceLinkIssues = getVOEvidenceLinkIssues(seedProject);
+  }
   if (seed.voConfirmationRequests !== undefined) seed.voConfirmationRequests = normalizeVOConfirmationRequests({ ...project, ...seed, voConfirmationRequests: seed.voConfirmationRequests });
   seed.claimDrafts = normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts });
   seed.messageClarifications = normalizeMessageClarifications({ ...project, ...seed, messageClarifications: seed.messageClarifications });
@@ -290,6 +295,9 @@ function normalizeProject(project: Project): Project {
     whatsappMessages: clone(getWhatsAppMessages(project)),
     messageClarifications: normalizeMessageClarifications(project),
     voReviews: normalizeVOReviews(project),
+    ...(project.voEvidenceLinks !== undefined || project.voEvidenceLinkIssues !== undefined ? {
+      voEvidenceLinks: normalizeVOEvidenceLinks(project), voEvidenceLinkIssues: getVOEvidenceLinkIssues(project),
+    } : {}),
     ...(project.voConfirmationRequests !== undefined ? { voConfirmationRequests: normalizeVOConfirmationRequests(project) } : {}),
     claimDrafts: normalizeClaimDrafts(project),
     claimTracking: normalizeClaimTracking(project),
@@ -365,12 +373,19 @@ export function resetProject(project: Project): Project {
   claimDrafts: normalizeClaimDrafts({ ...project, ...seed, claimDrafts: seed.claimDrafts }),
   claimTracking: project.claimExamplesDemo === true ? normalizeClaimTracking({ ...project, ...seed, claimTracking: seed.claimTracking }) : [], messageClarifications: [],
   ...(project.voConfirmationRequests !== undefined || seed.voConfirmationRequests !== undefined ? { voConfirmationRequests: [] } : {}) };
+  if (seed.voEvidenceLinks !== undefined || seed.voEvidenceLinkIssues !== undefined) {
+    const seedProject = { ...project, ...resetSeed, voEvidenceLinks: seed.voEvidenceLinks, voEvidenceLinkIssues: seed.voEvidenceLinkIssues };
+    resetSeed.voEvidenceLinks = normalizeVOEvidenceLinks(seedProject);
+    resetSeed.voEvidenceLinkIssues = getVOEvidenceLinkIssues(seedProject);
+  }
   const next = { ...clone(project), ...resetSeed, seed: clone(resetSeed) };
   if (project.claimExamplesDemo !== true && project.areaSplitDemo !== true) delete next.lockedAt;
   if (!seed.contractVersion || seed.contractVersion.version !== next.version) delete next.contractVersion;
   if (!Array.isArray(seed.contractTotalReviews)) delete next.contractTotalReviews;
   if (!Array.isArray(seed.messageMatchReviews)) delete next.messageMatchReviews;
   if (!Array.isArray(seed.voiceTranscriptReviews)) delete next.voiceTranscriptReviews;
+  if (!Array.isArray(seed.voEvidenceLinks)) delete next.voEvidenceLinks;
+  if (!Array.isArray(seed.voEvidenceLinkIssues)) delete next.voEvidenceLinkIssues;
   if (project.areaSplitDemo !== true) delete next.drawingMapping;
   return next;
 }

@@ -1,4 +1,4 @@
-import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
+import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, VOEvidenceLink, VORelatedEvidence, DrawingArea, DateInput } from '../types/domain';
 // Browser-local QS review records. Recording an approval here sends nothing externally.
 export const VO_STATUS_LABELS: Readonly<Record<string, string>> = Object.freeze({
   flagged: 'Flagged',
@@ -6,6 +6,7 @@ export const VO_STATUS_LABELS: Readonly<Record<string, string>> = Object.freeze(
   pendingApproval: 'Awaiting approval',
   approved: 'Approved',
   rejected: 'Rejected',
+  linked: 'Linked to existing VO',
 });
 
 export const VO_SCOPE_LABELS: Readonly<Record<string, string>> = Object.freeze({
@@ -25,7 +26,7 @@ const inProject = (project: Project, entry: unknown) => record(entry)
   && (entry.projectId == null || entry.projectId === '' || entry.projectId === project?.id)
   && (entry.projectCode == null || entry.projectCode === '' || (typeof entry.projectCode === 'string'
     && text(entry.projectCode).toUpperCase() === text(project?.code).toUpperCase()));
-const statuses = Object.keys(VO_STATUS_LABELS);
+const statuses = Object.keys(VO_STATUS_LABELS).filter(status => status !== 'linked');
 const editable = ['flagged', 'clarification'];
 const open = [...editable, 'pendingApproval'];
 const checkFields = ['scopeDisposition', 'instructionStatus', 'executionStatus', 'executionReference', 'claimEligibility', 'eligibilityNote'];
@@ -44,7 +45,7 @@ export function normalizeVOReviews(project: Project): VOReview[] {
     seen.add(entry.id);
     return true;
   }).map((entry) => {
-    const { report, ...review } = entry;
+    const { report, linkedTo, evidenceLinkIssue, relatedEvidence, ...review } = entry;
     return clone(review);
   });
 }
@@ -56,7 +57,7 @@ function titleFor(report: SiteReport) {
   return `Possible extra work${report.area ? ` · ${report.area}` : ''}`;
 }
 
-export function getVOCases(project: Project): VOCase[] {
+function getBaseVOCases(project: Project): VOCase[] {
   const saved = normalizeVOReviews(project);
   const seen = new Set();
   return (Array.isArray(project?.reports) ? project.reports : []).filter((report) => {
@@ -88,6 +89,118 @@ export function getVOCases(project: Project): VOCase[] {
       report,
     };
   });
+}
+
+const validLinkText = (value: unknown, limit = 300): value is string => typeof value === 'string'
+  && value === value.trim() && !!value && value.length <= limit;
+const linkActor = 'Alex Tan · Demo QS reviewer';
+const linkableStatus = (entry: VOCase) => editable.includes(entry.status)
+  && entry.report.status !== 'voApproved'
+  && entry.approvedValue == null && !entry.approvalReference && !entry.approver
+  && entry.history.every(event => record(event) && typeof event.action === 'string' && validDate(event.date))
+  && !entry.history.some(event => record(event) && (event.action === 'approve' || event.to === 'approved'));
+
+function includedInSavedClaim(project: Project, caseId: string) {
+  return (Array.isArray(project.claimDrafts) ? project.claimDrafts : []).some(draft => record(draft)
+    && (record(draft.assessment) && record(draft.assessment.vos) && record(draft.assessment.vos[caseId]) && draft.assessment.vos[caseId].include === true
+      || record(draft.snapshot) && Array.isArray(draft.snapshot.voRows) && draft.snapshot.voRows.some(row => record(row)
+        && (row.caseId === caseId || row.id === caseId) && row.included === true)));
+}
+
+function exactBaseCase(project: Project, caseId: unknown, cases = getBaseVOCases(project)): VOCase | null {
+  if (!validLinkText(caseId)) return null;
+  const reports = (Array.isArray(project.reports) ? project.reports : []).filter(value => record(value) && value.id === caseId);
+  const reviews = (Array.isArray(project.voReviews) ? project.voReviews : []).filter(value => record(value) && value.id === caseId);
+  if (reports.length !== 1 || reports[0].vo !== true || !inProject(project, reports[0]) || reviews.length > 1
+    || reviews.some(value => value.projectId !== project.id || value.reportId !== caseId || !inProject(project, value))) return null;
+  return cases.find(entry => entry.id === caseId) ?? null;
+}
+
+function validFrozenReport(value: unknown, project: Project, source: VOCase): value is SiteReport {
+  return record(value) && value.id === source.report.id && value.vo === true && inProject(project, value)
+    && typeof value.status === 'string' && value.sourceMessageId === source.report.sourceMessageId
+    && ['message', 'text', 'sender', 'senderRole', 'channel', 'photoAlt'].every(field => value[field] == null || typeof value[field] === 'string')
+    && ['itemId', 'area', 'location'].every(field => value[field] == null || typeof value[field] === 'string')
+    && (value.date == null || validDate(value.date))
+    && (value.photo == null || typeof value.photo === 'string' || record(value.photo) && typeof value.photo.url === 'string');
+}
+
+function linkValidation(project: Project) {
+  const raw: unknown[] = Array.isArray(project?.voEvidenceLinks) ? project.voEvidenceLinks : [];
+  const cases = getBaseVOCases(project);
+  const issues = new Set<string>((Array.isArray(project.voEvidenceLinkIssues) ? project.voEvidenceLinkIssues : [])
+    .filter(id => validLinkText(id) && exactBaseCase(project, id, cases)));
+  const candidates: VOEvidenceLink[] = [];
+  for (const value of raw) {
+    if (record(value) && value.projectId !== project.id) continue;
+    const source = record(value) ? exactBaseCase(project, value.sourceCaseId, cases) : null;
+    const target = record(value) ? exactBaseCase(project, value.targetCaseId, cases) : null;
+    const valid = record(value) && value.version === 1 && validLinkText(value.id) && value.projectId === project.id
+      && source && target && source.id !== target.id && linkableStatus(source)
+      && validLinkText(value.sourceReference) && validLinkText(value.targetReference)
+      && value.sourceReference === source.reference && value.targetReference === target.reference
+      && validLinkText(value.reason, 2000) && validDate(value.linkedAt) && value.linkedBy === linkActor
+      && validFrozenReport(value.sourceReport, project, source)
+      && !includedInSavedClaim(project, source.id);
+    if (!valid) { if (source) issues.add(source.id); continue; }
+    candidates.push(clone(value) as unknown as VOEvidenceLink);
+  }
+  // No arbitrary winner for duplicate IDs, competing destinations, chains or cycles.
+  const links = candidates.filter(candidate => {
+    const ambiguous = raw.filter(value => record(value) && value.projectId === project.id && value.id === candidate.id).length !== 1
+      || raw.filter(value => record(value) && value.projectId === project.id && value.sourceCaseId === candidate.sourceCaseId).length !== 1
+      || candidates.some(other => other.sourceCaseId === candidate.targetCaseId || other.targetCaseId === candidate.sourceCaseId);
+    if (ambiguous) issues.add(candidate.sourceCaseId);
+    return !ambiguous;
+  }).filter(link => !issues.has(link.sourceCaseId));
+  return { links, issues: [...issues] };
+}
+
+/** Validate append-only associations without rewriting their original reports or QS decisions. */
+export function normalizeVOEvidenceLinks(project: Project): VOEvidenceLink[] { return linkValidation(project).links; }
+export function getVOEvidenceLinkIssues(project: Project): string[] { return linkValidation(project).issues; }
+export function getVOEvidenceLink(project: Project, caseId: string): VOEvidenceLink | null {
+  return normalizeVOEvidenceLinks(project).find(link => link.sourceCaseId === caseId) ?? null;
+}
+export function getVORelatedEvidence(project: Project, caseId: string): VORelatedEvidence[] {
+  return normalizeVOEvidenceLinks(project).filter(link => link.targetCaseId === caseId)
+    .map(link => ({ link: clone(link), report: clone(link.sourceReport) }));
+}
+export function getVOCases(project: Project): VOCase[] {
+  const { links, issues } = linkValidation(project);
+  return getBaseVOCases(project).map(entry => {
+    const linkedTo = links.find(link => link.sourceCaseId === entry.id);
+    return linkedTo ? { ...entry, status: 'linked', linkedTo: clone(linkedTo) }
+      : issues.includes(entry.id) ? { ...entry, status: 'linked', evidenceLinkIssue: true as const } : entry;
+  });
+}
+export function getVOLinkTargets(project: Project, sourceCaseId: string): VOCase[] {
+  const cases = getBaseVOCases(project), source = exactBaseCase(project, sourceCaseId, cases);
+  const { links, issues } = linkValidation(project);
+  if (!source || !linkableStatus(source) || includedInSavedClaim(project, sourceCaseId) || issues.includes(sourceCaseId)
+    || links.some(link => link.sourceCaseId === sourceCaseId || link.targetCaseId === sourceCaseId)) return [];
+  return cases.filter(entry => entry.id !== sourceCaseId && exactBaseCase(project, entry.id, cases)
+    && linkableStatus(entry) && !includedInSavedClaim(project, entry.id) && !issues.includes(entry.id)
+    && !links.some(link => link.sourceCaseId === entry.id));
+}
+export function linkVOEvidence(project: Project, sourceCaseId: string, targetCaseId: string, reason: string) {
+  const invalid = (error: string) => ({ project, outcome: 'invalid' as const, error });
+  const cleanReason = text(reason);
+  if (!validLinkText(sourceCaseId) || !validLinkText(targetCaseId) || !cleanReason || cleanReason.length > 2000) return invalid('Choose an existing VO and add a reason of up to 2,000 characters.');
+  const existing = getVOEvidenceLink(project, sourceCaseId);
+  if (existing && existing.targetCaseId === targetCaseId && existing.reason === cleanReason) return { project, outcome: 'unchanged' as const, linkId: existing.id };
+  const source = exactBaseCase(project, sourceCaseId);
+  const target = getVOLinkTargets(project, sourceCaseId).find(entry => entry.id === targetCaseId);
+  if (!source || !target) return invalid('Link two open VOs that have no price approval or saved claim. Awaiting approval must be returned for information first.');
+  const link: VOEvidenceLink = {
+    version: 1, id: crypto.randomUUID(), projectId: project.id, sourceCaseId, targetCaseId,
+    sourceReference: source.reference, targetReference: target.reference, reason: cleanReason,
+    linkedAt: new Date().toISOString(), linkedBy: linkActor, sourceReport: clone(source.report),
+  };
+  return { outcome: 'updated' as const, linkId: link.id, project: { ...project,
+    voEvidenceLinks: [...normalizeVOEvidenceLinks(project), link],
+    history: [{ id: link.id, action: 'VO evidence linked', detail: `${source.reference} → ${target.reference} · ${cleanReason}`, date: link.linkedAt, actor: link.linkedBy }, ...project.history],
+  } };
 }
 
 function amount(value: unknown) {
@@ -125,6 +238,7 @@ export function updateVOReview(project: Project, caseId: string, action: string,
   const unchanged = () => ({ project, outcome: 'unchanged' as const });
   const current = getVOCases(project).find((entry) => entry.id === caseId);
   if (!current) return invalid('Choose a flagged report from the selected project.');
+  if (current.status === 'linked') return invalid('This evidence is linked to an existing VO. Review that VO instead.');
   if (!record(values)) return invalid('Review values must be an object.');
   if (!['save', 'clarify', 'submit', 'approve', 'reject', 'reopen', 'assessEligibility'].includes(action)) return invalid('Choose a valid review action.');
 

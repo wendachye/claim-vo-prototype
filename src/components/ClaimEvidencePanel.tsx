@@ -1,7 +1,7 @@
 import { VoiceNoteEvidenceDetails } from './VoiceNoteReview';
 import type { ReactNode } from 'react';
 import type { ClaimRow } from '../types/claims';
-import type { SiteReport } from '../types/domain';
+import type { SiteReport, VORelatedEvidence } from '../types/domain';
 import { useEffect, useId, useRef, useState } from 'react';
 import { ImageOff, X } from 'lucide-react';
 import { Badge, Button, FormField, SelectField, formatNumber } from './ui';
@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from './ui/sheet';
 import { VO_EXECUTION_LABELS, VO_INSTRUCTION_LABELS, VO_SCOPE_LABELS, VO_STATUS_LABELS } from '../data/vo.ts';
 import './claim-evidence.css';
 import { MessageMatchReviewDetails } from './MessageMatchReview';
+import { isClaimRelatedEvidence } from '../data/claim-pack.ts';
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const known = (value: unknown) => value !== null && value !== undefined && value !== '';
@@ -30,6 +31,24 @@ function Field({ label, children }: {label: string; children: ReactNode}) {
   return <div><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
+function RelatedEvidence({ entry }: { entry: VORelatedEvidence }) {
+  const { link, report } = entry;
+  const [failed, setFailed] = useState(false);
+  const photo = typeof report.photo === 'string' ? report.photo : report.photo?.url;
+  const generated = /^\/assets\/demo-[a-z0-9-]+\.jpg(?:[?#]|$)/.test(photo || '');
+  return <section className="claim-evidence-section" aria-label={`Related evidence from ${link.sourceReference}`}>
+    <h3>{link.sourceReference}</h3>
+    <dl className="claim-evidence-fields"><Field label="Sender">{text(report.sender)}</Field><Field label="Reported">{dateTime(report.date)}</Field><Field label="Area / location">{[report.area, report.location].filter(Boolean).join(' · ') || 'Not recorded'}</Field></dl>
+    <blockquote>{text(report.message, 'No original message was saved with this report.')}</blockquote>
+    {photo && !failed ? <figure className="claim-evidence-photo"><img src={photo} alt={report.photoAlt || 'Photo saved with the related site update'} onError={() => setFailed(true)}/><figcaption>{generated ? 'Generated demo photo · not actual project evidence' : 'Saved site attachment'}</figcaption></figure> : <p className="claim-evidence-context-note">{failed ? 'Photo could not be displayed. The saved original remains available.' : 'No photo was saved with this related update.'}</p>}
+    {report.voiceNote && <VoiceNoteEvidenceDetails evidence={report.voiceNote}/>}
+    {report.matchReview && <MessageMatchReviewDetails review={report.matchReview}/>}
+    <p className="claim-evidence-review-note"><strong>Link reason:</strong> {link.reason}</p>
+    <p className="claim-evidence-context-note">Linked {dateTime(link.linkedAt)} · {link.linkedBy}</p>
+    <details className="claim-evidence-details"><summary>Source details</summary><dl className="claim-evidence-fields"><Field label="Report ID">{report.id}</Field><Field label="Original message ID">{text(report.sourceMessageId)}</Field></dl></details>
+  </section>;
+}
+
 // Receives the assessment row itself. Saved callers pass a frozen snapshot row;
 // this panel deliberately has no access to the current project or message store.
 export function ClaimEvidencePanel({ row, kind, projectId, period, revision = null, cutoff, onClose }: { row: ClaimRow | null | undefined; kind: 'work' | 'vo'; projectId: string; period: string; revision?: number | null; cutoff: string | null; onClose: () => void }) {
@@ -42,10 +61,12 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
   const selectionContext = JSON.stringify([projectId, period, revision, row?.id]);
   const [selection, setSelection] = useState<{ context: string; reportId: string } | null>(null);
   const evidence = hasAreaEvidence ? areaEvidence.find((report) => selection?.context === selectionContext && report.id === selection.reportId) || areaEvidence[0] || null : record(row?.evidence) ? row.evidence : null;
+  const relatedValid = row?.relatedEvidence === undefined || isClaimRelatedEvidence(row.relatedEvidence, projectId, row.id);
+  const relatedEvidence = kind === 'vo' && relatedValid ? row?.relatedEvidence || [] : [];
   const manual = evidence?.channel === 'manual-vo-mock';
   const unavailable = !record(row) || !['work', 'vo'].includes(kind)
     || (row.projectId && row.projectId !== projectId)
-    || (evidence?.projectId && evidence.projectId !== projectId) || (hasAreaEvidence && !areaEvidence.length);
+    || (evidence?.projectId && evidence.projectId !== projectId) || (hasAreaEvidence && !areaEvidence.length) || !relatedValid;
   const photoData: unknown = evidence?.photo;
   const photoValue = typeof photoData === 'string' ? photoData : record(photoData) ? photoData.url || photoData.src : null;
   const photo = typeof photoValue === 'string' ? photoValue : null;
@@ -81,6 +102,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
             </section>
             {evidence?.voiceNote && <VoiceNoteEvidenceDetails evidence={evidence.voiceNote}/>}
             {evidence?.matchReview && <MessageMatchReviewDetails review={evidence.matchReview}/>}
+            {!!relatedEvidence.length && <details className="claim-evidence-details"><summary>Related evidence ({relatedEvidence.length})</summary><p className="claim-evidence-context-note">Supporting originals captured with this assessment. They add no separate claim amount.</p>{relatedEvidence.map(entry => <RelatedEvidence entry={entry} key={entry.link.id}/>)}</details>}
             {kind === 'work' ? <section className="claim-evidence-section" aria-label="Supervisor review">
               <h3>Supervisor review</h3>
               <dl className="claim-evidence-fields"><Field label={hasAreaEvidence ? 'Verified area completion' : 'Verified total'}>{percent(hasAreaEvidence ? evidence?.approvedCompletion ?? evidence?.completion : row.verified)}</Field><Field label="Reviewer">{text(evidence?.verifiedBy)}</Field><Field label="Verified">{dateTime(hasAreaEvidence ? evidence?.verifiedAt : row.verifiedAt)}</Field>{hasAreaEvidence && <Field label="Weighted contract item total">{percent(row.verified)}</Field>}</dl>

@@ -133,7 +133,13 @@ export interface VOReview {
   relatedItemId: string | null; history: VOHistoryEntry[]; reviewChecksVersion?: number;
   [key: string]: unknown;
 }
-export interface VOCase extends VOReview { report: SiteReport }
+export interface VOEvidenceLink {
+  version: 1; id: string; projectId: string; sourceCaseId: string; targetCaseId: string;
+  sourceReference: string; targetReference: string; reason: string; linkedAt: string; linkedBy: string;
+  sourceReport: SiteReport;
+}
+export interface VORelatedEvidence { link: VOEvidenceLink; report: SiteReport }
+export interface VOCase extends VOReview { report: SiteReport; linkedTo?: VOEvidenceLink; evidenceLinkIssue?: true }
 export type VOConfirmationReplyKind = 'scopeAcknowledged' | 'priceApproved' | 'changesRequested';
 export interface VOConfirmationSnapshot {
   projectId: string; projectCode: string; projectName: string; caseId: string; reference: string;
@@ -175,6 +181,7 @@ export interface ProjectWorkflow {
   messageMatchReviews?: MessageMatchReview[];
   voiceTranscriptReviews?: VoiceTranscriptReview[];
   voConfirmationRequests?: VOConfirmationRequest[];
+  voEvidenceLinks?: VOEvidenceLink[]; voEvidenceLinkIssues?: string[];
   whatsappMessages?: WhatsAppMessage[]; drawingMapping?: DrawingMapping; contractVersion?: ContractVersionMetadata; contractTotalReviews?: ContractTotalReview[];
 }
 export type DemoKind = 'drawing-progress' | 'area-split' | 'area-alias' | 'message-match' | 'voice-note' | 'claim-examples';

@@ -83,3 +83,26 @@
   .vo-evidence-details .vo-evidence-photo { height:175px; }
   .vo-proposed-value { max-width:none; }
 }
+
+.vo-link-form { display:grid; gap:16px; padding:18px 0; }
+.vo-link-form > h3, .vo-linked-summary h3 { display:flex; align-items:center; gap:7px; color:#334155; font-size:14px; font-weight:600; }
+.vo-link-form > p { color:#64748b; font-size:13px; line-height:1.75; margin:0; }
+.vo-link-form .form-actions { margin-top:0; }
+.vo-link-form .vo-link-empty { padding:12px 14px; border:1px solid var(--border); border-radius:7px; background:#f8fafc; }
+.vo-linked-summary { margin-top:16px; padding:14px; border:1px solid var(--border); border-radius:8px; background:#f8fafc; }
+.vo-linked-summary > p, .vo-link-reason { margin:9px 0; color:#475569; font-size:13px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; }
+.vo-linked-summary > small, .vo-link-meta { display:block; color:#64748b; font-size:12px; line-height:1.7; }
+.vo-linked-summary > .button { margin-top:4px; }
+.vo-related-evidence { border-bottom:1px solid var(--border); }
+.vo-related-evidence > summary { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; padding:14px 0; color:#475569; cursor:pointer; list-style:none; }
+.vo-related-evidence > summary::-webkit-details-marker { display:none; }
+.vo-related-evidence > summary > strong { font-size:13px; font-weight:550; }
+.vo-related-evidence > summary > span { color:#64748b; font-size:12px; }
+.vo-related-evidence > summary > svg { margin-left:auto; }
+.vo-related-evidence[open] > summary > svg { transform:rotate(180deg); }
+.vo-related-record { padding:14px 0; border-top:1px solid var(--border); }
+.vo-related-record > header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-bottom:12px; }
+.vo-related-record > header > div { min-width:0; }
+.vo-related-record > header strong { display:block; color:#334155; font-size:13px; overflow-wrap:anywhere; }
+.vo-related-record > header small { display:block; margin-top:4px; color:#64748b; font-size:12px; line-height:1.7; }
+.vo-link-reason > strong { font-weight:550; }

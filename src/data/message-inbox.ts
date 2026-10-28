@@ -25,7 +25,7 @@ export function getMessageReviewStatus(message?: WhatsAppMessage | null, report?
     const status = voCase?.status || (report.status === 'rejected' ? 'rejected' : 'flagged');
     return {
       label: status === 'flagged' ? 'Needs extra-work review' : (VO_STATUS_LABELS as Readonly<Record<string, string>>)[status] || 'Needs extra-work review',
-      tone: status === 'approved' ? 'green' : status === 'rejected' ? 'slate' : 'amber',
+      tone: status === 'approved' ? 'green' : ['rejected', 'linked'].includes(status) ? 'slate' : 'amber',
     };
   }
   if (report?.status === 'rejected') return { label: 'Dismissed', tone: 'slate' };
