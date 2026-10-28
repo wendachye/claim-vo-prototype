@@ -72,7 +72,10 @@ describe('simplified monthly claims journey', () => {
     render(<MonthlyClaimView project={project} initialTab="drafts" onSave={save} onTrack={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Edit claim', exact: true })).toBeNull();
     expect(screen.queryByText('Version details', { exact: true })).toBeNull();
-    await user.click(screen.getByRole('button', { name: 'Start new version', exact: true }));
+    const newVersion = screen.getByRole('button', { name: 'New version', exact: true });
+    expect(newVersion.closest('details').open).toBe(false);
+    await user.click(screen.getByText('History', { exact: true }));
+    await user.click(screen.getByRole('button', { name: 'New version', exact: true }));
     expect(screen.getByRole('spinbutton', { name: 'A QS cumulative quantity' }).value).toBe('40');
     expect(screen.getByRole('spinbutton', { name: 'A previously claimed value' }).value).toBe('5');
     expect(save).not.toHaveBeenCalled();

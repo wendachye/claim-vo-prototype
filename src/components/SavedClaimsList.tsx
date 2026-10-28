@@ -54,7 +54,7 @@ export function SavedClaimsList({ project, groups, currency, dirtyPeriods, onCon
       <div className="claim-history-status"><Badge tone={['prepared', 'paid'].includes(status) ? 'green' : status === 'queried' && !queryContext?.revision ? 'amber' : status === 'draft' && !readyDraft ? 'slate' : 'blue'}>{statusLabel}</Badge>{latest && dirtyPeriods[draft.period] && status !== 'paid' && !blockedByIssued && <span className="claim-unsaved">{prepared ? 'Unfinished draft' : 'Unsaved edits'}</span>}</div>
       <div className="claim-history-amount"><small>{prepared ? 'Claim amount' : 'This month'}{draft.snapshot?.claimBasis?.version === 1 && ' · net'}</small><strong><span>{draft.snapshot?.currency || currency}</span> {amount(draft.snapshot?.totals?.currentValue)}</strong></div>
       <div className="claim-history-actions">
-        {canContinue && !prepareHelp && <Button className="claim-edit-icon" icon={prepared ? Plus : Pencil} aria-label={continueLabel} title={continueLabel} onClick={continueClaim} />}
+        {canContinue && !prepared && !prepareHelp && <Button className="claim-edit-icon" icon={Pencil} aria-label={continueLabel} title={continueLabel} onClick={continueClaim} />}
         {previewAction}{blockedPrepareAction}{primaryDraftAction}{trackingAction}
       </div>
       {latest && (prepareHelp || blockedByIssued || status === 'queried') && <p className={`claim-history-next${prepareHelp ? ' needs-attention' : ''}`} id={prepareHelp ? helpId : undefined}>{nextStep}</p>}
@@ -70,7 +70,9 @@ export function SavedClaimsList({ project, groups, currency, dirtyPeriods, onCon
       const latest = group.drafts[0];
       const revisionContext = latest.revisionOf ? getClaimRevisionContext(project, latest.revisionOf) : null;
       const revisionSource = revisionContext && revisionContext.query?.id === latest.queryId ? revisionContext.source : null;
-      const queryContext = getClaimTracking(project, latest.id)?.status === 'queried' ? getClaimRevisionContext(project, latest.id) : null;
+      const latestStatus = getClaimTracking(project, latest.id)?.status || (latest.status === 'prepared' ? 'prepared' : 'draft');
+      const queryContext = latestStatus === 'queried' ? getClaimRevisionContext(project, latest.id) : null;
+      const canStartNewVersion = latest.status === 'prepared' && latestStatus === 'prepared' && !latest.revisionOf && !getClaimPeriodLock(project, latest.period);
       return <section className="claim-history-group" key={group.period}>
         {renderRecord(latest)}
         <details className="claim-older-versions"><summary><History size={14} />History<span>{group.drafts.length > 1 ? `${group.drafts.length - 1} earlier ${group.drafts.length === 2 ? 'version' : 'versions'}` : '1 version'}</span></summary>
@@ -78,6 +80,7 @@ export function SavedClaimsList({ project, groups, currency, dirtyPeriods, onCon
             {revisionSource && <p className="claim-history-revision">Revises version {revisionSource.revision} · Query {revisionContext!.query?.reference}</p>}
             {queryContext?.revision && <p className="claim-history-revision">Revised in version {queryContext.revision.revision}. Original assessment retained.</p>}
             {revisionSource && latest.revisionResponse && <details className="claim-history-response"><summary>QS response</summary><p>{latest.revisionResponse}</p></details>}
+            {canStartNewVersion && <div className="claim-version-actions"><span>Start a separate draft for changes before submission.</span><Button icon={Plus} onClick={() => onContinue(latest)}>New version</Button></div>}
           </div>
           {group.drafts.slice(1).map((draft) => renderRecord(draft, false))}
         </details>

@@ -68,7 +68,7 @@
 .claim-choice-copy > strong { display:block; color:#334155; font-size:13px; font-weight:550; line-height:1.7; }
 .claim-choice-copy > span { display:block; margin-top:2px; color:#64748b; font-size:12px; line-height:1.7; }
 .claim-choice p { color:#a16207; font-size:11px; margin-top:7px; line-height:1.8; }
-.claim-choice-status { padding-left:6px; text-align:right; }
+.claim-choice-status { max-width:140px; padding-left:6px; text-align:right; }
 .claim-choice-status > strong { display:block; color:#475569; font-size:14px; font-weight:550; line-height:1.7; white-space:nowrap; }
 .claim-choice-status > span { display:block; color:#64748b; font-size:10px; line-height:1.7; }
 .claim-section-empty { margin:0 20px 20px; color:#64748b; font-size:12px; line-height:1.8; }
@@ -246,4 +246,4 @@
   .claim-item-actions { margin-left:auto; }
 }
 
-@media screen and (max-width:420px) { .claim-choice-label { grid-template-columns:16px minmax(0,1fr); gap:9px; } }
+@media screen and (max-width:420px) { .claim-choice-label { grid-template-columns:16px minmax(0,1fr); gap:9px; } .claim-choice-status { grid-column:2; max-width:none; text-align:left; } }

@@ -32,6 +32,8 @@
 .claim-current-version { display:flex; flex-direction:column; gap:8px; padding:0 18px 14px; }
 .claim-current-version > p:first-child { display:flex; flex-wrap:wrap; gap:5px 14px; color:#64748b; font-size:11px; line-height:1.8; }
 .claim-current-version strong { color:#475569; font-weight:550; }
+.claim-version-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; color:#64748b; font-size:11px; line-height:1.8; }
+.claim-version-actions .button { min-height:36px; font-size:12px; }
 .claim-history-record.older { border-top:1px solid #e9eef5; }
 .claim-history-record.older h3 { font-size:13px; }
 .claim-history-record.older .claim-history-amount strong { font-size:15px; }
@@ -51,6 +53,7 @@
   .claim-history-actions .claim-edit-icon { width:40px; }
   .claim-older-versions > summary { padding-inline:16px; min-height:40px; }
   .claim-current-version { padding-inline:16px; }
+  .claim-version-actions .button { min-height:40px; }
 }
 @media screen and (max-width:460px) {
   .claim-history-actions { justify-content:flex-start; }

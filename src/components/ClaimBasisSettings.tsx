@@ -26,9 +26,9 @@ export function ClaimBasisSettings({ value, currency = 'SGD', previousGrossValue
       : 'Choose retention';
 
   return <details className="claim-basis-settings">
-    <summary><strong>Claim basis</strong><span>{configured ? `${billingLabel} · ${retentionLabel} · Prior net ${amount(basis!.previousNetValue, currency)}` : 'Legacy gross-only assessment'}</span><ChevronDown size={16} aria-hidden="true" /></summary>
+    <summary><strong>Claim basis</strong><span>{configured ? `${billingLabel} · ${retentionLabel} · Prior net ${amount(basis!.previousNetValue, currency)}` : 'Before retention and tax'}</span><ChevronDown size={16} aria-hidden="true" /></summary>
     <div className="claim-basis-content">
-      {!configured ? <div className="claim-basis-legacy"><p>This assessment keeps its original gross-only basis. Set a basis to review retention and prior submitted net amounts in a new draft.</p><Button onClick={() => onChange?.(defaultClaimBasis())}>Set claim basis</Button></div> : <>
+      {!configured ? <div className="claim-basis-legacy"><p>This draft keeps its existing amounts before retention and tax. Choose Set claim basis to review retention and amounts previously submitted after retention. Earlier saved claims stay unchanged.</p><Button onClick={() => onChange?.(defaultClaimBasis())}>Set claim basis</Button></div> : <>
         <div className="claim-basis-fields">
           <FormField label="Billing method" required><SelectField value={basis!.billingMethod || ''} aria-label="Billing method" onChange={event => update('billingMethod', event.target.value)}><option value="">Choose billing method</option><option value="quantityRate">Cumulative quantity × rate</option><option value="unsupported">Other method (needs review)</option></SelectField></FormField>
           <FormField label="Retention" required><SelectField value={basis!.retentionMode || ''} aria-label="Retention" onChange={event => update('retentionMode', event.target.value)}><option value="">Choose retention</option><option value="none">None</option><option value="rateCap">Rate with cap</option></SelectField></FormField>

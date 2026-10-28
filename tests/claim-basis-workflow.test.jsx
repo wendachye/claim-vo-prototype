@@ -95,7 +95,7 @@ describe('monthly claim basis workflow', () => {
 
     expect(basisDetails().open).toBe(false);
     await openBasis(user);
-    expect(screen.getByText('Legacy gross-only assessment')).toBeTruthy();
+    expect(screen.getByText('Before retention and tax')).toBeTruthy();
     expect(readFormBuffer(project.id, 'claims:forms')['2026-10']).not.toHaveProperty('claimBasis');
     expect(changes).toHaveLength(0);
     await user.click(screen.getByRole('button', { name: 'Set claim basis', exact: true }));

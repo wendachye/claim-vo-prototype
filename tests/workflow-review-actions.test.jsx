@@ -38,7 +38,7 @@ describe('site review offers actions for the remaining work', () => {
     expect(review.classList.contains('primary')).toBe(true);
     expect(footer().getByRole('button', { name: 'Next message', exact: true }).classList.contains('primary')).toBe(false);
     await userEvent.setup().click(review);
-    expect(onOpenVO).toHaveBeenCalledWith(target.id);
+    expect(onOpenVO).toHaveBeenCalledWith(target.id, message.id);
     expect(project).toEqual(original);
   });
 
@@ -59,7 +59,7 @@ describe('site review offers actions for the remaining work', () => {
     expect(view.classList.contains('primary')).toBe(false);
     expect(footer().getByRole('button', { name: 'Next message', exact: true }).classList.contains('primary')).toBe(true);
     await userEvent.setup().click(view);
-    expect(onOpenVO).toHaveBeenCalledWith(target.id);
+    expect(onOpenVO).toHaveBeenCalledWith(target.id, message.id);
     expect(project).toEqual(original);
   });
 

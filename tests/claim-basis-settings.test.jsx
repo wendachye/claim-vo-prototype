@@ -19,7 +19,7 @@ describe('compact claim basis settings', () => {
     const onChange = vi.fn();
     render(<ClaimBasisSettings currency="SGD" previousGrossValue={null} onChange={onChange} />);
     expect(document.querySelector('details').open).toBe(false);
-    expect(screen.getByText('Legacy gross-only assessment')).toBeTruthy();
+    expect(screen.getByText('Before retention and tax')).toBeTruthy();
     await open(user);
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.queryByRole('combobox', { name: 'Billing method', exact: true })).toBeNull();

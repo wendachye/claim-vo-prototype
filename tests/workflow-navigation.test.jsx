@@ -137,6 +137,88 @@ describe('S.I.T. workflow navigation retains source context without changing rec
     expect(readWorkspace().projects).toEqual(before);
   });
 
+  it('returns from a contract item to its exact message and area with the inbox search retained after remount', async () => {
+    const { project } = fixture();
+    const message = project.whatsappMessages.find(entry => entry.itemId === 'WI-002');
+    const area = getDrawingMapping(project).areas.find(entry => entry.workItemIds.includes('WI-002'));
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    const view = mount(`#whatsapp?${new URLSearchParams({ message: message.id, area: area.id })}`);
+    await user.type(screen.getByRole('textbox', { name: 'Search site updates' }), 'WI-002');
+    await user.click(screen.getByText('Contract & drawing links', { exact: true }));
+    await user.click(screen.getByRole('button', { name: 'View contract item', exact: true }));
+    await screen.findByRole('heading', { name: 'Contract review' });
+    expect(params().get('item')).toBe('WI-002');
+    expect(params().get('message')).toBe(message.id);
+    expect(params().get('messageArea')).toBe(area.id);
+    view.unmount();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Back to message', exact: true }));
+    await screen.findByRole('heading', { name: 'WhatsApp messages' });
+    expect(params().get('message')).toBe(message.id);
+    expect(params().get('area')).toBe(area.id);
+    expect(screen.getByRole('textbox', { name: 'Search site updates' }).value).toBe('WI-002');
+    expect(screen.getByRole('button', { name: 'Back to drawing', exact: true })).toBeTruthy();
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('keeps message origin through VO and contract review and returns to the same dashboard-sourced message', async () => {
+    const { project, caseId } = fixture();
+    const entry = getVOCases(project).find(record => record.id === caseId);
+    const message = project.whatsappMessages.find(record => record.id === entry.report.sourceMessageId);
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    const view = mount(`#whatsapp?${new URLSearchParams({ message: message.id, from: 'dashboard' })}`);
+    await user.type(screen.getByRole('textbox', { name: 'Search site updates' }), 'extra');
+    await user.click(screen.getByRole('button', { name: 'View extra work', exact: true }));
+    await screen.findByRole('heading', { name: 'Separate escalator access (navigation demo)' });
+    expect(params().get('case')).toBe(caseId);
+    expect(params().get('message')).toBe(message.id);
+    const reviewDetails = screen.getByText('Work review', { exact: true }).closest('details');
+    if (!reviewDetails.open) await user.click(within(reviewDetails).getByText('Work review', { exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Check contract', exact: true }));
+    await screen.findByRole('heading', { name: 'Contract review' });
+    expect(params().get('item')).toBe('WI-007');
+    expect(params().get('vo')).toBe(caseId);
+    expect(params().get('message')).toBe(message.id);
+    view.unmount();
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Back to extra work', exact: true }));
+    await screen.findByRole('heading', { name: 'Separate escalator access (navigation demo)' });
+    expect(params().get('message')).toBe(message.id);
+    await user.click(screen.getByRole('button', { name: 'Back to message', exact: true }));
+    await screen.findByRole('heading', { name: 'WhatsApp messages' });
+    expect(params().get('message')).toBe(message.id);
+    expect(params().get('from')).toBe('dashboard');
+    expect(screen.getByRole('textbox', { name: 'Search site updates' }).value).toBe('extra');
+    expect(screen.getByRole('button', { name: 'Back to dashboard', exact: true })).toBeTruthy();
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it.each(['contract', 'vo'])('does not offer a return to a foreign or missing message from %s', route => {
+    const { other, caseId } = fixture();
+    const before = readWorkspace().projects;
+    const view = mount(`#${route}?${new URLSearchParams({ item: 'WI-001', case: caseId, message: other.whatsappMessages[0].id })}`);
+    expect(screen.queryByRole('button', { name: 'Back to message', exact: true })).toBeNull();
+    view.unmount();
+    mount(`#${route}?${new URLSearchParams({ item: 'WI-001', case: caseId, message: 'MISSING-MESSAGE' })}`);
+    expect(screen.queryByRole('button', { name: 'Back to message', exact: true })).toBeNull();
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
+  it('clears a message return context when switching projects', async () => {
+    const { project, other, caseId } = fixture();
+    const before = readWorkspace().projects;
+    const user = userEvent.setup();
+    mount(`#vo?${new URLSearchParams({ case: caseId, message: project.whatsappMessages[0].id })}`);
+    expect(screen.getByRole('button', { name: 'Back to message', exact: true })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: `Project: ${project.name}` }));
+    await chooseProjectOption(user, other);
+    await waitFor(() => expect(location.hash).toBe('#vo'));
+    expect(screen.queryByRole('button', { name: 'Back to message', exact: true })).toBeNull();
+    expect(readWorkspace().projects).toEqual(before);
+  });
+
   it('VO review opens the related contract item, returns to the same case, and offers explicit claim selection', async () => {
     const { project, caseId } = fixture();
     const entry = getVOCases(project).find((record) => record.id === caseId);
