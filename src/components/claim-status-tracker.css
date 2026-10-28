@@ -19,6 +19,13 @@
 .claim-status-amounts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin:0; padding:15px 22px; border-top:1px solid #edf1f5; }
 .claim-status-amounts dt { color:#64748b; font-size:12px; line-height:1.7; }
 .claim-status-amounts dd { margin:3px 0 0; color:#334155; font-size:16px; font-weight:550; line-height:1.5; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.claim-status-balance,.claim-status-difference { padding-top:13px; border-top:1px solid #edf1f5; }
+.claim-status-balance.full-width { grid-column:1/-1; }
+.claim-status-balance-help,.claim-status-certification-note { font-size:11px; font-weight:400; line-height:1.7; color:#64748b; }
+.claim-status-balance-help { margin:5px 0 0; }
+.claim-status-certification-note { margin-top:6px; }
+.claim-status-certification-note summary { cursor:pointer; color:#475569; }
+.claim-status-certification-note p { margin-top:6px; white-space:pre-wrap; overflow-wrap:anywhere; }
 .claim-status-next { padding:20px; }
 .claim-status-eyebrow { display:block; margin-bottom:5px; color:#2563eb; font-size:11px; font-weight:550; }
 .claim-status-next h2,.claim-status-complete h2 { color:#1e293b; font-size:16px; font-weight:600; line-height:1.6; }
@@ -95,6 +102,8 @@
   .claim-status-amounts { grid-template-columns:1fr; gap:10px; }
   .claim-status-amounts > div { display:flex; align-items:baseline; justify-content:space-between; gap:15px; }
   .claim-status-amounts dd { margin:0; text-align:right; }
+  .claim-status-difference { flex-wrap:wrap; }
+  .claim-status-difference dd { flex:1 0 100%; text-align:left; }
   .claim-status-fields { grid-template-columns:1fr; }
   .claim-status-next header { flex-wrap:wrap; gap:10px; }
   .claim-status-next header > div { flex-basis:100%; }

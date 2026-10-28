@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Check, CheckCheck, CircleAlert, FileText, History, MessageSquare, Save } from 'lucide-react';
 import { getClaimTracking } from '../data/claim-tracking.ts';
 import { getClaimRevisionContext } from '../data/claim-revisions.ts';
+import { claimBasisDifference } from '../data/claim-basis.ts';
 import { clearFormBuffer } from '../data/form-buffer.ts';
 import { useBufferedState } from './useFormBuffer';
 import { Badge, Button, FormActions, FormField, Input, SelectField, PageHeader, Textarea } from './ui';
@@ -51,6 +52,9 @@ export function ClaimStatusTracker({ project, draftId, onBack, onBackToDashboard
   const isRevision = !!sourceDraft;
   const showCertifiedAmount = known(tracking?.certifiedValue) || ['certified', 'paid'].includes(tracking?.status || '');
   const showPaidAmount = known(tracking?.paidValue) || ['certified', 'paid'].includes(tracking?.status || '');
+  const certifiedBalance = known(tracking?.certifiedValue) && known(tracking?.paidValue) ? claimBasisDifference(tracking.certifiedValue, tracking.paidValue) : null;
+  const claimDifference = known(tracking?.claimedValue) && known(tracking?.certifiedValue) ? claimBasisDifference(tracking.claimedValue, tracking.certifiedValue) : null;
+  const showClaimDifference = claimDifference !== null && claimDifference !== 0;
 
   useEffect(() => { setFeedback(null); setErrors({}); }, [project.id, draftId]);
   useEffect(() => { if (feedback) feedbackRef.current?.focus(); }, [feedback]);
@@ -107,7 +111,12 @@ export function ClaimStatusTracker({ project, draftId, onBack, onBackToDashboard
     <section className="claim-status-summary" aria-label="Claim status summary">
       <div className="claim-status-reference"><div><span>{draft.snapshot?.claimBasis?.version === 1 ? 'Claimed this month · net' : 'Claimed this month'}</span><strong>{tracking.currency} {amount(tracking.claimedValue)}</strong></div><Badge tone={tracking.status === 'paid' || resubmitted ? 'green' : tracking.status === 'queried' ? 'amber' : 'blue'}>{resubmitted ? 'Revised' : labels[tracking.status]}</Badge></div>
       <ol className="claim-status-timeline" aria-label="Claim stages">{stages.map((stage, index) => <li key={stage} className={`${index < currentStage ? 'complete' : index === currentStage ? 'current' : ''}${stage === 'submitted' && tracking.status === 'queried' ? ' has-query' : ''}`} aria-current={index === currentStage ? 'step' : undefined}><i aria-hidden="true">{index < currentStage || stage === 'paid' && tracking.status === 'paid' ? <Check size={15} /> : index + 1}</i><div><strong>{labels[stage]}</strong><span>{index <= currentStage ? dateLabel(tracking[stageDates[stage]]) : 'Not yet'}</span>{stage === 'submitted' && tracking.status === 'queried' && <span className="claim-status-query-stage">Query recorded</span>}</div></li>)}</ol>
-      {(showCertifiedAmount || showPaidAmount) && <dl className="claim-status-amounts">{showCertifiedAmount && <div><dt>Certified amount</dt><dd>{known(tracking.certifiedValue) ? `${tracking.currency} ${amount(tracking.certifiedValue)}` : 'Not recorded'}</dd></div>}{showPaidAmount && <div><dt>Total paid to date</dt><dd>{known(tracking.paidValue) ? `${tracking.currency} ${amount(tracking.paidValue)}` : 'Not recorded'}</dd></div>}</dl>}
+      {(showCertifiedAmount || showPaidAmount) && <dl className="claim-status-amounts">
+        {showCertifiedAmount && <div><dt>Certified amount</dt><dd>{known(tracking.certifiedValue) ? `${tracking.currency} ${amount(tracking.certifiedValue)}` : 'Not recorded'}</dd></div>}
+        {showPaidAmount && <div><dt>Total paid to date</dt><dd>{known(tracking.paidValue) ? `${tracking.currency} ${amount(tracking.paidValue)}` : 'Not recorded'}</dd></div>}
+        <div className={`claim-status-balance${showClaimDifference ? '' : ' full-width'}`}><dt>Balance to receive (certified)</dt><dd>{certifiedBalance !== null ? `${tracking.currency} ${amount(certifiedBalance)}` : 'Not recorded'}</dd></div>
+        {showClaimDifference && <div className="claim-status-difference"><dt>Difference from claim</dt><dd><span>{tracking.currency} {amount(claimDifference)}</span><p className="claim-status-balance-help">Claimed amount minus certified amount.</p>{tracking.certificationNote && <details className="claim-status-certification-note"><summary>Certification note</summary><p>{tracking.certificationNote}</p></details>}</dd></div>}
+      </dl>}
       <details className="claim-status-details"><summary>Saved claim details</summary><dl><div><dt>Version</dt><dd>{draft.revision}</dd></div><div><dt>Claim reference</dt><dd>{draft.id}</dd></div></dl></details>
     </section>
     {feedback && <div ref={feedbackRef} tabIndex={-1} className={`claim-status-feedback${feedback.error ? ' error' : ''}`} role={feedback.error ? 'alert' : 'status'}>{feedback.error ? <CircleAlert size={17} /> : <Check size={17} />}<span>{feedback.message}</span></div>}
@@ -122,7 +131,7 @@ export function ClaimStatusTracker({ project, draftId, onBack, onBackToDashboard
       {hasEdits && <p className="claim-status-buffer-note">Your unfinished edits stay while you browse. Save before refreshing.</p>}
       <FormActions secondary={<Button className="ghost" onClick={fillDemoDetails}>Use demo details</Button>}><Button type="submit" className="primary" icon={Save}>{formTitle}</Button></FormActions>
       {tracking.status === 'submitted' && !queryMode && <div className="claim-status-query-option"><span>Received a question about this claim?</span><Button className="ghost" onClick={() => toggleQuery(true)}>Record a query</Button></div>}
-    </form> : <section className="claim-status-complete"><CheckCheck size={24} /><div><h2>Payment fully recorded</h2><p>This demo claim has reached Paid. You can review the saved claim and its tracking history.</p></div></section>}
+    </form> : <section className="claim-status-complete"><CheckCheck size={24} /><div><h2>Certified amount fully paid</h2><p>{showClaimDifference ? 'Payments match the certified amount. The difference from the original claim is shown above.' : 'Payments match the certified amount. The saved claim and tracking history remain available.'}</p></div></section>}
     {!!tracking.history?.length && <details className="claim-status-history"><summary><History size={15} />Tracking history <span>{tracking.history.length}</span></summary><ol>{[...tracking.history].reverse().map((event, index) => <li key={event.id || `${event.stage || ('action' in event && typeof event.action === 'string' ? event.action : '')}-${index}`}><div><strong>{event.stage === 'query' ? 'Query recorded' : event.stage === 'submitted' && isRevision ? 'Resubmitted' : labels[event.stage || ('action' in event && typeof event.action === 'string' ? event.action : '')] || (event.stage === 'payment' || 'action' in event && event.action === 'payment' ? 'Payment recorded' : 'Status recorded')}</strong><time>{dateLabel(event.date)}</time></div>{event.reference && <span>{event.reference}</span>}{known(event.value) && <p>{tracking.currency} {amount(event.value)}</p>}{event.note && <p>{event.note}</p>}</li>)}</ol></details>}
     <p className="claim-status-demo">Demo · Saved in this browser. No real submission or payment.</p>
   </div>;

@@ -224,3 +224,12 @@ final result: passed
 - Screenshots outside the repository in the task artifacts folder: workflow-refinements-vo-return.png, workflow-refinements-history.png, workflow-refinements-claim-labels.png, workflow-refinements-mobile-history.png and workflow-refinements-mobile-labels.png. Changes remain uncommitted for review. No Vercel check, deployment or next-module changes.
 
 final result: passed
+
+## 2026-10-28 — Approved Claim status balances
+
+- Added Balance to receive (certified) using the existing exact-decimal certified-minus-paid helper. Missing payments remain Not recorded; explicit zero and signed values remain distinct. A known nonzero claimed-minus-certified value appears as Difference from claim, with neutral basis text and the saved Certification note under a compact disclosure. Paid completion says Certified amount fully paid; lifecycle, input buffers, tracking history, original assessments, mock fixtures and exports are unchanged.
+- Validation: all 52 UI tests across seven files and 31 claim state/tracking/revision/export tests passed. Coverage includes partial and complete payments, a remaining claim/certification difference after certified payment, matching and unknown values, zero, above-claim certification, negative adjustments, decimal cents, project/claim navigation, note disclosure and unchanged saved project/pack/CSV. TypeScript, production build and diff whitespace checks passed. Independent read-only safety review found no concrete issues.
+- Local browser: reused Claim examples (Demo), August R1 Paid at SGD 5,000.00, and the existing Claims UI walkthrough Paid assessment at SGD 15,894.00. Both retained matching original claimed/certified/paid values and now show a zero certified balance. Difference scenarios were exercised in component tests; existing browser records were not altered to manufacture one. No new projects, claims, tracking actions or mock entries were created. Returned to the original August example for review.
+- Desktop 1440px and phone 390px showed readable balances with no horizontal page overflow. Browser errors/warnings were empty. Screenshots outside the repository in artifacts/claim-balance-update: paid-balance.png, paid-balance-mobile.png and paid-balance-desktop.png. Changes remain uncommitted for user review; no Vercel checks or next-module work.
+
+final result: passed

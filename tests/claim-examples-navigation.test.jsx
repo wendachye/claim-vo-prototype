@@ -94,7 +94,7 @@ describe('independent claim examples walkthrough', () => {
     expect(within(paidRow).queryByRole('button', { name: 'Edit claim', exact: true })).toBeNull();
     await user.click(within(paidRow).getByRole('button', { name: 'View payment history', exact: true }));
     expect(new URLSearchParams(location.hash.split('?')[1]).get('draft')).toBe(paid.id);
-    expect(screen.getByRole('heading', { name: 'Payment fully recorded' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Certified amount fully paid' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Back to monthly claims', exact: true }));
 
     view.unmount(); view = render(<App />);

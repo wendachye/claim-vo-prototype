@@ -127,7 +127,7 @@ describe('claim actions follow the recorded lifecycle', () => {
     const original = structuredClone(project);
     const onRecord = vi.fn(); const onPreview = vi.fn();
     render(<ClaimStatusTracker project={project} draftId={draft.id} onRecord={onRecord} onPreview={onPreview} />);
-    expect(screen.getByRole('heading', { name: 'Payment fully recorded' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Certified amount fully paid' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^Record / })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Use demo details' })).toBeNull();
     await user.click(screen.getByText(/^Tracking history/));

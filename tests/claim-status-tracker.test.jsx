@@ -47,6 +47,8 @@ describe('mock claim status tracker', () => {
     const summary = screen.getByRole('region', { name: 'Claim status summary' });
     expect(within(summary).queryByText('Certified amount')).toBeNull();
     expect(within(summary).queryByText('Total paid to date')).toBeNull();
+    expect(within(summary).queryByText('Balance to receive (certified)')).toBeNull();
+    expect(within(summary).queryByText('Difference from claim')).toBeNull();
     expect(screen.getByLabelText(/Submission reference/).value).toBe('');
     await user.click(screen.getByRole('button', { name: 'Record submission', exact: true }));
     expect(screen.getByText('Check the highlighted fields before saving.')).toBeTruthy();
@@ -113,7 +115,7 @@ describe('mock claim status tracker', () => {
     expect(within(summary).getByText('Total paid to date').nextElementSibling.textContent).toBe('SGD 40.00');
     await user.click(screen.getByRole('button', { name: 'Use demo details' }));
     await user.click(screen.getByRole('button', { name: 'Record payment', exact: true }));
-    expect(screen.getByRole('heading', { name: 'Payment fully recorded' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Certified amount fully paid' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Record payment', exact: true })).toBeNull();
     expect(records.at(-1).tracking.status).toBe('paid');
     expect(records.at(-1).project.claimDrafts[0]).toEqual(initial.claimDrafts[0]);

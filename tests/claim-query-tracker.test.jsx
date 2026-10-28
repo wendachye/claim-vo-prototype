@@ -109,7 +109,7 @@ describe('claim query and revision tracker', () => {
     expect(panel.textContent).toContain('A/01 · Scaffold access');
     expect(panel.textContent).toContain('DEMO-QUERY-R1');
     expect(screen.queryByRole('button', { name: 'Record certification', exact: true })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Payment fully recorded' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Certified amount fully paid' })).toBeNull();
     const timeline = screen.getByRole('list', { name: 'Claim stages' });
     expect(within(timeline).getByText('Submitted').closest('li').getAttribute('aria-current')).toBe('step');
     expect(within(timeline).getByText('Certified').closest('li').textContent).toContain('Not yet');
