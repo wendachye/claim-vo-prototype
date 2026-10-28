@@ -28,7 +28,9 @@ export function ClaimBasisSettings({ value, currency = 'SGD', previousGrossValue
   return <details className="claim-basis-settings">
     <summary><strong>Claim basis</strong><span>{configured ? `${billingLabel} · ${retentionLabel} · Prior net ${amount(basis!.previousNetValue, currency)}` : 'Before retention and tax'}</span><ChevronDown size={16} aria-hidden="true" /></summary>
     <div className="claim-basis-content">
-      {!configured ? <div className="claim-basis-legacy"><p>This draft keeps its existing amounts before retention and tax. Choose Set claim basis to review retention and amounts previously submitted after retention. Earlier saved claims stay unchanged.</p><Button onClick={() => onChange?.(defaultClaimBasis())}>Set claim basis</Button></div> : <>
+      {!configured ? <div className="claim-basis-legacy"><h3 className="form-section-heading">Review the claim basis</h3><p>Existing amounts are before retention and tax. Set a claim basis to review retention and prior submitted net. Earlier saved claims stay unchanged.</p><Button onClick={() => onChange?.(defaultClaimBasis())}>Set claim basis</Button></div> : <>
+        <section className="claim-basis-section" aria-label="Billing and retention">
+        <h3 className="form-section-heading">Billing &amp; retention</h3>
         <div className="claim-basis-fields">
           <FormField label="Billing method" required><SelectField value={basis!.billingMethod || ''} aria-label="Billing method" onChange={event => update('billingMethod', event.target.value)}><option value="">Choose billing method</option><option value="quantityRate">Cumulative quantity × rate</option><option value="unsupported">Other method (needs review)</option></SelectField></FormField>
           <FormField label="Retention" required><SelectField value={basis!.retentionMode || ''} aria-label="Retention" onChange={event => update('retentionMode', event.target.value)}><option value="">Choose retention</option><option value="none">None</option><option value="rateCap">Rate with cap</option></SelectField></FormField>
@@ -36,13 +38,19 @@ export function ClaimBasisSettings({ value, currency = 'SGD', previousGrossValue
             <FormField label="Retention rate" required suffix="%" error={rateError}><Input type="number" min="0" max="100" step="0.01" inputMode="decimal" aria-label="Retention rate" value={basis!.retentionRate ?? ''} onChange={event => update('retentionRate', event.target.value)} placeholder="Enter rate" /></FormField>
             <FormField label="Retention cap" required suffix={currency} error={nonNegativeError(basis!.retentionCap)} hint="Maximum cumulative retention held."><Input type="number" min="0" step="0.01" inputMode="decimal" aria-label="Retention cap" value={basis!.retentionCap ?? ''} onChange={event => update('retentionCap', event.target.value)} placeholder="Enter cap" /></FormField>
           </>}
-          <FormField label="Previously submitted net" suffix={currency} error={nonNegativeError(basis!.previousNetValue)} hint="Cumulative submitted amount after retention, not certified or paid totals."><Input type="number" min="0" step="0.01" inputMode="decimal" aria-label="Previously submitted net" value={basis!.previousNetValue ?? ''} onChange={event => update('previousNetValue', event.target.value)} placeholder="0.00 after confirmation" /></FormField>
-          <FormField label="Previous claim reference" required={referenceRequired} optional={!referenceRequired} hint={referenceRequired ? 'Identify the earlier submission or opening balance.' : 'Add a reference when there is an earlier claim.'}><Input aria-label="Previous claim reference" required={referenceRequired} value={basis!.priorReference ?? ''} onChange={event => update('priorReference', event.target.value)} placeholder="e.g. DEMO-CLAIM-001" /></FormField>
         </div>
         {basis!.retentionMode === 'rateCap' && (rate ?? 0) > 0 && <p className="claim-basis-help">Applies to cumulative gross work and eligible VOs; capped across all months.</p>}
-        <dl className="claim-basis-prior"><div><dt>Item totals claimed before (gross)</dt><dd>{amount(previousGrossValue, currency)}</dd></div></dl>
-        <p className="claim-basis-help">Blank prior amounts mean zero only after confirming previous claims below.</p>
         {(basis!.billingMethod === 'unsupported' || currency !== 'SGD') && <p className="claim-basis-blocked" role="status">{currency !== 'SGD' ? `This mock claim basis is not supported for ${currency}. No currency conversion is applied.` : 'This billing method needs review before the claim can be prepared.'}</p>}
+        </section>
+        <section className="claim-basis-section claim-basis-reconciliation" aria-label="Previous claim reconciliation">
+        <h3 className="form-section-heading">Previous claim reconciliation</h3>
+        <dl className="claim-basis-prior"><div><dt>Item totals claimed before (gross)</dt><dd>{amount(previousGrossValue, currency)}</dd></div></dl>
+        <div className="claim-basis-fields">
+          <FormField label="Previously submitted net" suffix={currency} error={nonNegativeError(basis!.previousNetValue)} hint="Submitted to date after retention, not certified or paid totals."><Input type="number" min="0" step="0.01" inputMode="decimal" aria-label="Previously submitted net" value={basis!.previousNetValue ?? ''} onChange={event => update('previousNetValue', event.target.value)} placeholder="0.00 after confirmation" /></FormField>
+          <FormField label="Previous claim reference" required={referenceRequired} optional={!referenceRequired} hint={referenceRequired ? 'Identify the earlier submission or opening balance.' : 'Add a reference if an earlier claim exists.'}><Input aria-label="Previous claim reference" required={referenceRequired} value={basis!.priorReference ?? ''} onChange={event => update('priorReference', event.target.value)} placeholder="e.g. DEMO-CLAIM-001" /></FormField>
+        </div>
+        <p className="claim-basis-help">Blank prior amounts mean zero only after confirming previous claims below.</p>
+        </section>
       </>}
       <p className="claim-basis-help">Mock settings for this draft, not extracted S.I.T. terms. Tax, retention releases and other deductions are not supported.</p>
     </div>

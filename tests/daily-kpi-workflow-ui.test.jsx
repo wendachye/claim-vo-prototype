@@ -41,6 +41,13 @@ describe('daily KPI intake', () => {
     await user.click(dialog.getByRole('button', { name: 'Preview message', exact: true }));
     const preview = dialog.getByRole('region', { name: 'Message preview', exact: true });
     expect(preview.querySelector('blockquote').textContent).toBe(raw);
+    const previewLogSummary = within(preview).getByText('Daily log details', { exact: true }).closest('summary');
+    const previewLog = previewLogSummary.closest('details');
+    expect(previewLog.open).toBe(false);
+    expect(preview.querySelector('blockquote').compareDocumentPosition(previewLog) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dialog.getByRole('region', { name: 'Daily KPI details', exact: true }).closest('details')).toBe(previewLog);
+    await user.click(previewLogSummary);
+    expect(previewLog.open).toBe(true);
     const details = within(dialog.getByRole('region', { name: 'Daily KPI details', exact: true }));
     expect(details.getByText('T11,13,20 KPI', { exact: true })).toBeTruthy();
     expect(details.getByText('20×1×1', { exact: true })).toBeTruthy();
@@ -52,7 +59,21 @@ describe('daily KPI intake', () => {
     const saved = selected();
     const message = saved.whatsappMessages.find(entry => !original.whatsappMessages.some(prior => prior.id === entry.id));
     expect(message).toMatchObject({ text: raw, kind: 'clarification', completion: null, itemId: null });
-    expect(screen.getByRole('region', { name: 'Daily KPI details', exact: true })).toBeTruthy();
+    const dailyLogSummary = screen.getByText('Daily log details', { exact: true }).closest('summary');
+    const dailyLog = dailyLogSummary.closest('details');
+    const sourceEvidence = document.querySelector('.wa-source-evidence');
+    expect(sourceEvidence.open).toBe(true);
+    expect(sourceEvidence.textContent).toContain(raw);
+    expect(sourceEvidence.compareDocumentPosition(dailyLog) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dailyLog.open).toBe(false);
+    // jsdom does not apply native closed-details visibility; the browser owns it.
+    expect(screen.getByRole('region', { name: 'Daily KPI details', exact: true }).closest('details')).toBe(dailyLog);
+    await user.click(dailyLogSummary);
+    expect(dailyLog.open).toBe(true);
+    const savedDetails = within(screen.getByRole('region', { name: 'Daily KPI details', exact: true }));
+    expect(savedDetails.getByText('T11,13,20 KPI', { exact: true })).toBeTruthy();
+    expect(savedDetails.getByText('20×1×1', { exact: true })).toBeTruthy();
+    expect(selected()).toEqual(saved);
     expect(screen.getByRole('button', { name: 'Save clarification request', exact: true })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Add progress update', exact: true })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Confirm match', exact: true })).toBeNull();

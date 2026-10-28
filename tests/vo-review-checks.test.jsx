@@ -81,6 +81,17 @@ describe('simple VO review preserves separate commercial checks', () => {
     for (const name of ['Contract scope', 'Instruction', 'Price approval', 'Claim readiness']) {
       expect(screen.getByRole('region', { name, exact: true })).toBeTruthy();
     }
+    expect(view.container.querySelector('.vo-work-review').open).toBe(true);
+    const priceStage = screen.getByRole('region', { name: 'Price approval' }).querySelector('.vo-stage-details');
+    const claimStage = screen.getByRole('region', { name: 'Claim readiness' }).querySelector('.vo-stage-details');
+    expect(priceStage.open).toBe(false);
+    expect(claimStage.open).toBe(false);
+    await user.click(priceStage.querySelector('summary'));
+    await user.click(claimStage.querySelector('summary'));
+    expect(priceStage.open).toBe(true);
+    expect(claimStage.open).toBe(true);
+    expect(action).not.toHaveBeenCalled();
+    expect(project).toEqual(before);
     const contract = screen.getByRole('region', { name: 'Contract scope' });
     expect(contract.textContent).toContain('A.1 / 1a · Original façade scaffold');
     expect(contract.textContent).toContain('Original scope includes listed guardrails and working decks.');
@@ -131,12 +142,22 @@ describe('simple VO review preserves separate commercial checks', () => {
   it('records a zero price approval separately and leaves claim eligibility blocked', async () => {
     const project = fixture('pendingApproval');
     let latest = project;
+    const action = vi.fn();
     const user = userEvent.setup();
-    render(<Harness initial={project} onState={value => { latest = value; }}/>);
+    render(<Harness initial={project} onAction={action} onState={value => { latest = value; }}/>);
+    const priceStage = screen.getByRole('region', { name: 'Price approval' }).querySelector('.vo-stage-details');
+    expect(priceStage.open).toBe(true);
+    expect(screen.getByRole('region', { name: 'Claim readiness' }).querySelector('.vo-stage-details').open).toBe(false);
     const approvedValue = screen.getByRole('spinbutton', { name: /^Approved value/ });
     expect(approvedValue.value).toBe('');
+    await user.click(priceStage.querySelector('summary'));
+    expect(priceStage.open).toBe(false);
     await user.click(screen.getByRole('button', { name: 'Record approval' }));
     expect(screen.getByText('Enter a non-negative approved value. Zero is valid.')).toBeTruthy();
+    expect(priceStage.open).toBe(true);
+    expect(document.activeElement).toBe(approvedValue);
+    expect(action).not.toHaveBeenCalled();
+    expect(latest).toEqual(project);
     await user.type(approvedValue, '0');
     await user.type(textbox('Approval reference'), 'ZERO-PRICE-APPROVAL');
     await user.type(textbox('Approved by'), 'Mock approving QS');
@@ -145,6 +166,8 @@ describe('simple VO review preserves separate commercial checks', () => {
     expect(entry.status).toBe('approved');
     expect(entry.approvedValue).toBe(0);
     expect(screen.getByRole('region', { name: 'Price approval' }).textContent).toContain('SGD 0.00');
+    expect(screen.getByRole('region', { name: 'Price approval' }).querySelector('.vo-stage-details').open).toBe(false);
+    expect(screen.getByRole('region', { name: 'Claim readiness' }).querySelector('.vo-stage-details').open).toBe(true);
     expect(screen.getByRole('region', { name: 'Claim readiness' }).textContent).toContain('Checks needed');
     expect(getVOClaimEligibility(entry).eligible).toBe(false);
     expect(screen.queryByRole('button', { name: 'Review in monthly claim' })).toBeNull();
@@ -209,9 +232,15 @@ describe('simple VO review preserves separate commercial checks', () => {
     let latest = project;
     const user = userEvent.setup();
     render(<Harness initial={project} onState={value => { latest = value; }}/>);
+    const claimStage = screen.getByRole('region', { name: 'Claim readiness' }).querySelector('.vo-stage-details');
+    expect(claimStage.open).toBe(false);
+    await user.click(claimStage.querySelector('summary'));
+    expect(claimStage.open).toBe(true);
+    expect(latest).toEqual(original);
     expect(screen.getByRole('button', { name: 'Edit claim checks' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Save claim checks' })).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Edit claim checks' }));
+    expect(claimStage.open).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Save claim checks' }));
     expect(latest).toEqual(original);
     expect(screen.getByRole('button', { name: 'Edit claim checks' })).toBeTruthy();

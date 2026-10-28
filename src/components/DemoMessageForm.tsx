@@ -89,23 +89,24 @@ export function DemoMessageForm({ project, onSave, onClose }: DemoMessageFormPro
         <li aria-current={!isPreview ? 'step' : undefined}>1. Write message</li><li aria-current={isPreview ? 'step' : undefined}>2. Preview</li>
       </ol>
       {!isPreview ? <>
-        <div className="demo-message-compose-heading"><span>Selected project · <strong>{project.code}</strong></span><Button className="ghost" onClick={() => update('text', sample)} disabled={!sample}>Use example</Button></div>
-        <FormField label="Message text" required hint="Daily KPI format: date, location, team/manpower, work and dimensions, working hours and remarks.">
+        <div className="demo-message-compose-heading"><h3 className="form-section-heading">Original message <span>{project.code}</span></h3><Button className="ghost" onClick={() => update('text', sample)} disabled={!sample}>Use example</Button></div>
+        <FormField label="Message text" required hint="Keep the worker’s wording and line breaks.">
           <Textarea ref={textControl} value={fields.text} onChange={event => update('text', event.target.value)} rows={9} maxLength={4000} placeholder={sample} autoFocus />
         </FormField>
-        <p className="demo-message-note">Keep the worker’s wording and line breaks. Daily activity needs a confirmed contract item, area and cumulative completion before it can update progress.</p>
-        <details className="demo-message-progress-format"><summary>Have a cumulative progress total?</summary><p>Use Project | Location | Area | Item ID, then COMPLETE=50% TOTAL. The item and area still need match review.</p><Button className="ghost" onClick={() => update('text', getDemoMessageSample(project))}>Use cumulative progress example</Button></details>
-        <FormField label="Demo photo" optional hint="Choose a bundled illustration, or leave this message without a photo.">
+        <details className="demo-message-details demo-message-progress-format"><summary>Format help</summary><div><h4>Daily activity</h4><p>Include the date, location, team/manpower, work and dimensions, working hours and remarks. Confirm the contract item, area and cumulative completion before updating progress.</p><h4>Cumulative progress</h4><p>Use Project | Location | Area | Item ID, then COMPLETE=50% TOTAL. The item and area still need match review.</p><Button className="ghost" onClick={() => update('text', getDemoMessageSample(project))}>Use cumulative progress example</Button></div></details>
+        <FormField label="Demo photo" optional hint="Bundled demonstration images only.">
           <SelectField value={fields.photoId} onChange={event => update('photoId', event.target.value)}>
             <option value="">No photo</option>{DEMO_MESSAGE_PHOTOS.map(photo => <option key={photo.id} value={photo.id}>{photo.label}</option>)}
           </SelectField>
         </FormField>
         {stalePreview && <p className="demo-message-note" role="status">Project details changed. Preview your message again.</p>}
       </> : <section className="demo-message-preview" aria-label="Message preview">
-        <div className="demo-message-preview-heading"><h3>Message preview</h3><Badge tone={preview.status === 'clarification' ? 'amber' : 'blue'}>{preview.status === 'clarification' ? 'Needs clarification' : 'Ready for review'}</Badge></div>
+        <div className="demo-message-preview-heading"><h3 className="form-section-heading">Original message</h3><Badge tone={preview.status === 'clarification' ? 'amber' : 'blue'}>{preview.status === 'clarification' ? 'Needs clarification' : 'Ready for review'}</Badge></div>
         <blockquote className="demo-message-original">{preview.text}</blockquote>
         {preview.photo ? <figure className="demo-message-photo"><img src={preview.photo.photo} alt={preview.photo.photoAlt} /><figcaption><ImagePlus size={13} aria-hidden="true" />Generated demo photo · illustrative only</figcaption></figure> : <p className="demo-message-note">No photo attached.</p>}
-        {preview.dailyKPI && <DailyKPISummary details={preview.dailyKPI} />}
+        {preview.dailyKPI && <details className="demo-message-details demo-message-log"><summary>Daily log details</summary><DailyKPISummary details={preview.dailyKPI} /></details>}
+        <section className="demo-message-routing" aria-label={preview.status === 'clarification' ? 'Details to confirm' : 'Suggested update'}>
+        <h3 className="form-section-heading">{preview.status === 'clarification' ? 'Details to confirm' : 'Suggested update'}</h3>
         <dl className="demo-message-summary">
           <div><dt>Project</dt><dd>{preview.projectCode}</dd></div>
           <div><dt>Contract item</dt><dd>{preview.item ? `${preview.item.ref || preview.item.id} · ${preview.item.description}` : 'Needs clarification'}</dd></div>
@@ -113,10 +114,11 @@ export function DemoMessageForm({ project, onSave, onClose }: DemoMessageFormPro
           <div><dt>{preview.status === 'clarification' ? 'Completion in message' : 'Cumulative completion'}</dt><dd>{preview.completion == null ? 'Not confirmed' : `${preview.completion}% ${preview.status === 'clarification' ? 'stated · needs review' : 'reported total'}`}</dd></div>
         </dl>
         {preview.issues.length > 0 && <div className="demo-message-issues"><p>Clarify before updating progress:</p><ul>{preview.issues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}</ul></div>}
-        <p className="demo-message-note">{preview.status === 'clarification' ? 'Saving adds an inbox message only. Ask the worker to clarify before updating progress.' : 'Saving adds an inbox message only. Review the match, process it and verify progress separately.'}</p>
+        </section>
+        <div className="demo-message-next"><h3 className="form-section-heading">Next action</h3><p>{preview.status === 'clarification' ? 'Saving adds to the inbox only; it does not update progress.' : 'Save to inbox, then review the match, process it and verify progress separately.'}</p></div>
       </section>}
       {error && <p className="demo-message-error" role="alert">{error}</p>}
-      <p className="demo-message-note">Local demo · nothing is sent to WhatsApp. Unfinished entries stay while you browse; save before refreshing.</p>
+      <p className="demo-message-note">Local demo · nothing is sent to WhatsApp. Save before refreshing.</p>
     </form>
   </Modal>;
 }

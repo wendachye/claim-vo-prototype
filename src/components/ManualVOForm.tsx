@@ -80,11 +80,17 @@ export function ManualVOForm({ project, onClose, onSave }: ManualVOFormProps) {
 
   return <Modal title="Add extra work" description={`${project.name} · Manual demo entry`} onClose={onClose} onCloseAutoFocus={event => { if (savedRef.current) event.preventDefault(); }} footer={<FormActions className="manual-vo-actions" secondary={<Button onClick={onClose} disabled={saving}>Cancel</Button>}><Button type="submit" form={formId} className="primary" icon={Plus} disabled={saving || !onSave}>{saving ? 'Adding…' : 'Add for review'}</Button></FormActions>}>
     <form id={formId} className="manual-vo-form" onSubmit={save} noValidate>
+      <section className="manual-vo-section" aria-label="Work to review">
+      <h3 className="form-section-heading">Work to review</h3>
       <FormField label="Work description" required error={fieldError('title')}><Input {...props('title')} maxLength={160} placeholder="e.g. Additional access platform at W5" autoFocus /></FormField>
-      <FormField label="Details" required error={fieldError('description')} hint="Describe the additional work and how the instruction was received."><Textarea {...props('description')} rows={3} maxLength={4000} placeholder="What was requested, where and by whom?" /></FormField>
+      <FormField label="Details" required error={fieldError('description')} hint="Keep the original notes and reported instruction."><Textarea {...props('description')} rows={3} maxLength={4000} placeholder="What was requested, where and by whom?" /></FormField>
+      </section>
+      <section className="manual-vo-section manual-vo-context" aria-label="Location and instruction">
+      <h3 className="form-section-heading">Location &amp; instruction</h3>
       {areas.length > 0 || staleArea ? <FormField label="Site area" optional error={fieldError('areaId')}><SelectField {...props('areaId')}><option value="">Another location / not yet linked</option>{staleArea && <option value={fields.areaId} disabled>Previous area unavailable</option>}{areas.map(area => <option key={area.id} value={area.id}>{area.code} · {area.name}</option>)}</SelectField></FormField> : null}
       {!fields.areaId && <FormField label="Location" optional error={fieldError('areaText')}><Input {...props('areaText')} maxLength={120} placeholder="e.g. W5, east side" /></FormField>}
       <FormField label="Instruction or reference" optional error={fieldError('instructionReference')}><Input {...props('instructionReference')} maxLength={500} placeholder="e.g. Reported site instruction or meeting reference" /></FormField>
+      </section>
       <details className="manual-vo-optional">
         <summary>Contract link &amp; demo photo <span>Optional</span></summary>
         <div className="manual-vo-optional-fields">
@@ -94,8 +100,8 @@ export function ManualVOForm({ project, onClose, onSave }: ManualVOFormProps) {
         </div>
       </details>
       {error && !knownFieldError && <p className="manual-vo-error" role="alert">{error.message}</p>}
-      <p className="manual-vo-note">Manual demo record · price unknown. The QS reviews scope, instruction and approval in the existing workflow.</p>
-      <p className="manual-vo-note">Unfinished entries stay while you browse. Save before refreshing.</p>
+      <div className="manual-vo-next"><h3 className="form-section-heading">Next action</h3><p className="manual-vo-note">Manual demo record · price unknown. Add for review saves the case for QS scope, instruction and price checks.</p></div>
+      <p className="manual-vo-note">Save before refreshing.</p>
     </form>
   </Modal>;
 }

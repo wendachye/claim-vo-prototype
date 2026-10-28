@@ -4,7 +4,7 @@
 .vo-register, .vo-review-anchor { scroll-margin-top:62px; }
 .vo-review-anchor { min-width:0; }
 .vo-panel-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 18px; min-height:69px; border-bottom:1px solid var(--border); }
-.vo-panel-header h2 { display:flex; align-items:center; gap:7px; color:#334155; font-size:14px; line-height:1.6; font-weight:600; overflow-wrap:anywhere; }
+.vo-panel-header h2 { display:flex; align-items:center; gap:7px; color:#1e293b; font-size:17px; line-height:1.5; font-weight:650; overflow-wrap:anywhere; }
 .vo-panel-header h2 > span { min-width:19px; padding:1px 6px; border-radius:4px; color:#64748b; background:#f1f5f9; font-size:12px; text-align:center; }
 .vo-panel-header p { margin-top:3px; color:#64748b; font-size:12px; line-height:1.5; }
 .vo-panel-header > svg { color:#64748b; }
@@ -35,9 +35,9 @@
 .vo-photo-label, .vo-photo-open { position:absolute; display:flex; align-items:center; gap:5px; padding:5px 7px; border:1px solid #ffffff40; border-radius:5px; color:#fff; background:#0f172a90; font-size:12px; }
 .vo-photo-label { left:10px; top:10px; }
 .vo-photo-open { right:10px; bottom:10px; }
-.vo-no-photo { display:flex; align-items:center; gap:11px; min-height:80px; padding:14px; border:1px dashed #cbd5e1; border-radius:7px; color:#64748b; background:#f8fafc; }
-.vo-no-photo strong { display:block; color:#64748b; font-size:13px; font-weight:550; }
-.vo-no-photo p { margin-top:4px; color:#64748b; font-size:12px; line-height:1.7; }
+.vo-no-photo { display:flex; align-items:center; gap:8px; padding:10px 12px; border-radius:7px; color:#64748b; background:#f8fafc; }
+.vo-no-photo > svg { flex-shrink:0; }
+.vo-no-photo strong { color:#64748b; font-size:12px; font-weight:400; }
 .vo-legacy-note { margin-top:11px; padding:10px 12px; border-radius:6px; background:#f8fafc; color:#64748b; font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
 .vo-legacy-note > strong { font-weight:550; }
 .vo-review-form { margin-top:23px; padding-top:19px; border-top:1px solid var(--border); }

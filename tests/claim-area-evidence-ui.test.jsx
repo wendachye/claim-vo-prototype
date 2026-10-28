@@ -79,7 +79,7 @@ describe('claim evidence retains each area separately', () => {
     const save = vi.fn();
     render(<MonthlyClaimView project={project} onSave={save} />);
     expect(screen.getByText('QS assessed quantity to date')).toBeTruthy();
-    expect(screen.getByText(/Whole-item verified total: 40%/)).toBeTruthy();
+    expect(screen.getByText('Whole-item verified total', { exact: true }).nextElementSibling.textContent).toBe('40%');
     await openEvidence(user);
     const east = project.reports.find(report => report.area === 'EAST');
     await chooseSelect(user, panel().getByRole('combobox', { name: 'Area evidence', exact: true }), east.id);

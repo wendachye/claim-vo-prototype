@@ -1,26 +1,38 @@
 .demo-message-form { display:grid; gap:18px; }
 .demo-message-steps { display:flex; gap:22px; margin:0; padding:0; list-style:none; color:#94a3b8; font-size:12px; }
 .demo-message-steps [aria-current='step'] { color:#2563eb; font-weight:600; }
-.demo-message-compose-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:-8px; color:#64748b; font-size:12px; }
-.demo-message-compose-heading strong { color:#475569; font-weight:500; }
+.demo-message-compose-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:-4px; }
+.demo-message-form h3.form-section-heading { margin:0; color:#1e293b; font-size:16px; font-weight:650; line-height:1.5; }
+.demo-message-compose-heading h3 span { display:inline-block; margin-left:8px; color:#64748b; font-size:12px; font-weight:400; }
 .demo-message-note { color:#64748b; font-size:12px; line-height:1.75; margin:0; }
-.demo-message-progress-format { color:#64748b; font-size:12px; line-height:1.75; }
-.demo-message-progress-format > summary { cursor:pointer; color:#475569; }
-.demo-message-progress-format > p { margin:8px 0 4px; }
+.demo-message-details { min-width:0; border:1px solid #e2e8f0; border-radius:8px; color:#64748b; font-size:13px; line-height:1.75; }
+.demo-message-details > summary { display:flex; align-items:center; gap:12px; padding:12px 14px; list-style:none; cursor:pointer; color:#334155; font-weight:600; }
+.demo-message-details > summary::-webkit-details-marker { display:none; }
+.demo-message-details > summary::after { content:'+'; margin-left:auto; color:#64748b; font-size:16px; font-weight:400; }
+.demo-message-details[open] > summary::after { content:'−'; }
+.demo-message-details > summary:focus-visible { outline:2px solid #2563eb; outline-offset:3px; border-radius:8px; }
+.demo-message-details > div { padding:0 14px 14px; }
+.demo-message-progress-format h4 { margin:0 0 4px; color:#334155; font-size:13px; font-weight:600; }
+.demo-message-progress-format h4:not(:first-child) { margin-top:16px; }
+.demo-message-progress-format p { margin:0 0 8px; }
+.demo-message-log > .daily-kpi-summary { margin:0; border:0; border-radius:0; background:transparent; }
 .demo-message-preview { display:grid; gap:16px; min-width:0; }
 .demo-message-preview-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
-.demo-message-preview-heading h3 { font-size:14px; font-weight:600; color:#334155; margin:0; }
 .demo-message-original { margin:0; padding:14px; border:1px solid var(--border); border-radius:7px; background:#f8fafc; color:#334155; font-size:13px; line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere; }
 .demo-message-photo { margin:0; }
 .demo-message-photo img { display:block; width:100%; max-height:180px; object-fit:cover; border:1px solid var(--border); border-radius:7px; }
 .demo-message-photo figcaption { display:flex; align-items:center; gap:6px; margin-top:6px; color:#64748b; font-size:11px; line-height:1.6; }
+.demo-message-routing { padding:18px; border:1px solid #dbe3ee; border-radius:10px; background:#f8fafc; }
+.demo-message-routing h3.form-section-heading { margin-bottom:16px; }
 .demo-message-summary { margin:0; display:grid; gap:12px; }
-.demo-message-summary > div { display:grid; grid-template-columns:115px minmax(0,1fr); gap:14px; font-size:12px; line-height:1.7; }
+.demo-message-summary > div { display:grid; grid-template-columns:115px minmax(0,1fr); gap:14px; font-size:13px; line-height:1.7; }
 .demo-message-summary dt { color:#64748b; }
-.demo-message-summary dd { margin:0; color:#334155; overflow-wrap:anywhere; }
-.demo-message-issues { border-left:2px solid #f59e0b; padding-left:12px; color:#92400e; font-size:12px; line-height:1.8; }
+.demo-message-summary dd { margin:0; color:#334155; font-weight:500; overflow-wrap:anywhere; }
+.demo-message-issues { border-left:2px solid #f59e0b; margin-top:18px; padding-left:12px; color:#92400e; font-size:12px; line-height:1.8; }
 .demo-message-issues p { margin:0 0 4px; font-weight:500; }
 .demo-message-issues ul { margin:0; padding-left:17px; }
+.demo-message-next { padding-top:2px; }
+.demo-message-next p { margin:6px 0 0; color:#64748b; font-size:13px; line-height:1.7; }
 .demo-message-error { color:#b91c1c; font-size:13px; line-height:1.8; margin:0; }
 .modal-footer .demo-message-actions { width:100%; margin:0; padding:0; border:0; }
 @media (max-width:420px) { .demo-message-summary > div { grid-template-columns:1fr; gap:2px; } }

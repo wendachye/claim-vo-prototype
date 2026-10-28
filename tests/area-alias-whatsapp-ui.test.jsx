@@ -22,7 +22,7 @@ it('shows the unique matched area beside the unchanged source before explicit pr
 it('shows ambiguity and the clarification action instead of a progress/VO action',async()=>{
   const user=userEvent.setup(),project=fixture(),source=project.whatsappMessages[2],onProcess=vi.fn();
   const view=render(<WhatsAppView project={project} messages={project.whatsappMessages} initialMessageId={source.id} onProcess={onProcess}/>);
-  expect(screen.getByText(/“Wall frontage” matches WEST and EAST/)).toBeTruthy();
+  expect(screen.getByRole('status').textContent).toContain('“Wall frontage” matches WEST and EAST');
   expect(screen.queryByRole('button',{name:'Add progress update',exact:true})).toBeNull();
   await user.click(screen.getByRole('button',{name:'Needs clarification',exact:true}));expect(onProcess).toHaveBeenCalledWith(source);
   const vo={...source,kind:'vo'},voProject={...project,whatsappMessages:[vo]};

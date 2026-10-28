@@ -57,7 +57,7 @@ it('opens the main project’s unclear recording from Dashboard notifications an
   await user.click(within(notifications).getByRole('button', { name: action, exact: true }));
   await waitFor(() => expect(location.hash).toContain(targets.unclearVoiceMessageId));
   expect(selected().id).toBe(main.id);
-  expect(screen.getByRole('heading', { name: 'Ask for missing details' })).toBeTruthy();
+  expect(within(screen.getByRole('region', { name: 'Clarification', exact: true })).getByRole('heading', { name: 'Details to confirm', exact: true })).toBeTruthy();
   expect(stored().projects).toHaveLength(initial.projects.length);
   expect(claimExports(selected())).toEqual(before);
 });

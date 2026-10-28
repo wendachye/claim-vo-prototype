@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MonthlyClaimView } from '../src/components/MonthlyClaimView';
 import { ClaimPackPreview } from '../src/components/ClaimPackPreview';
@@ -13,7 +13,7 @@ import { clearProjectFormBuffers, writeFormBuffer } from '../src/data/form-buffe
 const projectIds = new Set();
 afterEach(() => { for (const id of projectIds) clearProjectFormBuffers(id); projectIds.clear(); vi.restoreAllMocks(); });
 
-function fixture(saved = true) {
+function fixture(saved = true, note = '') {
   const project = createProject({ name: 'Monthly claims UI example', code: 'CLAIM-CLEANUP', country: 'Singapore' });
   projectIds.add(project.id);
   Object.assign(project, {
@@ -28,7 +28,7 @@ function fixture(saved = true) {
   vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
   if (!saved) return project;
   const result = saveClaimDraft(project, '2026-10', {
-    work: { A: { include: true, assessedQuantity: 40, previousValue: 5 } }, priorConfirmed: true,
+    work: { A: { include: true, assessedQuantity: 40, previousValue: 5 } }, priorConfirmed: true, note,
   });
   expect(result.draft.snapshot.canPrepare).toBe(true);
   return result.project;
@@ -48,7 +48,7 @@ function SavedClaimJourney({ initial, onChange, onSave }) {
 describe('simplified monthly claims journey', () => {
   it('opens a saved draft directly from its visible edit control without an extra details step', async () => {
     const user = userEvent.setup();
-    const project = fixture();
+    const project = fixture(true, 'Saved QS measurement note.');
     const original = structuredClone(project);
     const save = vi.fn();
     render(<MonthlyClaimView project={project} initialTab="drafts" onSave={save} />);
@@ -59,6 +59,18 @@ describe('simplified monthly claims journey', () => {
     expect(screen.getByRole('heading', { name: 'Prepare a monthly claim' })).toBeTruthy();
     expect(screen.getByRole('spinbutton', { name: 'A QS cumulative quantity' }).value).toBe('40');
     expect(screen.getByRole('spinbutton', { name: 'A previously claimed value' }).value).toBe('5');
+    const references = screen.getByLabelText('Read-only references');
+    for (const [label, value] of [['Verified progress', '50%'], ['Contract rate', 'SGD 10.00 / m²'], ['Contract quantity', '100 m²']]) {
+      expect(within(references).getByText(label, { exact: true }).nextElementSibling.textContent).toBe(value);
+    }
+    expect(references.querySelector('input')).toBeNull();
+    expect(references.contains(screen.getByRole('spinbutton', { name: 'A QS cumulative quantity' }))).toBe(false);
+    const noteDetails = screen.getByText(/Add a QS note/).closest('details');
+    expect(noteDetails.open).toBe(false);
+    expect(screen.getByRole('textbox', { name: 'QS note', exact: true }).value).toBe('Saved QS measurement note.');
+    await user.click(noteDetails.querySelector('summary'));
+    expect(noteDetails.open).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'QS note', exact: true }).value).toBe('Saved QS measurement note.');
     expect(save).not.toHaveBeenCalled();
     expect(project).toEqual(original);
   });

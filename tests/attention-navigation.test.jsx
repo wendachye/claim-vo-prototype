@@ -279,7 +279,7 @@ describe('Needs attention opens exact selected-project records and reflects comp
     const user = userEvent.setup();
     const view = mount();
     await openTask(user, task);
-    await screen.findByRole('heading', { name: 'Enter the totals for November 2026' });
+    await screen.findByRole('heading', { name: 'Enter totals to date' });
     expect(params().get('draft')).toBe(saved.draft.id);
     expect(screen.getByRole('spinbutton', { name: 'WI-001 QS cumulative quantity' }).value).toBe('1111');
     expect(readFormBuffer(project.id, 'claims:forms')['2026-12']).toEqual(unfinished);

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DemoMessageForm } from '../src/components/DemoMessageForm';
 import { DEMO_MESSAGE_PHOTOS, getDemoMessageSample, previewDemoMessage } from '../src/data/demo-message-intake';
@@ -38,10 +38,18 @@ describe('Add demo message', () => {
     const panel = screen.getByRole('region', { name: 'Message preview' });
     expect(panel.querySelector('blockquote').textContent).toBe(entered);
     expect(screen.getAllByText('Needs clarification', { exact: true }).length).toBeGreaterThan(0);
+    const logSummary = within(panel).getByText('Daily log details', { exact: true }).closest('summary');
+    const logDetails = logSummary.closest('details');
+    expect(logDetails.open).toBe(false);
+    expect(panel.querySelector('blockquote').compareDocumentPosition(logDetails) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const daily = screen.getByRole('region', { name: 'Daily KPI details', exact: true });
+    expect(daily.closest('details')).toBe(logDetails);
+    await user.click(logSummary);
+    expect(logDetails.open).toBe(true);
     expect(daily.textContent).toContain('3man');
     expect(daily.textContent).toContain('14 x 4.5 x 4 T');
     expect(daily.textContent).toContain('Hrs:8:00 to 19:00hrs');
+    expect(project).toEqual(original);
     expect(screen.getByText('Not confirmed', { exact: true })).toBeTruthy();
     expect(screen.getByRole('img', { name: DEMO_MESSAGE_PHOTOS[0].photoAlt }).getAttribute('src')).toBe(DEMO_MESSAGE_PHOTOS[0].photo);
     expect(screen.getByText('Generated demo photo · illustrative only', { exact: true })).toBeTruthy();
@@ -80,7 +88,7 @@ describe('Add demo message', () => {
     fireEvent.change(message(), { target: { value: text } });
     await user.click(previewButton());
     expect(screen.getByText('Needs clarification', { exact: true })).toBeTruthy();
-    expect(screen.getByText('Saving adds an inbox message only. Ask the worker to clarify before updating progress.', { exact: true })).toBeTruthy();
+    expect(screen.getByText('Saving adds to the inbox only; it does not update progress.', { exact: true })).toBeTruthy();
     expect(screen.getByText('Clarify before updating progress:', { exact: true })).toBeTruthy();
     expect(screen.getByText('Completion in message', { exact: true })).toBeTruthy();
     expect(screen.queryByText('Cumulative completion', { exact: true })).toBeNull();

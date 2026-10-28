@@ -41,7 +41,8 @@ describe('voice-only source evidence wording', () => {
     expect(source.textContent).toContain(message.sender); expect(source.querySelector('time').getAttribute('dateTime')).toBe(message.date);
     expect(source.querySelector('blockquote')).toBeNull(); expect(source.querySelector('.wa-photo-unavailable')).toBeNull();
     expect(screen.queryByText('No photo attached to this update')).toBeNull();
-    expect(screen.getByText('Check the recording and reviewed transcript above before saving.')).toBeTruthy();
+    expect(screen.getByText('Confirm the transcript to continue.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add progress update', exact: true }).disabled).toBe(true);
   });
 
   it('points a voice-note match review to its reviewed transcript and recording above', () => {
