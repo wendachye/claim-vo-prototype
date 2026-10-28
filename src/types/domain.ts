@@ -1,4 +1,5 @@
 import type { ClaimDraft, ClaimTracking } from './claims';
+import type { DailyKPIEvidence } from './daily-kpi';
 export type { ClaimBasis, ClaimAssessmentRow, ClaimAssessment, ClaimRow, ClaimWorkRow, ClaimVORow, ClaimTotals, ClaimSnapshot, ClaimReview, ClaimDraft, ClaimTracking, ClaimStageEvent, ClaimQuery, ClaimPack } from './claims';
 /** Browser-local prototype records. Optional fields represent retained legacy data. */
 export type Scalar = string | number | boolean | null;
@@ -100,6 +101,7 @@ export interface SiteReport {
   areaMapping?: AreaMappingSnapshot | null; areaProgress?: AreaProgressSnapshot; scopeLabel?: string;
   matchReview?: MessageMatchReview;
   voiceNote?: VoiceNoteEvidence;
+  dailyKPIEvidence?: DailyKPIEvidence;
   manualEntry?: { version: number; submissionId: string; input: Record<string, string> };
   supersededByReportId?: string; supersededAt?: string; supersededBy?: string; supersededReason?: string;
   [key: string]: unknown;
@@ -114,6 +116,7 @@ export interface WhatsAppMessage {
   matchSuggestion?: MessageMatchSuggestion;
   audio?: VoiceNoteAudio; originalTranscript?: string; voiceSourceKey?: string;
   originalVoiceNote?: VoiceNoteEvidence;
+  originalDailyKPI?: DailyKPIEvidence;
   demoIntake?: { version: 1; submissionId: string; input: { projectId: string; text: string; photoId: string };
     previewKey: string; receivedAt: string; status: 'ready' | 'clarification'; issues: string[] };
   demoPhotoHistory?: { photo: string; photoAlt?: string }[]; vo?: boolean; demo?: boolean; origin?: string; channel?: string;

@@ -2,6 +2,8 @@ import type { DateInput, DrawingArea, Project, WhatsAppMessage, WorkItem } from 
 import { getAreaMatchForMessage, getDrawingMapping } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation } from './area-allocations.ts';
 import { getMessageMatchContext } from './message-match.ts';
+import { parseDailyKPIMessage } from './daily-kpi-message.ts';
+import type { DailyKPIMessage } from '../types/daily-kpi';
 
 /** A bounded, deterministic demonstration of message intake; no service or AI is called. */
 export interface DemoMessageInput { projectId: string; text: string; photoId: string; submissionId: string; previewKey?: string }
@@ -17,7 +19,7 @@ export const DEMO_MESSAGE_PHOTOS: ReadonlyArray<Readonly<DemoMessagePhoto>> = Ob
 export interface DemoMessagePreview {
   canSave: boolean; status: 'ready' | 'clarification' | 'invalid'; error?: string; issues: string[]; sourceKey: string;
   projectCode: string; item: WorkItem | null; area: DrawingArea | null; areaText: string; location: string;
-  completion: number | null; text: string; photo: DemoMessagePhoto | null;
+  completion: number | null; text: string; photo: DemoMessagePhoto | null; dailyKPI: DailyKPIMessage | null;
 }
 
 const record = (value: unknown): value is Record<string, unknown> => Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -57,7 +59,8 @@ const keyFor = (project: Project, input: DemoMessageInput, preview: DemoMessageP
     items: project.items.map(({ id, ref, description, pricingType, quantity, location, projectId, projectCode }) =>
       ({ id, ref, description, pricingType, quantity, location, projectId, projectCode })),
     drawing: mapping.drawing, areas: mapping.areas },
-  interpretation: { status: preview.status, issues: preview.issues, itemId: preview.item?.id || null, areaId: preview.area?.id || null } });
+  interpretation: { status: preview.status, issues: preview.issues, itemId: preview.item?.id || null, areaId: preview.area?.id || null,
+    ...(preview.dailyKPI ? { dailyKPI: preview.dailyKPI } : {}) } });
 };
 
 function validProject(project: Project) {
@@ -97,11 +100,17 @@ export function getDemoMessageSample(project: Project): string {
   return `${project?.code || 'PROJECT'} | ${item?.location || 'Site location'} | AREA-CODE | ${item?.id || 'WI-001'}\nCOMPLETE=50% TOTAL\nSimulated site update.`;
 }
 
+/** Fictional daily activity log; dimensions and manpower are not cumulative progress. */
+export function getDailyKPIMessageSample(project: Project): string {
+  const location = project.items.find(item => item.pricingType === 'measured' && local(project, item))?.location || 'Site A';
+  return `Date:-27/10/26\nProject: ${project.code}\nLocation: ${location}\nKPI\nTeam:-15\n3man\n\nErection:-\nLevel6:-\n14 x 4.5 x 4 T\n\n1man support platform remove modification work\nMaterials lower down\nHrs:8:00 to 19:00hrs\n\nAfternoon no materials lower down due to crane breakdown.\nSimulated daily KPI example.`;
+}
+
 /** Preview is pure. Exact codes/alternate names resolve; unclear meanings are never guessed. */
 export function previewDemoMessage(project: Project, values: unknown): DemoMessagePreview {
   const preview: DemoMessagePreview = { canSave: false, status: 'invalid', issues: [], sourceKey: '', projectCode: text(project?.code),
     item: null, area: null, areaText: '', location: '', completion: null,
-    text: record(values) && typeof values.text === 'string' ? values.text : '', photo: null };
+    text: record(values) && typeof values.text === 'string' ? values.text : '', photo: null, dailyKPI: null };
   const invalid = (error: string) => ({ ...preview, error });
   const error = inputError(project, values);
   if (error) return invalid(error);
@@ -110,7 +119,26 @@ export function previewDemoMessage(project: Project, values: unknown): DemoMessa
   // The separator before COMPLETE may be a fifth pipe or a new line, matching the original worker format.
   const parts = input.text.match(/^\s*([^\r\n]+?)(?:[ \t]*\|[ \t]*|[ \t]*\r?\n[ \t]*)(COMPLETE[\s\S]*)$/i);
   const fields = parts?.[1].split('|').map(value => value.trim());
-  if (!parts || !fields || fields.length !== 4 || fields.some(field => !field)) return invalid('Use Project | Location | Area | Work item, followed by COMPLETE=50% TOTAL.');
+  if (!parts || !fields || fields.length !== 4 || fields.some(field => !field)) {
+    // Keep malformed cumulative input on its validation path. A daily date in a
+    // trailing note must not turn a foreign header or invalid percentage into a save.
+    if (!input.text.includes('|') && !/\bCOMPLETE\s*=/i.test(input.text)) {
+      const daily = parseDailyKPIMessage(input.text);
+      if (daily) {
+        const explicitProjects = [...input.text.matchAll(/^[ \t]*project(?:[ \t]+code)?[ \t]*[:=-]+[ \t]*([^\r\n]+)[ \t]*$/gim)];
+        if (explicitProjects.some(match => match[1].trim().toUpperCase() !== project.code.toUpperCase())) return invalid('The message project code must match the selected project.');
+        preview.dailyKPI = daily;
+        preview.location = daily.locations.join(' · ');
+        preview.areaText = daily.locations[0] || '';
+        preview.issues = [...daily.issues,
+          'Confirm the measured contract item, compatible site area and cumulative completion (0–100%). Daily activity, manpower, dimensions and working hours do not establish progress.'];
+        preview.status = 'clarification'; preview.canSave = true;
+        preview.sourceKey = keyFor(project, input, preview);
+        return preview;
+      }
+    }
+    return invalid('Use a daily KPI update with a date, location or team and work details, or Project | Location | Area | Work item followed by COMPLETE=50% TOTAL.');
+  }
   if (fields[0].toUpperCase() !== project.code.toUpperCase()) return invalid('The message project code must match the selected project.');
   if (fields[1].length > 180 || fields[2].length > 120 || !/^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$/.test(fields[3])) return invalid('Use one location, one area and one work-item ID in the formatted fields.');
   const completion = parts[2].match(/^COMPLETE[ \t]*=[ \t]*([+-]?(?:\d+(?:\.\d+)?|\.\d+))[ \t]*%[ \t]*([^|\r\n]*?)[ \t]*(?:(?:\|[ \t]*|\r?\n)([\s\S]*))?$/i);

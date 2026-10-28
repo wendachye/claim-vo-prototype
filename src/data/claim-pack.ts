@@ -2,6 +2,8 @@ import { isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 import type { ClaimRow, ClaimPack, ClaimProjectDetails, ClaimEvidenceReference } from '../types/claims';
 import { isMessageMatchReviewSnapshot } from './message-match.ts';
 import { isClaimDocumentDetails } from './claim-document-details.ts';
+import { isDailyKPIEvidenceSnapshot } from './daily-kpi-evidence.ts';
+import { parseDailyKPIMessage } from './daily-kpi-message.ts';
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput, VORelatedEvidence } from '../types/domain';
 // Read-only exports of saved local assessments; never rebuild from live progress.
 const clone = <T>(value: T): T => structuredClone(value);
@@ -37,6 +39,14 @@ export function isClaimRelatedEvidence(value: unknown, projectId: string, caseId
   });
 }
 
+/** Only frozen report evidence is used; legacy reports are never filled from the inbox. */
+export function isClaimDailyKPIEvidenceValid(source: SiteReport | null | undefined, projectId: string): boolean {
+  if (!record(source) || !Object.hasOwn(source, 'dailyKPIEvidence')) return true;
+  return isDailyKPIEvidenceSnapshot(source.dailyKPIEvidence, projectId)
+    && (!source.projectCode || source.projectCode === source.dailyKPIEvidence.projectCode)
+    && source.sourceMessageId === `${source.dailyKPIEvidence.messageId}-CLARIFIED-001`;
+}
+
 function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | null | undefined = row.evidence, related?: VORelatedEvidence): ClaimEvidenceReference {
   const evidence: Partial<SiteReport> = record(source) ? source : {};
   return {
@@ -56,6 +66,7 @@ function evidenceFor(row: ClaimRow, kind: 'work' | 'vo', source: SiteReport | nu
     ...(evidence.areaProgress ? {areaProgress:clone(evidence.areaProgress)} : {}),
     ...(isVoiceNoteEvidenceSnapshot(evidence.voiceNote) ? {voiceNote:clone(evidence.voiceNote)} : {}),
     ...(isMessageMatchReviewSnapshot(evidence.matchReview) ? {matchReview:clone(evidence.matchReview)} : {}),
+    ...(isDailyKPIEvidenceSnapshot(evidence.dailyKPIEvidence) ? { dailyKPIEvidence: clone(evidence.dailyKPIEvidence) } : {}),
     ...(evidence.channel === 'manual-vo-mock' ? { channel: evidence.channel,
       reportedInstructionReference: evidence.reportedInstructionReference ?? null } : {}),
     ...(related ? { relatedVO: { linkId: related.link.id, sourceCaseId: related.link.sourceCaseId,
@@ -85,6 +96,10 @@ export function buildClaimPack(project: Project, draftId: string): { outcome: 'r
   const voRows = snapshot.voRows.filter((row) => record(row) && row.included === true);
   if ([...workRows, ...voRows].some((row) => row.evidence?.projectId && row.evidence.projectId !== project.id || row.areaEvidence?.some(evidence=>evidence.projectId && evidence.projectId!==project.id))) return invalid();
   if (voRows.some(row => row.relatedEvidence !== undefined && !isClaimRelatedEvidence(row.relatedEvidence, project.id, row.id))) return invalid();
+  const sources = [...workRows, ...voRows].flatMap(row => [row.evidence, ...(row.areaEvidence || []), ...(row.relatedEvidence || []).map(entry => entry.report)]);
+  if (sources.some(source => !isClaimDailyKPIEvidenceValid(source, project.id))) return {
+    outcome: 'invalid', error: 'The saved daily KPI evidence is invalid or belongs to another source. The saved assessment is unchanged.',
+  };
   const hasSavedDetails = record(draft.projectDetails);
   return { outcome: 'ready', pack: clone({
     id: draft.id, draftId: draft.id, projectId: draft.projectId,
@@ -208,7 +223,8 @@ export function toClaimCSV(pack: ClaimPack) {
     add({ Section: 'Total', Description: 'Contract work this period', 'This period': pack.totals?.workCurrentValue, Currency: pack.currency });
     add({ Section: 'Total', Description: 'Variations this period', 'This period': pack.totals?.voCurrentValue, Currency: pack.currency });
   }
-  for (const evidence of list(pack.evidenceRefs)) add({
+  for (const evidence of list(pack.evidenceRefs)) {
+    add({
     Section: evidence.kind === 'vo' ? 'Variation evidence' : 'Work evidence',
     Reference: evidence.rowRef ?? evidence.rowId, Description: evidence.title,
     'Evidence reference': joined(evidence.reportId && `Report: ${evidence.reportId}`,
@@ -227,6 +243,23 @@ export function toClaimCSV(pack: ClaimPack) {
       evidence.sender && `${evidence.channel === 'manual-vo-mock' ? 'Entered by' : 'Sender'}: ${evidence.sender}`,
       evidence.sourcePage != null && `Contract page: ${evidence.sourcePage}`,
       evidence.evidenceDateConfirmation?.confirmed && `Undated progress confirmed by QS as of ${evidence.evidenceDateConfirmation.asOf}`),
-  });
+    });
+    if (isDailyKPIEvidenceSnapshot(evidence.dailyKPIEvidence, pack.projectId)) {
+      const original = evidence.dailyKPIEvidence;
+      const daily = parseDailyKPIMessage(original.text)!;
+      const stated = (values: string[]) => values.join('; ') || 'Not stated';
+      add({ Section: 'Daily KPI evidence', Reference: evidence.rowRef ?? evidence.rowId,
+        Description: 'Original daily KPI update · supporting evidence only',
+        'Evidence reference': joined(`Original message: ${original.messageId}`, evidence.reportId && `Clarified report: ${evidence.reportId}`),
+        'Evidence date': joined(`Received: ${original.date}`, `Reported date: ${daily.reportedDate || 'Not stated'}`),
+        'Message / photo': joined(original.text, photoReference(original.photo)),
+        'Review notes': joined(`Sender: ${original.sender}`,
+          `Location: ${stated(daily.locations)}`, `Team: ${stated(daily.teams)}`, `Manpower: ${stated(daily.manpower)}`,
+          `Work activity: ${stated(daily.activities)}`, `Reported dimensions: ${stated(daily.dimensions)}`,
+          `Working hours: ${stated(daily.workingHours)}`, `Remarks: ${stated(daily.remarks)}`, ...daily.issues,
+          'Daily activity context only. Dimensions, manpower and hours do not determine QS-assessed quantities, completion or claim amounts.'),
+      });
+    }
+  }
   return `${columns.map(csvCell).join(',')}\r\n${rows.join('\r\n')}\r\n`;
 }

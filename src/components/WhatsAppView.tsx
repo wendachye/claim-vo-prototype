@@ -21,6 +21,8 @@ import { getMessageMatchContext } from '../data/message-match';
 import { getVoiceNoteContext } from '../data/voice-notes';
 import { VoiceNoteReview, VoiceNoteEvidenceDetails } from './VoiceNoteReview';
 import { DemoMessageForm } from './DemoMessageForm';
+import { DailyKPISummary } from './DailyKPISummary';
+import { parseDailyKPIMessage } from '../data/daily-kpi-message';
 import type { DemoMessageInput } from '../data/demo-message-intake';
 import { getMessageProgressCheck } from '../data/message-progress-check';
 import { MessageProgressCheck } from './MessageProgressCheck';
@@ -96,6 +98,7 @@ export function WhatsAppView({ project, onDismissMessage, onReopenMessage, onSav
   });
   const unavailable = Boolean(initialMessageId && !messages.some((message) => message.id === initialMessageId));
   const selected = unavailable ? null : messages.find((message) => message.id === selectedId) || shown[0];
+  const selectedDailyKPI = selected?.channel === 'whatsapp-intake-mock' && !selected.audio ? parseDailyKPIMessage(selected.text) : null;
   const selectionOutsideFilters = Boolean(selected && !shown.some((message) => message.id === selected.id));
   const report: SiteReport | null = selected ? messageReport(project, selected) : null;
   const voiceContext=selected && (Object.hasOwn(selected,'audio') || Object.hasOwn(selected,'originalTranscript')) ? getVoiceNoteContext(project,selected.id) : null;
@@ -253,6 +256,7 @@ export function WhatsAppView({ project, onDismissMessage, onReopenMessage, onSav
               </div>
             </details>
 
+            {selectedDailyKPI && <DailyKPISummary details={selectedDailyKPI} />}
             <MessageInboxActions key={`${selected.id}-record`} project={project} messageId={selected.id} recordOnly/>
             {!inboxClosed && <>
             {!voiceAwaitingReview && !showClarification && !matchContext?.eligible && !areaAmbiguous && !areaBlocked && (item || areaLink?.area) && <section className="wa-work-summary" aria-label="Matched work and area">

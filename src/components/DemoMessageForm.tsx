@@ -1,10 +1,11 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, Check, ImagePlus } from 'lucide-react';
 import type { Project } from '../types/domain';
-import { DEMO_MESSAGE_PHOTOS, getDemoMessageSample, previewDemoMessage, type DemoMessageInput } from '../data/demo-message-intake';
+import { DEMO_MESSAGE_PHOTOS, getDailyKPIMessageSample, getDemoMessageSample, previewDemoMessage, type DemoMessageInput } from '../data/demo-message-intake';
 import { clearFormBuffer } from '../data/form-buffer';
 import { useBufferedState } from './useFormBuffer';
 import { Badge, Button, FormActions, FormField, Modal, SelectField, Textarea } from './ui';
+import { DailyKPISummary } from './DailyKPISummary';
 import './demo-message-form.css';
 
 const FORM_SCOPE = 'whatsapp:demo-message';
@@ -31,7 +32,7 @@ export function DemoMessageForm({ project, onSave, onClose }: DemoMessageFormPro
   const preview = previewDemoMessage(project, values);
   const isPreview = Boolean(reviewed && reviewed.projectId === project.id && reviewed.sourceKey === preview.sourceKey);
   const stalePreview = Boolean(reviewed && !isPreview);
-  const sample = getDemoMessageSample(project);
+  const sample = getDailyKPIMessageSample(project);
 
   function update(name: 'text' | 'photoId', value: string) {
     setFields(previous => ({ ...previous, [name]: value }));
@@ -89,9 +90,11 @@ export function DemoMessageForm({ project, onSave, onClose }: DemoMessageFormPro
       </ol>
       {!isPreview ? <>
         <div className="demo-message-compose-heading"><span>Selected project · <strong>{project.code}</strong></span><Button className="ghost" onClick={() => update('text', sample)} disabled={!sample}>Use example</Button></div>
-        <FormField label="Message text" required hint="Project | Location | Area | Item ID, then COMPLETE=50% TOTAL. Enter cumulative completion.">
-          <Textarea ref={textControl} value={fields.text} onChange={event => update('text', event.target.value)} rows={6} maxLength={4000} placeholder={sample || 'Add a contract work item and site area to use an example.'} autoFocus />
+        <FormField label="Message text" required hint="Daily KPI format: date, location, team/manpower, work and dimensions, working hours and remarks.">
+          <Textarea ref={textControl} value={fields.text} onChange={event => update('text', event.target.value)} rows={9} maxLength={4000} placeholder={sample} autoFocus />
         </FormField>
+        <p className="demo-message-note">Keep the worker’s wording and line breaks. Daily activity needs a confirmed contract item, area and cumulative completion before it can update progress.</p>
+        <details className="demo-message-progress-format"><summary>Have a cumulative progress total?</summary><p>Use Project | Location | Area | Item ID, then COMPLETE=50% TOTAL. The item and area still need match review.</p><Button className="ghost" onClick={() => update('text', getDemoMessageSample(project))}>Use cumulative progress example</Button></details>
         <FormField label="Demo photo" optional hint="Choose a bundled illustration, or leave this message without a photo.">
           <SelectField value={fields.photoId} onChange={event => update('photoId', event.target.value)}>
             <option value="">No photo</option>{DEMO_MESSAGE_PHOTOS.map(photo => <option key={photo.id} value={photo.id}>{photo.label}</option>)}
@@ -102,10 +105,11 @@ export function DemoMessageForm({ project, onSave, onClose }: DemoMessageFormPro
         <div className="demo-message-preview-heading"><h3>Message preview</h3><Badge tone={preview.status === 'clarification' ? 'amber' : 'blue'}>{preview.status === 'clarification' ? 'Needs clarification' : 'Ready for review'}</Badge></div>
         <blockquote className="demo-message-original">{preview.text}</blockquote>
         {preview.photo ? <figure className="demo-message-photo"><img src={preview.photo.photo} alt={preview.photo.photoAlt} /><figcaption><ImagePlus size={13} aria-hidden="true" />Generated demo photo · illustrative only</figcaption></figure> : <p className="demo-message-note">No photo attached.</p>}
+        {preview.dailyKPI && <DailyKPISummary details={preview.dailyKPI} />}
         <dl className="demo-message-summary">
           <div><dt>Project</dt><dd>{preview.projectCode}</dd></div>
           <div><dt>Contract item</dt><dd>{preview.item ? `${preview.item.ref || preview.item.id} · ${preview.item.description}` : 'Needs clarification'}</dd></div>
-          <div><dt>Site area</dt><dd>{preview.area ? `${preview.area.code} · ${preview.area.name}` : preview.areaText || 'Needs clarification'}</dd></div>
+          <div><dt>Site area</dt><dd>{preview.area ? `${preview.area.code} · ${preview.area.name}` : preview.dailyKPI ? 'Needs clarification' : preview.areaText || 'Needs clarification'}</dd></div>
           <div><dt>{preview.status === 'clarification' ? 'Completion in message' : 'Cumulative completion'}</dt><dd>{preview.completion == null ? 'Not confirmed' : `${preview.completion}% ${preview.status === 'clarification' ? 'stated · needs review' : 'reported total'}`}</dd></div>
         </dl>
         {preview.issues.length > 0 && <div className="demo-message-issues"><p>Clarify before updating progress:</p><ul>{preview.issues.map((issue, index) => <li key={`${index}-${issue}`}>{issue}</li>)}</ul></div>}

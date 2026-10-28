@@ -37,7 +37,12 @@ describe('Add demo message', () => {
     await user.click(previewButton());
     const panel = screen.getByRole('region', { name: 'Message preview' });
     expect(panel.querySelector('blockquote').textContent).toBe(entered);
-    expect(screen.getByText('Ready for review', { exact: true })).toBeTruthy();
+    expect(screen.getAllByText('Needs clarification', { exact: true }).length).toBeGreaterThan(0);
+    const daily = screen.getByRole('region', { name: 'Daily KPI details', exact: true });
+    expect(daily.textContent).toContain('3man');
+    expect(daily.textContent).toContain('14 x 4.5 x 4 T');
+    expect(daily.textContent).toContain('Hrs:8:00 to 19:00hrs');
+    expect(screen.getByText('Not confirmed', { exact: true })).toBeTruthy();
     expect(screen.getByRole('img', { name: DEMO_MESSAGE_PHOTOS[0].photoAlt }).getAttribute('src')).toBe(DEMO_MESSAGE_PHOTOS[0].photo);
     expect(screen.getByText('Generated demo photo · illustrative only', { exact: true })).toBeTruthy();
     expect(screen.queryByRole('textbox')).toBeNull();

@@ -63,3 +63,13 @@ test('fallbacks remain neutral and ordinary pipe-separated prose is not stripped
   assert.equal(getMessageSummary(progress({ text: 'DEMO ONLY: separate instruction adds temporary access.' })).detail,
     'DEMO ONLY: separate instruction adds temporary access.');
 });
+
+test('a daily KPI note does not replace the cumulative title or original progress excerpt', () => {
+  const message = progress({ channel: 'whatsapp-intake-mock', text: `${progress().text}\n27/10/26\nKPI\n3man\n4*1*7` });
+  const before = structuredClone(message);
+  assert.deepEqual(getMessageSummary(message), {
+    title: '35% reported total',
+    detail: 'Reported cumulative physical progress for this whole contract work item. Supervisor verification is still required.',
+  });
+  assert.deepEqual(message, before);
+});

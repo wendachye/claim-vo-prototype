@@ -2,7 +2,7 @@ import type { ClaimAssessment, ClaimAssessmentRow, ClaimRow, ClaimWorkRow, Claim
 import type { Project, WorkItem, SiteReport, WhatsAppMessage, VOCase, VOReview, DrawingArea, DateInput } from '../types/domain';
 import { getItemAreaAllocation, getItemAreaRollup, getItemAreaSplitStartedAt } from './area-allocations.ts';
 import { getVOCases, getVOClaimEligibility, getVORelatedEvidence } from './vo.ts';
-import { captureClaimProjectDetails } from './claim-pack.ts';
+import { captureClaimProjectDetails, isClaimDailyKPIEvidenceValid } from './claim-pack.ts';
 import { isClaimDocumentDetails } from './claim-document-details.ts';
 import { normalizeClaimBasis, claimBasisNumber, claimBasisProduct, claimBasisSum, claimBasisDifference, applyClaimBasis } from './claim-basis.ts';
 
@@ -161,6 +161,10 @@ export function buildClaimReview(project: Project, period: string, input: unknow
     const currentValue = cumulativeValue === null || previousValue === null ? null : hasBasis ? claimBasisDifference(cumulativeValue, previousValue) : money(cumulativeValue - previousValue);
     const rowIssues: string[] = [];
     if (included) {
+      if ([verification.evidence, ...(verification.areaEvidence || [])].some(source => !isClaimDailyKPIEvidenceValid(source, project.id))) {
+        const issue = `${item.id}: Daily KPI evidence is invalid or belongs to another source. Review the original update.`;
+        rowIssues.push(issue); errors.push(issue);
+      }
       if (!eligible) rowIssues.push(exclusionReason);
       if (verification.allocationIssues?.length) rowIssues.push(...verification.allocationIssues);
       if (assessedQuantity === null) rowIssues.push('Enter the QS-assessed cumulative quantity.');
@@ -194,6 +198,10 @@ export function buildClaimReview(project: Project, period: string, input: unknow
     const currentValue = assessedValue === null || previousValue === null ? null : hasBasis ? claimBasisDifference(assessedValue, previousValue) : money(assessedValue - previousValue);
     const rowIssues: string[] = [];
     if (included) {
+      if ([entry.report, ...relatedEvidence.map(related => related.report)].some(source => !isClaimDailyKPIEvidenceValid(source, project.id))) {
+        const issue = `${entry.reference}: Daily KPI evidence is invalid or belongs to another source. Review the original update.`;
+        rowIssues.push(issue); errors.push(issue);
+      }
       if (!approval.eligible) rowIssues.push(`${approval.exclusionReason}${(entered.previousValue ?? 0) > 0 ? ' Reconcile the previously claimed value; this row cannot be omitted.' : ''}`);
       if (assessedValue === null) rowIssues.push('Enter the QS-assessed cumulative VO value.');
       if (assessedValue !== null && finite(entry.approvedValue) && assessedValue > entry.approvedValue + 0.001) rowIssues.push('Assessed VO value exceeds the recorded approval.');
@@ -295,6 +303,11 @@ export function markClaimPrepared(project: Project, draftId: string) {
   const drafts = normalizeClaimDrafts(project);
   const draft = drafts.find((entry) => entry.id === draftId);
   if (!draft) return { project, outcome: 'invalid' as const, error: 'Choose a saved claim draft from this project.' };
+  const savedSources = [...(draft.snapshot.workRows || []), ...(draft.snapshot.voRows || [])].filter(row => row.included)
+    .flatMap(row => [row.evidence, ...(row.areaEvidence || []), ...(row.relatedEvidence || []).map(entry => entry.report)]);
+  if (savedSources.some(source => !isClaimDailyKPIEvidenceValid(source, project.id))) return {
+    project, outcome: 'invalid' as const, error: 'The saved daily KPI evidence is invalid. The saved assessment is unchanged.',
+  };
   if (Object.hasOwn(draft, 'documentDetails') && !isClaimDocumentDetails(draft.documentDetails)) {
     return { project, outcome: 'invalid' as const, error: 'The saved claim document details are invalid. Review them before preparing this version.' };
   }

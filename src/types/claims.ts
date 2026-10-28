@@ -1,4 +1,5 @@
 import type { ContractDetails, InputNumber, SiteReport, VOHistoryEntry, VORelatedEvidence } from './domain';
+import type { DailyKPIEvidence } from './daily-kpi';
 
 export interface ClaimBasis {
   version: number; billingMethod: string; retentionMode: string; retentionRate: number | null;
@@ -114,6 +115,7 @@ export interface ClaimEvidenceReference {
   areaProgress?: SiteReport['areaProgress'];
   matchReview?: SiteReport['matchReview'];
   voiceNote?: SiteReport['voiceNote'];
+  dailyKPIEvidence?: DailyKPIEvidence;
   channel?: string; reportedInstructionReference?: string | null;
   relatedVO?: { linkId: string; sourceCaseId: string; sourceReference: string; reason: string; linkedAt: string; linkedBy: string };
 }

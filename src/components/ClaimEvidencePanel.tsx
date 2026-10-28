@@ -10,6 +10,8 @@ import { VO_EXECUTION_LABELS, VO_INSTRUCTION_LABELS, VO_SCOPE_LABELS, VO_STATUS_
 import './claim-evidence.css';
 import { MessageMatchReviewDetails } from './MessageMatchReview';
 import { isClaimRelatedEvidence } from '../data/claim-pack.ts';
+import { isDailyKPIEvidenceSnapshot } from '../data/daily-kpi-evidence';
+import { DailyKPIEvidence } from './DailyKPIEvidence';
 
 const record = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value);
 const known = (value: unknown) => value !== null && value !== undefined && value !== '';
@@ -31,13 +33,16 @@ function Field({ label, children }: {label: string; children: ReactNode}) {
   return <div><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
-function RelatedEvidence({ entry }: { entry: VORelatedEvidence }) {
+function RelatedEvidence({ entry, projectId }: { entry: VORelatedEvidence; projectId: string }) {
   const { link, report } = entry;
   const [failed, setFailed] = useState(false);
   const photo = typeof report.photo === 'string' ? report.photo : report.photo?.url;
   const generated = /^\/assets\/demo-[a-z0-9-]+\.jpg(?:[?#]|$)/.test(photo || '');
+  const dailyKPI = isDailyKPIEvidenceSnapshot(report.dailyKPIEvidence, projectId) ? report.dailyKPIEvidence : null;
   return <section className="claim-evidence-section" aria-label={`Related evidence from ${link.sourceReference}`}>
     <h3>{link.sourceReference}</h3>
+    {report.dailyKPIEvidence !== undefined && <DailyKPIEvidence evidence={report.dailyKPIEvidence} projectId={projectId} includePhoto={!dailyKPI?.photo || dailyKPI.photo !== photo} />}
+    {dailyKPI && <h3>Clarified worker reply</h3>}
     <dl className="claim-evidence-fields"><Field label="Sender">{text(report.sender)}</Field><Field label="Reported">{dateTime(report.date)}</Field><Field label="Area / location">{[report.area, report.location].filter(Boolean).join(' · ') || 'Not recorded'}</Field></dl>
     <blockquote>{text(report.message, 'No original message was saved with this report.')}</blockquote>
     {photo && !failed ? <figure className="claim-evidence-photo"><img src={photo} alt={report.photoAlt || 'Photo saved with the related site update'} onError={() => setFailed(true)}/><figcaption>{generated ? 'Generated demo photo · not actual project evidence' : 'Saved site attachment'}</figcaption></figure> : <p className="claim-evidence-context-note">{failed ? 'Photo could not be displayed. The saved original remains available.' : 'No photo was saved with this related update.'}</p>}
@@ -70,6 +75,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
   const photoData: unknown = evidence?.photo;
   const photoValue = typeof photoData === 'string' ? photoData : record(photoData) ? photoData.url || photoData.src : null;
   const photo = typeof photoValue === 'string' ? photoValue : null;
+  const dailyKPI = isDailyKPIEvidenceSnapshot(evidence?.dailyKPIEvidence, projectId) ? evidence.dailyKPIEvidence : null;
   const generated = /^\/assets\/demo-[a-z0-9-]+\.jpg(?:[?#]|$)/.test(photo || '');
   const checks = record(row?.eligibilityReview) ? row.eligibilityReview : null;
   const saved = Number.isInteger(revision) && (revision ?? 0) > 0;
@@ -91,8 +97,9 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
           {unavailable ? <p className="claim-evidence-empty">Choose an item from the selected project to view its evidence.</p> : <>
             <div className="claim-evidence-context"><Badge tone="blue">{saved ? `Saved version ${revision}` : 'Current assessment'}</Badge><span>{month(period)} · Cutoff {date(cutoff)}</span></div>
             <p className="claim-evidence-context-note">{saved ? 'Evidence captured with this saved claim version.' : 'Evidence supporting this assessment at its cutoff.'}</p>
+            {evidence?.dailyKPIEvidence !== undefined && <DailyKPIEvidence evidence={evidence.dailyKPIEvidence} projectId={projectId} includePhoto={!dailyKPI?.photo || dailyKPI.photo !== photo} />}
             <section className="claim-evidence-section" aria-label="Original update">
-              <h3>{manual ? 'Manual entry' : 'Original update'}</h3>
+              <h3>{manual ? 'Manual entry' : dailyKPI ? 'Clarified worker reply' : 'Original update'}</h3>
               {hasAreaEvidence && evidence && <><FormField label="Area evidence"><SelectField aria-label="Area evidence" value={evidence.id} onChange={(event) => setSelection({ context: selectionContext, reportId: event.target.value })}>{areaEvidence.map((report) => <option key={report.id} value={report.id}>{areaLabel(report)} · {quantity(report.areaProgress?.allocatedQuantity)} {row.unit || ''}</option>)}</SelectField></FormField><p className="claim-evidence-context-note">Assigned {quantity(evidence.areaProgress?.allocatedQuantity)} {row.unit || ''} of {quantity(evidence.areaProgress?.contractQuantity)} {row.unit || ''} in the contract. Each area contributes once to the item total.</p></>}
               {evidence ? <>
                 <dl className="claim-evidence-fields"><Field label={manual ? 'Entered by' : 'Sender'}>{text(evidence.sender)}</Field><Field label={manual ? 'Recorded' : 'Reported'}>{dateTime(evidence.date)}</Field><Field label="Area / location">{[evidence.area, evidence.location].filter(Boolean).join(' · ') || 'Not recorded'}</Field>{manual && <Field label="Reported instruction / reference">{text(evidence.reportedInstructionReference)}</Field>}</dl>
@@ -102,7 +109,7 @@ export function ClaimEvidencePanel({ row, kind, projectId, period, revision = nu
             </section>
             {evidence?.voiceNote && <VoiceNoteEvidenceDetails evidence={evidence.voiceNote}/>}
             {evidence?.matchReview && <MessageMatchReviewDetails review={evidence.matchReview}/>}
-            {!!relatedEvidence.length && <details className="claim-evidence-details"><summary>Related evidence ({relatedEvidence.length})</summary><p className="claim-evidence-context-note">Supporting originals captured with this assessment. They add no separate claim amount.</p>{relatedEvidence.map(entry => <RelatedEvidence entry={entry} key={entry.link.id}/>)}</details>}
+            {!!relatedEvidence.length && <details className="claim-evidence-details"><summary>Related evidence ({relatedEvidence.length})</summary><p className="claim-evidence-context-note">Supporting originals captured with this assessment. They add no separate claim amount.</p>{relatedEvidence.map(entry => <RelatedEvidence entry={entry} projectId={projectId} key={entry.link.id}/>)}</details>}
             {kind === 'work' ? <section className="claim-evidence-section" aria-label="Supervisor review">
               <h3>Supervisor review</h3>
               <dl className="claim-evidence-fields"><Field label={hasAreaEvidence ? 'Verified area completion' : 'Verified total'}>{percent(hasAreaEvidence ? evidence?.approvedCompletion ?? evidence?.completion : row.verified)}</Field><Field label="Reviewer">{text(evidence?.verifiedBy)}</Field><Field label="Verified">{dateTime(hasAreaEvidence ? evidence?.verifiedAt : row.verifiedAt)}</Field>{hasAreaEvidence && <Field label="Weighted contract item total">{percent(row.verified)}</Field>}</dl>

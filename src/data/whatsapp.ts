@@ -4,6 +4,7 @@ import { getAreaLinkStatus, snapshotMappedArea } from './drawing-mapping.ts';
 import { getMessageMatchContext } from './message-match.ts';
 import { getVoiceNoteContext } from './voice-notes.ts';
 import { getMessageInboxDecision } from './message-dismissal.ts';
+import { dailyKPIEvidenceMatchesSource, isDailyKPIEvidenceSnapshot } from './daily-kpi-evidence.ts';
 import { isUnresolvedProgressReport } from './report-status.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope, syncAreaItemProgress } from './area-allocations.ts';
 export interface WhatsAppProcessingResult { project: Project; outcome: string; reportId?: string; error?: string }
@@ -103,6 +104,9 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
   const originalMessage = messages.find((entry) => entry.id === messageId);
   let message = originalMessage;
   if (!message || message.projectId !== project.id || message.projectCode !== project.code) return invalid;
+  if (Object.hasOwn(message, 'originalDailyKPI') && (!message.replyToMessageId
+    || !isDailyKPIEvidenceSnapshot(message.originalDailyKPI, project.id, project.code)
+    || message.originalDailyKPI.messageId !== message.replyToMessageId)) return invalid;
   const inboxDecision = getMessageInboxDecision(project, messageId);
   if (inboxDecision.dismissed || inboxDecision.blocked) return { ...invalid, error: inboxDecision.issue || 'Reopen this dismissed message with a reason before processing it.' };
   const existing = project.reports.find((report) => report.sourceMessageId === messageId);
@@ -141,6 +145,8 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
       && entry.id === message.clarificationThreadId && entry.sourceMessageId === message.replyToMessageId && entry.replyMessageId === message.id);
     const parent = getWhatsAppMessages(project).find(entry => entry.id === message.replyToMessageId);
     if (threads.length !== 1 || !parent || parent.clarificationReplyMessageId !== message.id || item?.pricingType !== 'measured') return invalid;
+    if (Object.hasOwn(message, 'originalDailyKPI') && (!dailyKPIEvidenceMatchesSource(message.originalDailyKPI, project, threads[0].original)
+      || !dailyKPIEvidenceMatchesSource(message.originalDailyKPI, project, parent))) return invalid;
     if (message.areaId) {
       const saved = message.areaMapping;
       if (!saved || saved.areaId !== message.areaId || saved.code !== message.area || !saved.drawingId
@@ -190,6 +196,7 @@ export function processWhatsAppMessage(project: Project, messageId: string): Wha
     ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),
     ...(matchContext?.review ? { matchReview: clone(matchContext.review) } : {}),
     ...(voice?.evidence || originalMessage!.originalVoiceNote ? { voiceNote:clone(voice?.evidence || originalMessage!.originalVoiceNote!) } : {}),
+    ...(originalMessage!.originalDailyKPI ? { dailyKPIEvidence: clone(originalMessage!.originalDailyKPI) } : {}),
     sender: message.sender, date: message.date, completion: isVo ? null : pct,
     completionBasis: isVo ? 'unclear' : 'cumulative', status: isVo ? 'needsReview' : 'pending',
     message: voice ? originalMessage!.text : message.text, photo: message.photo, photoAlt: message.photoAlt,

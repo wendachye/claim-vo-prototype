@@ -1,9 +1,12 @@
 .demo-message-form { display:grid; gap:18px; }
 .demo-message-steps { display:flex; gap:22px; margin:0; padding:0; list-style:none; color:#94a3b8; font-size:12px; }
 .demo-message-steps [aria-current='step'] { color:#2563eb; font-weight:600; }
-.demo-message-compose-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:-8px; color:#64748b; font-size:12px; }
+.demo-message-compose-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:-8px; color:#64748b; font-size:12px; }
 .demo-message-compose-heading strong { color:#475569; font-weight:500; }
 .demo-message-note { color:#64748b; font-size:12px; line-height:1.75; margin:0; }
+.demo-message-progress-format { color:#64748b; font-size:12px; line-height:1.75; }
+.demo-message-progress-format > summary { cursor:pointer; color:#475569; }
+.demo-message-progress-format > p { margin:8px 0 4px; }
 .demo-message-preview { display:grid; gap:16px; min-width:0; }
 .demo-message-preview-heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
 .demo-message-preview-heading h3 { font-size:14px; font-weight:600; color:#334155; margin:0; }

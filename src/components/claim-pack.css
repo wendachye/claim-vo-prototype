@@ -96,6 +96,16 @@
 .claim-pack-evidence-meta strong { color:#404040; font-weight:600; }
 .claim-pack-evidence blockquote { margin:8px 0 0; padding:7px 9px; border-left:2px solid #c4c4c4; background:#fafafa; color:#303030; font-size:10px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
 .claim-pack-evidence-note { margin-top:7px; color:#5d5d5d; font-size:8px; line-height:1.5; overflow-wrap:anywhere; }
+.claim-pack-clarified-label { margin-top:12px; color:#303030; font-size:10px; font-weight:700; }
+.claim-pack-document .daily-kpi-evidence { margin-top:10px; padding:10px; border-color:#b7b7b7; border-radius:0; }
+.claim-pack-document .daily-kpi-evidence > h3 { color:#303030; font-size:10px; }
+.claim-pack-document .daily-kpi-evidence-meta { gap:7px 12px; margin-top:7px; }
+.claim-pack-document .daily-kpi-evidence-meta dt,.claim-pack-document .daily-kpi-evidence-meta dd,.claim-pack-document .daily-kpi-evidence-meta dd > span { font-size:8px; }
+.claim-pack-document .daily-kpi-summary h3 { font-size:9px; }
+.claim-pack-document .daily-kpi-summary dl { gap:7px 12px; }
+.claim-pack-document .daily-kpi-summary dt,.claim-pack-document .daily-kpi-summary dd,.claim-pack-document .daily-kpi-summary > p,.claim-pack-document .daily-kpi-evidence-shared-photo { font-size:8px; }
+.claim-pack-document .daily-kpi-evidence-photo img { max-width:170px; max-height:160px; }
+.claim-pack-document .daily-kpi-evidence-photo figcaption { font-size:8px; }
 .claim-pack-photo { margin:0; min-width:0; }
 .claim-pack-photo img { display:block; width:170px; max-height:160px; height:auto; object-fit:contain; border:1px solid #d2d2d2; background:#fafafa; }
 .claim-pack-photo figcaption { margin-top:4px; color:#696969; font-size:8px; line-height:1.5; }
@@ -212,6 +222,23 @@
   .claim-pack-evidence-meta { margin-top:1mm; gap:.5mm 3mm; }
   .claim-pack-evidence blockquote { font-size:7pt; line-height:1.4; padding:1mm 1.5mm; margin-top:1mm; orphans:3; widows:3; }
   .claim-pack-evidence-note { margin-top:1mm; }
+  /* Daily originals and clarified replies remain separate, flowing evidence blocks. */
+  .claim-pack-document .daily-kpi-evidence { margin-top:2mm; padding:2mm; break-inside:auto; }
+  .claim-pack-document .daily-kpi-evidence > h3 { font-size:7.5pt; break-after:avoid; }
+  .claim-pack-document .daily-kpi-evidence-meta { margin-top:1mm; gap:1mm 3mm; break-inside:avoid; }
+  .claim-pack-document .daily-kpi-evidence-meta dt,.claim-pack-document .daily-kpi-evidence-meta dd,.claim-pack-document .daily-kpi-evidence-meta dd > span { font-size:6.5pt; line-height:1.4; }
+  .claim-pack-document .daily-kpi-evidence-original { break-inside:auto; orphans:3; widows:3; }
+  .claim-pack-document .daily-kpi-summary { margin-top:2mm; break-inside:auto; }
+  .claim-pack-document .daily-kpi-summary h3 { margin-bottom:1mm; font-size:7pt; break-after:avoid; }
+  .claim-pack-document .daily-kpi-summary dl { display:block; }
+  .claim-pack-document .daily-kpi-summary dl > div { margin-top:1mm; break-inside:auto; }
+  .claim-pack-document .daily-kpi-summary dt { break-after:avoid; }
+  .claim-pack-document .daily-kpi-summary dt,.claim-pack-document .daily-kpi-summary dd,.claim-pack-document .daily-kpi-summary > p,.claim-pack-document .daily-kpi-evidence-shared-photo { font-size:6.5pt; line-height:1.4; }
+  .claim-pack-document .daily-kpi-summary > p { margin-top:1mm; }
+  .claim-pack-document .daily-kpi-evidence-photo { margin:2mm 0; break-inside:avoid; }
+  .claim-pack-document .daily-kpi-evidence-photo img { max-width:43mm; max-height:45mm; }
+  .claim-pack-document .daily-kpi-evidence-photo figcaption { font-size:6pt; }
+  .claim-pack-clarified-label { margin-top:2mm; font-size:7.5pt; break-after:avoid; }
   .claim-pack-photo { display:block; width:43mm; break-inside:avoid; }
   .claim-pack-photo img { display:block; width:43mm; max-height:45mm; height:auto; object-fit:contain; }
   .claim-pack-photo-unavailable { width:43mm; min-height:25mm; }

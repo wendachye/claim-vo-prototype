@@ -6,6 +6,8 @@ import { getDrawingMapping, snapshotMappedArea } from './drawing-mapping.ts';
 import { getAreaAllocationSnapshot, getItemAreaAllocation, sameProgressScope } from './area-allocations.ts';
 import { getVoiceNoteContext, isVoiceNoteAudio, isVoiceNoteEvidenceSnapshot } from './voice-notes.ts';
 import { getMessageInboxDecision } from './message-dismissal.ts';
+import { captureDailyKPIEvidence, dailyKPIEvidenceMatchesSource } from './daily-kpi-evidence.ts';
+import { parseDailyKPIMessage } from './daily-kpi-message.ts';
 
 export interface ClarificationMutation { project: Project; outcome: string; error?: string; thread?: MessageClarification }
 export interface ClarificationContext { thread: MessageClarification; original: WhatsAppMessage; request: MessageClarification['request']; reply: WhatsAppMessage | null; report: SiteReport | null; latestReport: SiteReport | null; stage: string; sourceMessageId: string; replyMessageId: string | null }
@@ -88,6 +90,7 @@ function savedReplyValid(project: Project, thread: MessageClarification, reply: 
     || reply.originalVoiceNote.projectId !== project.id || reply.originalVoiceNote.messageId !== thread.sourceMessageId
     || JSON.stringify(reply.originalVoiceNote.audio) !== JSON.stringify(thread.original.audio)
     || reply.originalVoiceNote.originalTranscript !== thread.original.originalTranscript)) return false;
+  if (Object.hasOwn(reply, 'originalDailyKPI') && !dailyKPIEvidenceMatchesSource(reply.originalDailyKPI, project, thread.original)) return false;
   const item = oneById(project.items, reply.itemId);
   if (!item || !optionalLocal(project, item)) return false;
   if (reply.areaId) {
@@ -223,11 +226,16 @@ export function saveMockClarificationReply(project: Project, messageId: string, 
     || list(project.reports).some((entry) => entry?.id === `WA-REPORT-${replyId}` || entry?.sourceMessageId === replyId)
     || list(project.history).some((entry) => entry?.id === `${thread.id}-REPLY`)) return invalid('This reply reference is already in use.');
   const original = thread.original;
+  const originalDailyKPI = captureDailyKPIEvidence(project, original);
+  if (original.channel === 'whatsapp-intake-mock' && parseDailyKPIMessage(original.text) && !originalDailyKPI) {
+    return invalid('The original daily KPI evidence is unavailable. Reopen the original message before saving its reply.');
+  }
   const reply = { id: replyId, projectId: project.id, projectCode: project.code, kind: 'progress', status: 'new',
     replyToMessageId: messageId, clarificationThreadId: thread.id, sender: original.sender,
     senderRole: original.senderRole || 'Site worker · demo', date, text: text(values.text),
     photo: original.photo, photoAlt: original.photoAlt, itemId: item.id,
     ...(getVoiceNoteContext(project,messageId).evidence ? {originalVoiceNote:clone(getVoiceNoteContext(project,messageId).evidence!)} : {}),
+    ...(originalDailyKPI ? { originalDailyKPI } : {}),
     area: mappedArea?.code || text(values.area), areaId: mappedArea?.id || null,
     areaMapping: snapshotMappedArea(mappedArea), location: item.location || mappedArea?.name || '',
     ...(areaProgress ? { areaProgress: clone(areaProgress) } : {}),

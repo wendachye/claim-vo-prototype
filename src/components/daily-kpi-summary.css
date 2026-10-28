@@ -1,0 +1,11 @@
+.daily-kpi-summary { min-width:0; padding:14px; border:1px solid var(--border); border-radius:7px; background:#fff; }
+.daily-kpi-summary h3 { margin:0 0 12px; color:#334155; font-size:14px; font-weight:600; }
+.daily-kpi-summary dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 20px; margin:0; }
+.daily-kpi-summary dl > div { min-width:0; }
+.daily-kpi-summary .daily-kpi-wide { grid-column:1/-1; }
+.daily-kpi-summary dt { margin-bottom:3px; color:#64748b; font-size:11px; line-height:1.6; }
+.daily-kpi-summary dd { margin:0; color:#334155; font-size:12px; line-height:1.7; overflow-wrap:anywhere; }
+.daily-kpi-summary dd > span { display:block; white-space:pre-wrap; }
+.daily-kpi-summary .daily-kpi-unknown { color:#94a3b8; }
+.daily-kpi-summary > p { margin:12px 0 0; color:#64748b; font-size:11px; line-height:1.7; }
+@media (max-width:480px) { .daily-kpi-summary dl { grid-template-columns:minmax(0,1fr); } }
